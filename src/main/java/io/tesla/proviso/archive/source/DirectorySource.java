@@ -11,6 +11,7 @@ import java.util.List;
 import org.codehaus.plexus.util.DirectoryScanner;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 public class DirectorySource implements Source {
   private final File[] sourceDirectories;
@@ -50,7 +51,23 @@ public class DirectorySource implements Source {
       scanner.setBasedir(sourceDirectory);
       scanner.setCaseSensitive(true);
       scanner.scan();
-      this.files = scanner.getIncludedFiles();
+      List<String> entries = Lists.newArrayList();
+      String includedFiles[] = scanner.getIncludedFiles();
+      for(String includedFile : includedFiles) {
+        if(!includedFile.isEmpty()) {
+          entries.add(includedFile);
+        }
+      }
+      String includedDirectories[] = scanner.getIncludedDirectories();
+      for(String includedDirectory : includedDirectories) {
+        if(!includedDirectory.isEmpty()) {
+          if(!includedDirectory.endsWith("/")) {
+            includedDirectory = includedDirectory + "/";
+          }
+          entries.add(includedDirectory);
+        }
+      }
+      this.files = entries.toArray(new String[entries.size()]);
       this.sourceDirectory = sourceDirectory;
     }
 

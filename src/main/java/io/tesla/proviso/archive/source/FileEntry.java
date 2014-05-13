@@ -35,6 +35,9 @@ public class FileEntry implements Entry {
 
   @Override
   public void writeEntry(OutputStream outputStream) throws IOException {
+    if(file.isDirectory()) {
+      return;
+    }
     Closer closer = Closer.create();
     try {
       InputStream entryInputStream = closer.register(getInputStream());
@@ -47,5 +50,10 @@ public class FileEntry implements Entry {
   @Override
   public int getFileMode() {
     return -1;
+  }
+
+  @Override
+  public boolean isDirectory() {
+    return file.isDirectory();
   }
 }

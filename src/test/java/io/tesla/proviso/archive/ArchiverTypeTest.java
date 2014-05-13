@@ -22,13 +22,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
+    System.out.println(archive);
+    validator().assertNumberOfEntriesInArchive(8, archive);
 
-    validator().assertNumberOfEntriesInArchive(5, archive);
-
+    validator().assertPresenceOfEntryInArchive(archive, "archive-0/0/");
     validator().assertPresenceOfEntryInArchive(archive, "archive-0/0/0.txt");
+    validator().assertPresenceOfEntryInArchive(archive, "archive-0/1/");
     validator().assertPresenceOfEntryInArchive(archive, "archive-0/1/1.txt");
+    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/2/2/");
     validator().assertPresenceOfEntryInArchive(archive, "archive-0/2/2.txt");
+    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/3/");
     validator().assertPresenceOfEntryInArchive(archive, "archive-0/3/3.txt");
+    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/4/");
     validator().assertPresenceOfEntryInArchive(archive, "archive-0/4/4.txt");
 
     validator().assertContentOfEntryInArchive(archive, "archive-0/0/0.txt", "0");

@@ -21,7 +21,7 @@ public class Archiver {
   private final List<String> executables;
   private final boolean useRoot;
   private final boolean flatten;
-  
+
   private Archiver(List<String> includes, List<String> excludes, List<String> executables, boolean useRoot, boolean flatten) {
     this.includes = includes;
     this.excludes = excludes;
@@ -61,7 +61,7 @@ public class Archiver {
           }
           if (exclude) {
             continue;
-          }          
+          }
           boolean include = true;
           if (!includes.isEmpty()) {
             for (String includePattern : includes) {
@@ -70,10 +70,10 @@ public class Archiver {
                 break;
               }
             }
-          }             
+          }
           if (!include) {
             continue;
-          }          
+          }
           if (!useRoot && source.isDirectory()) {
             entryName = entryName.substring(entryName.indexOf('/') + 1);
           }
@@ -88,6 +88,7 @@ public class Archiver {
             }
           }
           ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+          System.out.println(archiveEntry.getName());
           aos.putArchiveEntry(archiveEntry);
           entry.writeEntry(aos);
           aos.closeArchiveEntry();

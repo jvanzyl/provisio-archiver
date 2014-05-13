@@ -11,4 +11,5 @@ public interface Entry {
   void writeEntry(OutputStream outputStream) throws IOException;
   // this should be general filemode
   int getFileMode();
+  boolean isDirectory();
 }

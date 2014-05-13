@@ -48,7 +48,7 @@ public class TarGzArchiveValidator implements ArchiverValidator {
       while (null != (entry = is.getNextTarEntry())) {
         entryNames.add(entry.getName());
       }
-      assertTrue(String.format("The entry %s is expected to be present, but it is.", entryName), entryNames.contains(entryName));
+      assertTrue(String.format("The entry %s is expected to be present, but it is not.", entryName), entryNames.contains(entryName));
     } finally {
       closer.close();
     }

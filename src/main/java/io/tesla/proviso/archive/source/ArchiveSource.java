@@ -85,6 +85,11 @@ public class ArchiveSource implements Source {
       }
       return -1;
     }
+
+    @Override
+    public boolean isDirectory() {
+      return archiveEntry.isDirectory();
+    }
   }
 
   class ArchiveEntryIterator implements Iterator<Entry> {
