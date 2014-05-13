@@ -30,10 +30,8 @@ public class TarGzArchiveValidator implements ArchiverValidator {
     Closer closer = Closer.create();
     try {
       ArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
-      ArchiveEntry entry;
       int entries = 0;
-      while (null != (entry = is.getNextEntry())) {
-        System.out.println(">>>> " + entry.getName());
+      while (null != (is.getNextEntry())) {
         entries++;
       }
       String message = String.format("Expected %s entries.", entries);
