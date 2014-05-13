@@ -6,7 +6,7 @@
     <artifactId>takari</artifactId>
     <version>9</version>
   </parent>
-  <artifactId>provisio-archive</artifactId>
+  <artifactId>provisio-archiver</artifactId>
   <name>Provisio :: Archiver</name>
   <dependencies>
     <dependency>
