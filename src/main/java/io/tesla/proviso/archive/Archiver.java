@@ -88,7 +88,6 @@ public class Archiver {
             }
           }
           ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
-          System.out.println(archiveEntry.getName());
           aos.putArchiveEntry(archiveEntry);
           entry.writeEntry(aos);
           aos.closeArchiveEntry();

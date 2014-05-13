@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -27,9 +29,11 @@ public class TarGzArchiveValidator implements ArchiverValidator {
   public void assertNumberOfEntriesInArchive(int expectedEntries, File archive) throws IOException {
     Closer closer = Closer.create();
     try {
-      TarArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
+      ArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
+      ArchiveEntry entry;
       int entries = 0;
-      while (null != (is.getNextTarEntry())) {
+      while (null != (entry = is.getNextEntry())) {
+        System.out.println(">>>> " + entry.getName());
         entries++;
       }
       String message = String.format("Expected %s entries.", entries);
@@ -42,10 +46,10 @@ public class TarGzArchiveValidator implements ArchiverValidator {
   public void assertPresenceOfEntryInArchive(File archive, String entryName) throws IOException {
     Closer closer = Closer.create();
     try {
-      TarArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
-      TarArchiveEntry entry;
+      ArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
+      ArchiveEntry entry;
       Set<String> entryNames = Sets.newHashSet();
-      while (null != (entry = is.getNextTarEntry())) {
+      while (null != (entry = is.getNextEntry())) {
         entryNames.add(entry.getName());
       }
       assertTrue(String.format("The entry %s is expected to be present, but it is not.", entryName), entryNames.contains(entryName));
@@ -57,10 +61,10 @@ public class TarGzArchiveValidator implements ArchiverValidator {
   public void assertAbsenceOfEntryInArchive(File archive, String entryName) throws IOException {
     Closer closer = Closer.create();
     try {
-      TarArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
-      TarArchiveEntry entry;
+      ArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
+      ArchiveEntry entry;
       Set<String> entryNames = Sets.newHashSet();
-      while (null != (entry = is.getNextTarEntry())) {
+      while (null != (entry = is.getNextEntry())) {
         entryNames.add(entry.getName());
       }
       assertFalse(String.format("The entry %s is not expected to be present, but is not.", entryName), entryNames.contains(entryName));
@@ -72,10 +76,10 @@ public class TarGzArchiveValidator implements ArchiverValidator {
   public void assertContentOfEntryInArchive(File archive, String entryName, String expectedEntryContent) throws IOException {
     Closer closer = Closer.create();
     try {
-      TarArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
-      TarArchiveEntry entry;
+      ArchiveInputStream is = closer.register(new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive))));
+      ArchiveEntry entry;
       Map<String, String> entries = Maps.newHashMap();
-      while (null != (entry = is.getNextTarEntry())) {
+      while (null != (entry = is.getNextEntry())) {
         OutputStream outputStream = new ByteArrayOutputStream();
         ByteStreams.copy(is, outputStream);
         entries.put(entry.getName(), outputStream.toString());
