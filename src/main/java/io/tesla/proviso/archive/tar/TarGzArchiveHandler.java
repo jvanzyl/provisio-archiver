@@ -4,6 +4,7 @@ import io.tesla.proviso.archive.ArchiveHandler;
 import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
 import io.tesla.proviso.archive.FileMode;
+import io.tesla.proviso.archive.Source;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,5 +49,10 @@ public class TarGzArchiveHandler implements ArchiveHandler {
       entry.setMode(archiveEntry.getFileMode());
     }
     return entry;
+  }
+
+  @Override
+  public Source getArchiveSource() {
+    return new TarGzArchiveSource(archive);
   }
 }

@@ -78,6 +78,9 @@ public class Archiver {
             entryName = entryName.substring(entryName.indexOf('/') + 1);
           }
           if (flatten && source.isDirectory()) {
+            if(entry.isDirectory()) {
+              continue;
+            }
             entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
           }
           boolean isExecutable = false;

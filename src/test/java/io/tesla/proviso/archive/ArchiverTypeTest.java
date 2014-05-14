@@ -1,6 +1,7 @@
 package io.tesla.proviso.archive;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
@@ -10,9 +11,8 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   // Each archiver type must implement these methods in their test class
   //
   protected abstract String getArchiveExtension();
-
-  protected abstract ArchiverValidator validator();
-  
+  protected abstract ArchiverValidator validator(File archive) throws IOException;
+      
   //
   // Archiver
   //  
@@ -21,26 +21,24 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
-    archiver.archive(archive, archiveDirectory);
-    System.out.println(archive);
-    validator().assertNumberOfEntriesInArchive(10, archive);
-
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/0/");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/0/0.txt");
-    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/1/");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/1/1.txt");
-    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/2/2/");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/2/2.txt");
-    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/3/");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/3/3.txt");
-    //validator().assertPresenceOfEntryInArchive(archive, "archive-0/4/");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/4/4.txt");
-
-    validator().assertContentOfEntryInArchive(archive, "archive-0/0/0.txt", "0");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/1/1.txt", "1");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/2/2.txt", "2");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/3/3.txt", "3");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/4/4.txt", "4");
+    archiver.archive(archive, archiveDirectory);    
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(10);
+    validator.assertPresenceOfEntryInArchive("archive-0/0/");
+    validator.assertPresenceOfEntryInArchive("archive-0/0/0.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/1/");
+    validator.assertPresenceOfEntryInArchive("archive-0/1/1.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/2/");
+    validator.assertPresenceOfEntryInArchive("archive-0/2/2.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/3/");
+    validator.assertPresenceOfEntryInArchive("archive-0/3/3.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/4/");
+    validator.assertPresenceOfEntryInArchive("archive-0/4/4.txt");
+    validator.assertContentOfEntryInArchive("archive-0/0/0.txt", "0");
+    validator.assertContentOfEntryInArchive("archive-0/1/1.txt", "1");
+    validator.assertContentOfEntryInArchive("archive-0/2/2.txt", "2");
+    validator.assertContentOfEntryInArchive("archive-0/3/3.txt", "3");
+    validator.assertContentOfEntryInArchive("archive-0/4/4.txt", "4");
   }
 
   @Test
@@ -51,16 +49,14 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-
-    validator().assertNumberOfEntriesInArchive(1, archive);
-
-    validator().assertAbsenceOfEntryInArchive(archive, "archive-0/0/0.txt");
-    validator().assertAbsenceOfEntryInArchive(archive, "archive-0/1/1.txt");
-    validator().assertAbsenceOfEntryInArchive(archive, "archive-0/2/2.txt");
-    validator().assertAbsenceOfEntryInArchive(archive, "archive-0/3/3.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/4/4.txt");
-
-    validator().assertContentOfEntryInArchive(archive, "archive-0/4/4.txt", "4");
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(1);
+    validator.assertAbsenceOfEntryInArchive("archive-0/0/0.txt");
+    validator.assertAbsenceOfEntryInArchive("archive-0/1/1.txt");
+    validator.assertAbsenceOfEntryInArchive("archive-0/2/2.txt");
+    validator.assertAbsenceOfEntryInArchive("archive-0/3/3.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/4/4.txt");
+    validator.assertContentOfEntryInArchive("archive-0/4/4.txt", "4");
   }
 
   @Test
@@ -71,19 +67,17 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("excludes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-
-    validator().assertNumberOfEntriesInArchive(9, archive);
-
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/0/0.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/1/1.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/2/2.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "archive-0/3/3.txt");
-    validator().assertAbsenceOfEntryInArchive(archive, "archive-0/4/4.txt");
-
-    validator().assertContentOfEntryInArchive(archive, "archive-0/0/0.txt", "0");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/1/1.txt", "1");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/2/2.txt", "2");
-    validator().assertContentOfEntryInArchive(archive, "archive-0/3/3.txt", "3");
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(9);
+    validator.assertPresenceOfEntryInArchive("archive-0/0/0.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/1/1.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/2/2.txt");
+    validator.assertPresenceOfEntryInArchive("archive-0/3/3.txt");
+    validator.assertAbsenceOfEntryInArchive("archive-0/4/4.txt");
+    validator.assertContentOfEntryInArchive("archive-0/0/0.txt", "0");
+    validator.assertContentOfEntryInArchive("archive-0/1/1.txt", "1");
+    validator.assertContentOfEntryInArchive("archive-0/2/2.txt", "2");
+    validator.assertContentOfEntryInArchive("archive-0/3/3.txt", "3");
   }
 
   @Test
@@ -94,20 +88,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("without-root-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-
-    validator().assertNumberOfEntriesInArchive(10, archive);
-
-    validator().assertPresenceOfEntryInArchive(archive, "0/0.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "1/1.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "2/2.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "3/3.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "4/4.txt");
-
-    validator().assertContentOfEntryInArchive(archive, "0/0.txt", "0");
-    validator().assertContentOfEntryInArchive(archive, "1/1.txt", "1");
-    validator().assertContentOfEntryInArchive(archive, "2/2.txt", "2");
-    validator().assertContentOfEntryInArchive(archive, "3/3.txt", "3");
-    validator().assertContentOfEntryInArchive(archive, "4/4.txt", "4");
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(10);
+    validator.assertPresenceOfEntryInArchive("0/0.txt");
+    validator.assertPresenceOfEntryInArchive("1/1.txt");
+    validator.assertPresenceOfEntryInArchive("2/2.txt");
+    validator.assertPresenceOfEntryInArchive("3/3.txt");
+    validator.assertPresenceOfEntryInArchive("4/4.txt");
+    validator.assertContentOfEntryInArchive("0/0.txt", "0");
+    validator.assertContentOfEntryInArchive("1/1.txt", "1");
+    validator.assertContentOfEntryInArchive("2/2.txt", "2");
+    validator.assertContentOfEntryInArchive("3/3.txt", "3");
+    validator.assertContentOfEntryInArchive("4/4.txt", "4");
   }
 
   @Test
@@ -119,20 +111,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("flatten-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-
-    validator().assertNumberOfEntriesInArchive(10, archive);
-
-    validator().assertPresenceOfEntryInArchive(archive, "0.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "1.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "2.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "3.txt");
-    validator().assertPresenceOfEntryInArchive(archive, "4.txt");
-
-    validator().assertContentOfEntryInArchive(archive, "0.txt", "0");
-    validator().assertContentOfEntryInArchive(archive, "1.txt", "1");
-    validator().assertContentOfEntryInArchive(archive, "2.txt", "2");
-    validator().assertContentOfEntryInArchive(archive, "3.txt", "3");
-    validator().assertContentOfEntryInArchive(archive, "4.txt", "4");
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(5);
+    validator.assertPresenceOfEntryInArchive("0.txt");
+    validator.assertPresenceOfEntryInArchive("1.txt");
+    validator.assertPresenceOfEntryInArchive("2.txt");
+    validator.assertPresenceOfEntryInArchive("3.txt");
+    validator.assertPresenceOfEntryInArchive("4.txt");
+    validator.assertContentOfEntryInArchive("0.txt", "0");
+    validator.assertContentOfEntryInArchive("1.txt", "1");
+    validator.assertContentOfEntryInArchive("2.txt", "2");
+    validator.assertContentOfEntryInArchive("3.txt", "3");
+    validator.assertContentOfEntryInArchive("4.txt", "4");
   }
     
   //
@@ -144,23 +134,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   //
   // File modes
   //
-  
-  
-// This is passing with targz but not with zip but appears passing because i was unpacking to the same directory without cleaning 
-//  @Test
-//  public void testSettingAndPreservationOfExecutables() throws Exception {    
-//    File sourceDirectory = getArchiveProject("apache-maven-3.0.4");
-//    Archiver archiver = Archiver.builder() //
-//        .executable("**/bin/mvn", "**/bin/mvnDebug", "**/bin/mvnyjp") //
-//        .build();
-//    File archive = getTargetArchive("apache-maven-3.0.4-bin." + getArchiveExtension());
-//    archiver.archive(archive, sourceDirectory);
-//
-//    File outputDirectory = getOutputDirectory();
-//    UnArchiver unArchiver = UnArchiver.builder().build();
-//    unArchiver.unarchive(archive, outputDirectory);
-//    assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
-//    assertFilesIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
-//  }
-
+  @Test
+  public void testSettingAndPreservationOfExecutables() throws Exception {    
+    File sourceDirectory = getArchiveProject("apache-maven-3.0.4");
+    Archiver archiver = Archiver.builder() //
+        .executable("**/bin/mvn", "**/bin/mvnDebug", "**/bin/mvnyjp") //
+        .build();
+    File archive = getTargetArchive("apache-maven-3.0.4-bin." + getArchiveExtension());
+    archiver.archive(archive, sourceDirectory);
+    File outputDirectory = getOutputDirectory("ep-" + getArchiveExtension());
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    unArchiver.unarchive(archive, outputDirectory);
+    assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
+    assertFilesIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
+  }
 }

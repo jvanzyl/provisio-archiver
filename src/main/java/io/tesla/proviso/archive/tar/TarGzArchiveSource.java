@@ -1,4 +1,4 @@
-package io.tesla.proviso.archive.source;
+package io.tesla.proviso.archive.tar;
 
 import io.tesla.proviso.archive.ArchiverHelper;
 import io.tesla.proviso.archive.Entry;
@@ -20,12 +20,12 @@ import com.google.common.io.Closer;
 
 //JVZ: This is really what the unarchiver needs to do its work...
 
-public class ArchiveSource implements Source {
+public class TarGzArchiveSource implements Source {
 
   private final ArchiveInputStream archiveInputStream;
   private final Closer closer;
 
-  public ArchiveSource(File archive) {
+  public TarGzArchiveSource(File archive) {
     closer = Closer.create();
     try {
       archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive).getInputStream());

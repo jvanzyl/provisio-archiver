@@ -40,6 +40,10 @@ public abstract class ArchiverTest {
     return new File(getBasedir(), "target/archives");
   }
 
+  protected final File getOutputDirectory(String name) {
+    return new File(getBasedir(), "target/archives/" + name);
+  }
+
   protected final File getSourceArchiveDirectory() {
     return new File(getBasedir(), "src/test/archives");
   }

@@ -8,5 +8,6 @@ import org.apache.commons.compress.archivers.ArchiveOutputStream;
 public interface ArchiveHandler {
   ArchiveOutputStream getOutputStream() throws IOException;
   ArchiveInputStream getInputStream() throws IOException;
-  ExtendedArchiveEntry createEntryFor(String entryName, Entry entry, boolean isExecutable);  
+  ExtendedArchiveEntry createEntryFor(String entryName, Entry entry, boolean isExecutable);
+  Source getArchiveSource();  
 }

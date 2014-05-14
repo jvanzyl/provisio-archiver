@@ -11,8 +11,6 @@ import java.util.List;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.codehaus.plexus.util.SelectorUtils;
@@ -52,94 +50,80 @@ public class UnArchiver {
     //
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
-    }
-    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive);
-    Closer inputCloser = Closer.create();
-    try {
-      ArchiveInputStream ais = inputCloser.register(archiveHandler.getInputStream());
-      ArchiveEntry archiveEntry;
-      while ((archiveEntry = ais.getNextEntry()) != null) {
-        String entryName = archiveEntry.getName();
-        if (useRoot == false) {
-          entryName = entryName.substring(entryName.indexOf('/') + 1);
-        }
-        //
-        // If we get an exclusion that matches then just carry on.
-        //
-        boolean exclude = false;
-        if (!excludes.isEmpty()) {
-          for (String excludePattern : excludes) {
-            if (isExcluded(excludePattern, entryName)) {
-              exclude = true;
-              break;
-            }
+    }    
+    Source source = ArchiverHelper.getArchiveHandler(archive).getArchiveSource();
+    for (Entry archiveEntry : source.entries()) {
+      String entryName = archiveEntry.getName();
+      if (useRoot == false) {
+        entryName = entryName.substring(entryName.indexOf('/') + 1);
+      }
+      //
+      // If we get an exclusion that matches then just carry on.
+      //
+      boolean exclude = false;
+      if (!excludes.isEmpty()) {
+        for (String excludePattern : excludes) {
+          if (isExcluded(excludePattern, entryName)) {
+            exclude = true;
+            break;
           }
-        }
-        if (exclude) {
-          continue;
-        }
-        //
-        // need useRoot = false and step in so just truncate the beginning of the name entry
-        //
-        boolean include = false;
-        if (!includes.isEmpty()) {
-          for (String includePattern : includes) {
-            if (isIncluded(includePattern, entryName)) {
-              include = true;
-              break;
-            }
-          }
-        } else {
-          include = true;
-        }
-        if (include == false) {
-          continue;
-        }
-        //
-        // So with an entry we may want to take a set of entry in a set of directories and flatten them
-        // into one directory, or we may want to preserve the directory structure.
-        //
-        if (flatten) {
-          entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
-        } else {
-          if (archiveEntry.isDirectory()) {
-            createDir(new File(outputDirectory, entryName));
-            continue;
-          }
-        }
-        File outputFile = new File(outputDirectory, entryName);
-        //
-        // If we take an archive and flatten it into the output directory the first entry will
-        // match the output directory which exists so it will cause an error trying to make it
-        //
-        if (outputFile.getAbsolutePath().equals(outputDirectory.getAbsolutePath())) {
-          continue;
-        }
-        if (!outputFile.getParentFile().exists()) {
-          createDir(outputFile.getParentFile());
-        }
-        Closer outputCloser = Closer.create();
-        try {
-          OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
-          ByteStreams.copy(ais, outputStream);
-        } finally {
-          outputCloser.close();
-        }
-                
-        int mode = 0;
-        if (archiveEntry instanceof ZipArchiveEntry) {
-          mode = ((ZipArchiveEntry) archiveEntry).getUnixMode();
-        } else if (archiveEntry instanceof TarArchiveEntry) {
-          mode = ((TarArchiveEntry) archiveEntry).getMode();
-        }
-
-        // Preserve the executable bit on the way out
-        if (FileMode.EXECUTABLE_FILE.equals(mode)) {
-          outputFile.setExecutable(true);
         }
       }
-    } finally {
-      inputCloser.close();
+      if (exclude) {
+        continue;
+      }
+      //
+      // need useRoot = false and step in so just truncate the beginning of the name entry
+      //
+      boolean include = false;
+      if (!includes.isEmpty()) {
+        for (String includePattern : includes) {
+          if (isIncluded(includePattern, entryName)) {
+            include = true;
+            break;
+          }
+        }
+      } else {
+        include = true;
+      }
+      if (include == false) {
+        continue;
+      }
+      //
+      // So with an entry we may want to take a set of entry in a set of directories and flatten them
+      // into one directory, or we may want to preserve the directory structure.
+      //
+      if (flatten) {
+        entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
+      } else {
+        if (archiveEntry.isDirectory()) {
+          createDir(new File(outputDirectory, entryName));
+          continue;
+        }
+      }
+      File outputFile = new File(outputDirectory, entryName);
+      //
+      // If we take an archive and flatten it into the output directory the first entry will
+      // match the output directory which exists so it will cause an error trying to make it
+      //
+      if (outputFile.getAbsolutePath().equals(outputDirectory.getAbsolutePath())) {
+        continue;
+      }
+      if (!outputFile.getParentFile().exists()) {
+        createDir(outputFile.getParentFile());
+      }
+      Closer outputCloser = Closer.create();
+      try {
+        OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
+        ByteStreams.copy(archiveEntry.getInputStream(), outputStream);
+      } finally {
+        outputCloser.close();
+      }
+
+      int mode = archiveEntry.getFileMode();
+      if ((mode & 0100) != 0) {
+        outputFile.setExecutable(true);
+      }     
     }
   }
 

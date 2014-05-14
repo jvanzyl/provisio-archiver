@@ -5,6 +5,7 @@ import io.tesla.proviso.archive.ArchiverTest;
 import io.tesla.proviso.archive.ArchiverValidator;
 import io.tesla.proviso.archive.Source;
 import io.tesla.proviso.archive.UnArchiver;
+import io.tesla.proviso.archive.tar.TarGzArchiveSource;
 import io.tesla.proviso.archive.tar.TarGzArchiveValidator;
 
 import java.io.File;
@@ -20,13 +21,10 @@ public class ArchiveEntrySourceTest extends ArchiverTest {
         .build();
     
     File archive = getTargetArchive("archive-from-archive.tar.gz");
-    Source source = new ArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
-    archiver.archive(archive, source);
-    
-    ArchiverValidator validator = new TarGzArchiveValidator();
-
-    validator.assertNumberOfEntriesInArchive(44, archive);
-    
+    Source source = new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
+    archiver.archive(archive, source);    
+    ArchiverValidator validator = new TarGzArchiveValidator(archive);
+    validator.assertNumberOfEntriesInArchive(44);    
     // Need to make sure file modes are preserved when creating an archive from 
     // directly reading the entries of another
     File outputDirectory = new File(getOutputDirectory(), "archive-source");
