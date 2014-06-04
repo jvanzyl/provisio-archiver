@@ -12,7 +12,7 @@ public class TarGzArchiverTypeTest extends ArchiverTypeTest {
   }
 
   @Override
-  protected ArchiverValidator validator(File archive) throws IOException {
+  protected ArchiverValidator validator(File archive) throws Exception {
     return new TarGzArchiveValidator(archive);
   }
 }

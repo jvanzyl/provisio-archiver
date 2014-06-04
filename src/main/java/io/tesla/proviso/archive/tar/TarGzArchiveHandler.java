@@ -34,7 +34,7 @@ public class TarGzArchiveHandler implements ArchiveHandler {
   @Override
   public ArchiveOutputStream getOutputStream() throws IOException {
     TarArchiveOutputStream aos = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
-    aos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+    //aos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
     return aos;
   }
 

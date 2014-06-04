@@ -14,7 +14,7 @@ import org.junit.Test;
 public class FileEntrySourceTest extends ArchiverTest {
 
   @Test
-  public void readIndividualFilesToMakeArchive() throws IOException {
+  public void readIndividualFilesToMakeArchive() throws Exception {
     Archiver archiver = Archiver.builder() //
         .build();
 

@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +12,6 @@ import java.util.List;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.codehaus.plexus.util.SelectorUtils;
 
 import com.google.common.collect.ImmutableList;
@@ -45,6 +44,10 @@ public class UnArchiver {
   }
 
   public void unarchive(File archive, File outputDirectory) throws IOException {
+    unarchive(archive, outputDirectory, new NoopEntryProcessor());    
+  }
+
+  public void unarchive(File archive, File outputDirectory, UnarchivingEntryProcessor entryProcessor) throws IOException {
     //
     // These are the contributions that unpacking this archive is providing
     //
@@ -101,7 +104,7 @@ public class UnArchiver {
           continue;
         }
       }
-      File outputFile = new File(outputDirectory, entryName);
+      File outputFile = new File(outputDirectory, entryProcessor.processName(entryName));
       //
       // If we take an archive and flatten it into the output directory the first entry will
       // match the output directory which exists so it will cause an error trying to make it
@@ -112,19 +115,19 @@ public class UnArchiver {
       if (!outputFile.getParentFile().exists()) {
         createDir(outputFile.getParentFile());
       }
-      Closer outputCloser = Closer.create();
+      Closer closer = Closer.create();
       try {
-        OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
-        ByteStreams.copy(archiveEntry.getInputStream(), outputStream);
+        OutputStream outputStream = closer.register(new BufferedOutputStream(new FileOutputStream(outputFile)));
+        entryProcessor.processStream(archiveEntry.getInputStream(), outputStream);
       } finally {
-        outputCloser.close();
+        closer.close();
       }
-
       int mode = archiveEntry.getFileMode();
       if ((mode & 0100) != 0) {
         outputFile.setExecutable(true);
       }     
     }
+    source.close();
   }
 
   private void createDir(File dir) {
@@ -155,6 +158,22 @@ public class UnArchiver {
     return new UnArchiverBuilder();
   }
 
+  /**
+   * {@EntryProcesor} that leaves the entry name and content as-is. 
+   */
+  class NoopEntryProcessor implements UnarchivingEntryProcessor {
+
+    @Override
+    public String processName(String name) {
+      return name;
+    }
+
+    @Override
+    public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+      ByteStreams.copy(inputStream, outputStream);      
+    }    
+  }
+  
   public static class UnArchiverBuilder {
 
     private List<String> includes = new ArrayList<String>();

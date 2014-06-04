@@ -15,8 +15,6 @@ import org.apache.commons.compress.archivers.zip.ZipFile;
 
 import com.google.common.io.ByteStreams;
 
-//JVZ: This is really what the unarchiver needs to do its work...
-
 public class ZipArchiveSource implements Source {
 
   private ZipFile zipFile;

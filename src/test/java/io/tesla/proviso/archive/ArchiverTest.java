@@ -1,8 +1,12 @@
 package io.tesla.proviso.archive;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+
+import org.codehaus.plexus.util.FileUtils;
 
 public abstract class ArchiverTest {
 
@@ -13,17 +17,29 @@ public abstract class ArchiverTest {
   //  
   protected void assertDirectoryExists(File outputDirectory, String directoryName) {
     File directory = new File(outputDirectory, directoryName);
-    assertTrue(String.format("We expected to find the directory %s, but it doesn't exist or is not a directory.", directoryName), directory.exists() && directory.isDirectory());
+    assertTrue(String.format("We expect to find the directory %s, but it doesn't exist or is not a directory.", directoryName), directory.exists() && directory.isDirectory());
   }
 
   protected void assertFilesExists(File outputDirectory, String fileName) {
     File file = new File(outputDirectory, fileName);
-    assertTrue(String.format("We expected to find the file %s, but it doesn't exist or is not a file.", fileName), file.exists() && file.isFile());
+    assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", fileName), file.exists() && file.isFile());
+  }
+
+  protected void assertPresenceAndSizeOf(File outputDirectory, String fileName, int size) {
+    File file = new File(outputDirectory, fileName);
+    assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", fileName), file.exists() && file.isFile());
+    assertEquals(String.format("We expect the file to be size = %s, but it not.", size), size, file.length());
+  }
+
+  protected void assertPresenceAndContentOf(File outputDirectory, String fileName, String expectedContent) throws IOException {
+    File file = new File(outputDirectory, fileName);
+    assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", fileName), file.exists() && file.isFile());
+    assertEquals(String.format("We expect the content of the file to be %s, but is not.", expectedContent), expectedContent, FileUtils.fileRead(file));
   }
 
   protected void assertFilesIsExecutable(File outputDirectory, String fileName) {
     File file = new File(outputDirectory, fileName);
-    assertTrue(String.format("We expected to find the file %s, but it doesn't exist or is not executable.", fileName), file.exists() && file.isFile() && file.canExecute());
+    assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not executable.", fileName), file.exists() && file.isFile() && file.canExecute());
   }
 
   //

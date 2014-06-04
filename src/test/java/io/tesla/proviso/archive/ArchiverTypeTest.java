@@ -11,7 +11,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   // Each archiver type must implement these methods in their test class
   //
   protected abstract String getArchiveExtension();
-  protected abstract ArchiverValidator validator(File archive) throws IOException;
+  protected abstract ArchiverValidator validator(File archive) throws Exception;
       
   //
   // Archiver
@@ -148,4 +148,27 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
     assertFilesIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
   }
+  
+  @Test
+  public void unpack() throws Exception {
+    File archiveDirectory = getArchiveProject("archive-0");
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive("create-archive-0." + getArchiveExtension());    
+    archiver.archive(archive, archiveDirectory);    
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    File outputDirectory = getOutputDirectory("archive-0-extracted/" + getArchiveExtension());
+    unArchiver.unarchive(archive, outputDirectory);
+    
+    assertPresenceAndSizeOf(outputDirectory, "archive-0/0/0.txt", 1);
+    assertPresenceAndContentOf(outputDirectory, "archive-0/0/0.txt", "0");
+    assertPresenceAndSizeOf(outputDirectory, "archive-0/1/1.txt", 1);
+    assertPresenceAndContentOf(outputDirectory, "archive-0/1/1.txt", "1");
+    assertPresenceAndSizeOf(outputDirectory, "archive-0/2/2.txt", 1);
+    assertPresenceAndContentOf(outputDirectory, "archive-0/2/2.txt", "2");
+    assertPresenceAndSizeOf(outputDirectory, "archive-0/3/3.txt", 1);
+    assertPresenceAndContentOf(outputDirectory, "archive-0/3/3.txt", "3");
+    assertPresenceAndSizeOf(outputDirectory, "archive-0/4/4.txt", 1);
+    assertPresenceAndContentOf(outputDirectory, "archive-0/4/4.txt", "4");
+  }
+ 
 }

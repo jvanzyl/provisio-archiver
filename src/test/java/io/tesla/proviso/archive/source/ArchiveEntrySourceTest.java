@@ -9,14 +9,13 @@ import io.tesla.proviso.archive.tar.TarGzArchiveSource;
 import io.tesla.proviso.archive.tar.TarGzArchiveValidator;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.junit.Test;
 
 public class ArchiveEntrySourceTest extends ArchiverTest {
 
   @Test
-  public void readEntriesDirectlyFromAnArchiveToMakeAnotherArchive() throws IOException {
+  public void readEntriesDirectlyFromAnArchiveToMakeAnotherArchive() throws Exception {
     Archiver archiver = Archiver.builder() //
         .build();
     
