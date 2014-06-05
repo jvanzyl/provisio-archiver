@@ -93,9 +93,13 @@ public class UnArchiver {
         continue;
       }
       //
+      // Process the entry name before any output is created on disk
+      //
+      entryName =  entryProcessor.processName(entryName);
+      //
       // So with an entry we may want to take a set of entry in a set of directories and flatten them
       // into one directory, or we may want to preserve the directory structure.
-      //
+      //      
       if (flatten) {
         entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
       } else {
@@ -104,7 +108,7 @@ public class UnArchiver {
           continue;
         }
       }
-      File outputFile = new File(outputDirectory, entryProcessor.processName(entryName));
+      File outputFile = new File(outputDirectory, entryName);
       //
       // If we take an archive and flatten it into the output directory the first entry will
       // match the output directory which exists so it will cause an error trying to make it

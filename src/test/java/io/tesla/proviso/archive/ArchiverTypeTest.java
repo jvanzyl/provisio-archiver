@@ -2,8 +2,14 @@ package io.tesla.proviso.archive;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
+import org.codehaus.plexus.util.InterpolationFilterReader;
+import org.codehaus.swizzle.stream.ReplaceStringInputStream;
 import org.junit.Test;
+
+import com.google.common.io.ByteStreams;
 
 public abstract class ArchiverTypeTest extends ArchiverTest {
 
@@ -150,25 +156,52 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   }
   
   @Test
-  public void unpack() throws Exception {
+  public void unarchive() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());    
+    
     archiver.archive(archive, archiveDirectory);    
     UnArchiver unArchiver = UnArchiver.builder().build();
     File outputDirectory = getOutputDirectory("archive-0-extracted/" + getArchiveExtension());
     unArchiver.unarchive(archive, outputDirectory);
     
-    assertPresenceAndSizeOf(outputDirectory, "archive-0/0/0.txt", 1);
-    assertPresenceAndContentOf(outputDirectory, "archive-0/0/0.txt", "0");
-    assertPresenceAndSizeOf(outputDirectory, "archive-0/1/1.txt", 1);
-    assertPresenceAndContentOf(outputDirectory, "archive-0/1/1.txt", "1");
-    assertPresenceAndSizeOf(outputDirectory, "archive-0/2/2.txt", 1);
-    assertPresenceAndContentOf(outputDirectory, "archive-0/2/2.txt", "2");
-    assertPresenceAndSizeOf(outputDirectory, "archive-0/3/3.txt", 1);
-    assertPresenceAndContentOf(outputDirectory, "archive-0/3/3.txt", "3");
-    assertPresenceAndSizeOf(outputDirectory, "archive-0/4/4.txt", 1);
-    assertPresenceAndContentOf(outputDirectory, "archive-0/4/4.txt", "4");
+    assertPresenceAndSizeOf(file(outputDirectory, "archive-0/0/0.txt"), 1);
+    assertPresenceAndContentOf(file(outputDirectory, "archive-0/0/0.txt"), "0");
+    assertPresenceAndSizeOf(file(outputDirectory, "archive-0/1/1.txt"), 1);
+    assertPresenceAndContentOf(file(outputDirectory, "archive-0/1/1.txt"), "1");
+    assertPresenceAndSizeOf(file(outputDirectory, "archive-0/2/2.txt"), 1);
+    assertPresenceAndContentOf(file(outputDirectory, "archive-0/2/2.txt"), "2");
+    assertPresenceAndSizeOf(file(outputDirectory, "archive-0/3/3.txt"), 1);
+    assertPresenceAndContentOf(file(outputDirectory, "archive-0/3/3.txt"), "3");
+    assertPresenceAndSizeOf(file(outputDirectory, "archive-0/4/4.txt"), 1);
+    assertPresenceAndContentOf(file(outputDirectory, "archive-0/4/4.txt"), "4");
   }
- 
+
+  @Test
+  public void unarchiveWithEntryProcoessor() throws Exception {
+    String name = "archive-with-entry-processor";
+    File archiveDirectory = getArchiveProject(name);
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive(name + "." + getArchiveExtension());    
+    
+    archiver.archive(archive, archiveDirectory);    
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    File outputDirectory = getOutputDirectory(name + "-extracted/" + getArchiveExtension());
+    unArchiver.unarchive(archive, outputDirectory, new UnarchivingEntryProcessor() {
+      
+      @Override
+      public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        ByteStreams.copy(new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT"), outputStream);                   
+      }
+      
+      @Override
+      public String processName(String name) {
+        name = name.replace("${packagePath}", "io/takari/app");
+        return name;
+      }
+    });    
+    assertPresenceAndContentOf(file(outputDirectory, "archive-with-entry-processor/src/main/java/io/takari/app/file.txt"), "PROCESSED_TEXT");
+    assertDirectoryDoesNotExist(outputDirectory, "archive-with-entry-processor/src/main/java/${packagePath}");    
+  }
 }
