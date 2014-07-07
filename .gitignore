@@ -6,5 +6,4 @@ target/
 *.iml
 *.ipr
 *.iws
-bin/
 .DS_Store
