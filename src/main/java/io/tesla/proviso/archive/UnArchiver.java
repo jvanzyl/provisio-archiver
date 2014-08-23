@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Named;
@@ -14,8 +15,10 @@ import javax.inject.Singleton;
 
 import org.codehaus.plexus.util.SelectorUtils;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 
@@ -186,7 +189,13 @@ public class UnArchiver {
     private boolean flatten = false;
 
     public UnArchiverBuilder includes(String... includes) {
-      return includes(ImmutableList.copyOf(includes));
+      List<String> i = Lists.newArrayList();
+      for(String include : includes) {
+        if(include != null) {
+          i.add(include);
+        }
+      }
+      return includes(ImmutableList.copyOf(i));
     }
 
     public UnArchiverBuilder includes(Iterable<String> includes) {
@@ -195,7 +204,13 @@ public class UnArchiver {
     }
 
     public UnArchiverBuilder excludes(String... excludes) {
-      return excludes(ImmutableList.copyOf(excludes));
+      List<String> i = Lists.newArrayList();
+      for(String exclude : excludes) {
+        if(exclude != null) {
+          i.add(exclude);
+        }
+      }
+      return excludes(ImmutableList.copyOf(i));
     }
 
     public UnArchiverBuilder excludes(Iterable<String> excludes) {
