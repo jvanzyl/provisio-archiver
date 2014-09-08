@@ -1,10 +1,9 @@
 package io.tesla.proviso.archive.tar;
 
-import java.io.File;
-import java.io.IOException;
-
 import io.tesla.proviso.archive.ArchiverTypeTest;
 import io.tesla.proviso.archive.ArchiverValidator;
+
+import java.io.File;
 
 public class TarGzArchiverTypeTest extends ArchiverTypeTest {
   protected String getArchiveExtension() {

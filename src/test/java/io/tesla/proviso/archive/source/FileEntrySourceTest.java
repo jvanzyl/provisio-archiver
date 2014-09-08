@@ -7,7 +7,6 @@ import io.tesla.proviso.archive.Source;
 import io.tesla.proviso.archive.tar.TarGzArchiveValidator;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.junit.Test;
 

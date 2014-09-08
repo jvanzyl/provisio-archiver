@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.codehaus.plexus.util.InterpolationFilterReader;
 import org.codehaus.swizzle.stream.ReplaceStringInputStream;
 import org.junit.Test;
 

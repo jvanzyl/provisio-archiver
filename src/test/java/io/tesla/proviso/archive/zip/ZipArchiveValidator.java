@@ -6,23 +6,15 @@ import static org.junit.Assert.assertTrue;
 import io.tesla.proviso.archive.ArchiverValidator;
 import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.Source;
-import io.tesla.proviso.archive.tar.TarGzArchiveSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Closer;
 
 public class ZipArchiveValidator implements ArchiverValidator {
 
