@@ -23,7 +23,11 @@ public class ArchiveEntrySourceTest extends ArchiverTest {
     Source source = new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
     archiver.archive(archive, source);    
     ArchiverValidator validator = new TarGzArchiveValidator(archive);
-    validator.assertNumberOfEntriesInArchive(44);    
+    // note that original archive is missing 3 directory entries
+    // apache-maven-3.0.4/,apache-maven-3.0.4/boot/ and apache-maven-3.0.4/bin/
+    // I assume this is due to a bug in maven archiver. 
+    // tar on command line does create 47 entries
+    validator.assertNumberOfEntriesInArchive(47);    
     // Need to make sure file modes are preserved when creating an archive from 
     // directly reading the entries of another
     File outputDirectory = new File(getOutputDirectory(), "archive-source");

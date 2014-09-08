@@ -1,5 +1,7 @@
 package io.tesla.proviso.archive;
 
+import io.tesla.proviso.archive.source.FileSource;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,17 +30,20 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);    
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(10);
-    validator.assertPresenceOfEntryInArchive("archive-0/0/");
-    validator.assertPresenceOfEntryInArchive("archive-0/0/0.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/1/");
-    validator.assertPresenceOfEntryInArchive("archive-0/1/1.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/2/");
-    validator.assertPresenceOfEntryInArchive("archive-0/2/2.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/3/");
-    validator.assertPresenceOfEntryInArchive("archive-0/3/3.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/4/");
-    validator.assertPresenceOfEntryInArchive("archive-0/4/4.txt");
+
+    validator.assertEntries("archive-0/", //
+        "archive-0/0/", //
+        "archive-0/0/0.txt", //
+        "archive-0/1/", //
+        "archive-0/1/1.txt", //
+        "archive-0/2/", //
+        "archive-0/2/2.txt", //
+        "archive-0/3/", //
+        "archive-0/3/3.txt", //
+        "archive-0/4/", //
+        "archive-0/4/4.txt" //
+    );
+
     validator.assertContentOfEntryInArchive("archive-0/0/0.txt", "0");
     validator.assertContentOfEntryInArchive("archive-0/1/1.txt", "1");
     validator.assertContentOfEntryInArchive("archive-0/2/2.txt", "2");
@@ -55,12 +60,12 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(1);
-    validator.assertAbsenceOfEntryInArchive("archive-0/0/0.txt");
-    validator.assertAbsenceOfEntryInArchive("archive-0/1/1.txt");
-    validator.assertAbsenceOfEntryInArchive("archive-0/2/2.txt");
-    validator.assertAbsenceOfEntryInArchive("archive-0/3/3.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/4/4.txt");
+
+    validator.assertEntries("archive-0/", //
+        "archive-0/4/", //
+        "archive-0/4/4.txt" //
+    );
+
     validator.assertContentOfEntryInArchive("archive-0/4/4.txt", "4");
   }
 
@@ -73,12 +78,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("excludes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(9);
-    validator.assertPresenceOfEntryInArchive("archive-0/0/0.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/1/1.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/2/2.txt");
-    validator.assertPresenceOfEntryInArchive("archive-0/3/3.txt");
-    validator.assertAbsenceOfEntryInArchive("archive-0/4/4.txt");
+
+    validator.assertEntries("archive-0/", //
+        "archive-0/0/", //
+        "archive-0/0/0.txt", //
+        "archive-0/1/", //
+        "archive-0/1/1.txt", //
+        "archive-0/2/", //
+        "archive-0/2/2.txt", //
+        "archive-0/3/", //
+        "archive-0/3/3.txt" //
+    );
+
     validator.assertContentOfEntryInArchive("archive-0/0/0.txt", "0");
     validator.assertContentOfEntryInArchive("archive-0/1/1.txt", "1");
     validator.assertContentOfEntryInArchive("archive-0/2/2.txt", "2");
@@ -202,5 +213,17 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     });    
     assertPresenceAndContentOf(file(outputDirectory, "archive-with-entry-processor/src/main/java/io/takari/app/file.txt"), "PROCESSED_TEXT");
     assertDirectoryDoesNotExist(outputDirectory, "archive-with-entry-processor/src/main/java/${packagePath}");    
+  }
+
+  @Test
+  public void testIntermediateDirectoryEntries() throws Exception {
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
+    archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
+    ArchiverValidator validator= validator(archive);
+    validator.assertNumberOfEntriesInArchive(3);
+    validator.assertPresenceOfEntryInArchive("1/");
+    validator.assertPresenceOfEntryInArchive("1/2/");
+    validator.assertPresenceOfEntryInArchive("1/2/file.txt");
   }
 }

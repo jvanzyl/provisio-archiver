@@ -58,12 +58,6 @@ public class DirectorySource implements Source {
           entries.add(includedFile);
         }
       }
-      String includedDirectories[] = scanner.getIncludedDirectories();
-      for(String includedDirectory : includedDirectories) {
-        if(!includedDirectory.isEmpty()) {
-          entries.add(includedDirectory);
-        }
-      }
       this.files = entries.toArray(new String[entries.size()]);
       this.sourceDirectory = sourceDirectory;
     }

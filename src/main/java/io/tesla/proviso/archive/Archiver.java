@@ -1,10 +1,15 @@
 package io.tesla.proviso.archive;
 
+import io.tesla.proviso.archive.source.DirectoryEntry;
 import io.tesla.proviso.archive.source.DirectorySource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.codehaus.plexus.util.SelectorUtils;
@@ -47,6 +52,7 @@ public class Archiver {
     Closer closer = Closer.create();
     try {
       ArchiveOutputStream aos = closer.register(archiveHandler.getOutputStream());
+      Set<String> paths = new HashSet<>();
       for (Source source : sources) {
         for (Entry entry : source.entries()) {
           String entryName = entry.getName();
@@ -94,6 +100,15 @@ public class Archiver {
           if(entry.isDirectory() && !entryName.endsWith("/")) {
             entryName += "/";
           }
+          // Create any missing intermediate directory entries
+          for (String directoryName : getParentDirectoryNames(entryName)) {
+            if (paths.add(directoryName)) {
+              ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
+              aos.putArchiveEntry(directoryEntry);
+              aos.closeArchiveEntry();
+            }
+          }
+          paths.add(entryName); // TODO detect and reject duplicate entries
           ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
           aos.putArchiveEntry(archiveEntry);
           entry.writeEntry(aos);
@@ -104,6 +119,20 @@ public class Archiver {
     } finally {
       closer.close();
     }
+  }
+
+  private Iterable<String> getParentDirectoryNames(String entryName) {
+    List<String> directoryNames = new ArrayList<>();
+    StringTokenizer st = new StringTokenizer(entryName, "/");
+    if (st.hasMoreTokens()) {
+      StringBuilder directoryName = new StringBuilder(st.nextToken());
+      while (st.hasMoreTokens()) {
+        directoryName.append('/');
+        directoryNames.add(directoryName.toString());
+        directoryName.append(st.nextToken());
+      }
+    }
+    return directoryNames;
   }
 
   public static ArchiverBuilder builder() {
