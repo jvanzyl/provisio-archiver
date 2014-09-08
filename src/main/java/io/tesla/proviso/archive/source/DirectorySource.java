@@ -61,9 +61,6 @@ public class DirectorySource implements Source {
       String includedDirectories[] = scanner.getIncludedDirectories();
       for(String includedDirectory : includedDirectories) {
         if(!includedDirectory.isEmpty()) {
-          if(!includedDirectory.endsWith("/")) {
-            includedDirectory = includedDirectory + "/";
-          }
           entries.add(includedDirectory);
         }
       }

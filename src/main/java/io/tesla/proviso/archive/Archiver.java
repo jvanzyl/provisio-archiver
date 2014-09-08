@@ -90,6 +90,10 @@ public class Archiver {
               break;
             }
           }
+          // If we have a directory entry then make sure we append a trailing "/"
+          if(entry.isDirectory() && !entryName.endsWith("/")) {
+            entryName += "/";
+          }
           ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
           aos.putArchiveEntry(archiveEntry);
           entry.writeEntry(aos);
