@@ -8,7 +8,7 @@
   </parent>
   <packaging>takari-jar</packaging>
   <artifactId>takari-archiver</artifactId>
-  <version>0.1.5</version>
+  <version>0.1.6-SNAPSHOT</version>
   <name>Provisio :: Archiver</name>
   <dependencies>
     <dependency>
@@ -63,8 +63,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <scm>
-    <tag>takari-archiver-0.1.5</tag>
-  </scm>
 </project>
