@@ -6,9 +6,9 @@ import io.tesla.proviso.archive.source.DirectorySource;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
@@ -51,8 +51,11 @@ public class Archiver {
     ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive);
     Closer closer = Closer.create();
     try {
+      // collected archive entry paths mapped to true for explicitly provided entries
+      // and to false for implicitly created directory entries
+      // duplicate explicitly provided entries result in IllegalArgumentException
+      Map<String, Boolean> paths = new HashMap<>();
       ArchiveOutputStream aos = closer.register(archiveHandler.getOutputStream());
-      Set<String> paths = new HashSet<>();
       for (Source source : sources) {
         for (Entry entry : source.entries()) {
           String entryName = entry.getName();
@@ -102,17 +105,24 @@ public class Archiver {
           }
           // Create any missing intermediate directory entries
           for (String directoryName : getParentDirectoryNames(entryName)) {
-            if (paths.add(directoryName)) {
+            if (!paths.containsKey(directoryName)) {
+              paths.put(directoryName, Boolean.FALSE);
               ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
               aos.putArchiveEntry(directoryEntry);
               aos.closeArchiveEntry();
             }
           }
-          paths.add(entryName); // TODO detect and reject duplicate entries
-          ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
-          aos.putArchiveEntry(archiveEntry);
-          entry.writeEntry(aos);
-          aos.closeArchiveEntry();
+          if (!paths.containsKey(entryName)) {
+            paths.put(entryName, Boolean.TRUE);
+            ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+            aos.putArchiveEntry(archiveEntry);
+            entry.writeEntry(aos);
+            aos.closeArchiveEntry();
+          } else {
+            if (Boolean.TRUE.equals(paths.get(entryName))) {
+              throw new IllegalArgumentException("Duplicate archive entry " + entryName);
+            }
+          }
         }
         source.close();
       }

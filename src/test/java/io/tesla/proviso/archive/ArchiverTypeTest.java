@@ -213,4 +213,13 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     ArchiverValidator validator= validator(archive);
     validator.assertEntries("1/", "1/2/", "1/2/file.txt");
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testDuplicateEntries() throws Exception {
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
+    archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")), new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
+    ArchiverValidator validator = validator(archive);
+    validator.assertEntries("1/", "1/2/", "1/2/file.txt");
+  }
 }
