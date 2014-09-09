@@ -105,12 +105,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("without-root-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(10);
-    validator.assertPresenceOfEntryInArchive("0/0.txt");
-    validator.assertPresenceOfEntryInArchive("1/1.txt");
-    validator.assertPresenceOfEntryInArchive("2/2.txt");
-    validator.assertPresenceOfEntryInArchive("3/3.txt");
-    validator.assertPresenceOfEntryInArchive("4/4.txt");
+    validator.assertEntries("0/", "0/0.txt", "1/", "1/1.txt", "2/", "2/2.txt", "3/", "3/3.txt", "4/", "4/4.txt");
     validator.assertContentOfEntryInArchive("0/0.txt", "0");
     validator.assertContentOfEntryInArchive("1/1.txt", "1");
     validator.assertContentOfEntryInArchive("2/2.txt", "2");
@@ -128,12 +123,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("flatten-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(5);
-    validator.assertPresenceOfEntryInArchive("0.txt");
-    validator.assertPresenceOfEntryInArchive("1.txt");
-    validator.assertPresenceOfEntryInArchive("2.txt");
-    validator.assertPresenceOfEntryInArchive("3.txt");
-    validator.assertPresenceOfEntryInArchive("4.txt");
+    validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
     validator.assertContentOfEntryInArchive("0.txt", "0");
     validator.assertContentOfEntryInArchive("1.txt", "1");
     validator.assertContentOfEntryInArchive("2.txt", "2");
@@ -221,9 +211,6 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
     archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
     ArchiverValidator validator= validator(archive);
-    validator.assertNumberOfEntriesInArchive(3);
-    validator.assertPresenceOfEntryInArchive("1/");
-    validator.assertPresenceOfEntryInArchive("1/2/");
-    validator.assertPresenceOfEntryInArchive("1/2/file.txt");
+    validator.assertEntries("1/", "1/2/", "1/2/file.txt");
   }
 }

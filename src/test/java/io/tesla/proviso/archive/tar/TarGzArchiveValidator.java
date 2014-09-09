@@ -1,7 +1,6 @@
 package io.tesla.proviso.archive.tar;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import io.airlift.command.Command;
 import io.airlift.command.CommandResult;
@@ -51,16 +50,6 @@ public class TarGzArchiveValidator implements ArchiverValidator {
   public void assertNumberOfEntriesInArchive(int expectedEntries) throws IOException {
     String message = String.format("Expected %s entries.", count);
     assertEquals(message, expectedEntries, count);
-  }
-
-  @Override
-  public void assertPresenceOfEntryInArchive(String entryName) throws IOException {
-    assertTrue(String.format("The entry %s is expected to be present, but it is not.", entryName), entries.containsKey(entryName));
-  }
-
-  @Override
-  public void assertAbsenceOfEntryInArchive(String entryName) throws IOException {
-    assertFalse(String.format("The entry %s is not expected to be present, but is not.", entryName), entries.containsKey(entryName));
   }
 
   @Override

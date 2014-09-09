@@ -25,12 +25,7 @@ public class FileEntrySourceTest extends ArchiverTest {
     Source s4 = new FileSource(getSourceFile("4.txt"));
     archiver.archive(archive, s0, s1, s2, s3, s4);
     ArchiverValidator validator = new TarGzArchiveValidator(archive);    
-    validator.assertNumberOfEntriesInArchive(5);
-    validator.assertPresenceOfEntryInArchive("0.txt");
-    validator.assertPresenceOfEntryInArchive("1.txt");
-    validator.assertPresenceOfEntryInArchive("2.txt");
-    validator.assertPresenceOfEntryInArchive("3.txt");
-    validator.assertPresenceOfEntryInArchive("4.txt");
+    validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
     validator.assertContentOfEntryInArchive("0.txt", "0");
     validator.assertContentOfEntryInArchive("1.txt", "1");
     validator.assertContentOfEntryInArchive("2.txt", "2");
