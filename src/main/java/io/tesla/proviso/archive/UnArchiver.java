@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closer;
 
 // useRoot
 // directories
@@ -120,13 +119,10 @@ public class UnArchiver {
       if (!outputFile.getParentFile().exists()) {
         createDir(outputFile.getParentFile());
       }
-      Closer closer = Closer.create();
-      try {
-        OutputStream outputStream = closer.register(new BufferedOutputStream(new FileOutputStream(outputFile)));
+      
+      try(OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
         entryProcessor.processStream(archiveEntry.getInputStream(), outputStream);
-      } finally {
-        closer.close();
-      }
+      } 
       int mode = archiveEntry.getFileMode();
       if ((mode & 0100) != 0) {
         outputFile.setExecutable(true);

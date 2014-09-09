@@ -84,7 +84,7 @@ public class Archiver {
             entryName = entryName.substring(entryName.indexOf('/') + 1);
           }
           if (flatten && source.isDirectory()) {
-            if(entry.isDirectory()) {
+            if (entry.isDirectory()) {
               continue;
             }
             entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
@@ -97,7 +97,7 @@ public class Archiver {
             }
           }
           // If we have a directory entry then make sure we append a trailing "/"
-          if(entry.isDirectory() && !entryName.endsWith("/")) {
+          if (entry.isDirectory() && !entryName.endsWith("/")) {
             entryName += "/";
           }
           // Create any missing intermediate directory entries
