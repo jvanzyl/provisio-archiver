@@ -5,13 +5,12 @@ import io.tesla.proviso.archive.Source;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.Collections;
 
 public class FileSource implements Source {
 
   private final String archiveEntryName;
   private final File file;
-  private boolean hasNext = true;
 
   public FileSource(File file) {
     this.archiveEntryName = file.getName();
@@ -25,28 +24,7 @@ public class FileSource implements Source {
 
   @Override
   public Iterable<Entry> entries() {
-    return new Iterable<Entry>() {
-      @Override
-      public Iterator<Entry> iterator() {
-        return new Iterator<Entry>() {
-          @Override
-          public boolean hasNext() {
-            return hasNext;
-          }
-
-          @Override
-          public Entry next() {
-            hasNext = false;
-            return new FileEntry(archiveEntryName, file);
-          }
-
-          @Override
-          public void remove() {
-            throw new UnsupportedOperationException("remove method not implemented");
-          }
-        };
-      }
-    };
+    return Collections.<Entry>singleton(new FileEntry(archiveEntryName, file));
   }
 
   @Override
