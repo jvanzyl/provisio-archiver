@@ -8,4 +8,14 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   public ExtendedTarArchiveEntry(String name) {
     super(name);
   }
+
+  @Override
+  public void setFileMode(int mode) {
+    setMode(mode);    
+  }
+
+  @Override
+  public int getFileMode() {
+    return getMode();
+  }
 }

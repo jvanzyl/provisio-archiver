@@ -1,9 +1,7 @@
 package io.tesla.proviso.archive.tar;
 
-import io.tesla.proviso.archive.ArchiveHandler;
-import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.ArchiveHandlerSupport;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
-import io.tesla.proviso.archive.FileMode;
 import io.tesla.proviso.archive.Source;
 
 import java.io.File;
@@ -18,12 +16,17 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-public class TarGzArchiveHandler implements ArchiveHandler {
+public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
   private final File archive;
 
   public TarGzArchiveHandler(File archive) {
     this.archive = archive;
+  }
+
+  @Override
+  public ExtendedArchiveEntry newEntry(String entryName) {
+    return new ExtendedTarArchiveEntry(entryName);
   }
 
   @Override
@@ -34,23 +37,6 @@ public class TarGzArchiveHandler implements ArchiveHandler {
   @Override
   public ArchiveOutputStream getOutputStream() throws IOException {
     return new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
-  }
-
-  @Override
-  public ExtendedArchiveEntry createEntryFor(String entryName, Entry archiveEntry, boolean isExecutable) {
-    ExtendedTarArchiveEntry entry = new ExtendedTarArchiveEntry(entryName);
-    entry.setSize(archiveEntry.getSize());
-    if (archiveEntry.getFileMode() != -1) {
-      entry.setMode(archiveEntry.getFileMode());
-      if (isExecutable) {
-        entry.setMode(FileMode.makeExecutable(entry.getMode()));
-      }
-    } else {
-      if (isExecutable) {
-        entry.setMode(FileMode.EXECUTABLE_FILE.getBits());
-      }
-    }
-    return entry;
   }
 
   @Override

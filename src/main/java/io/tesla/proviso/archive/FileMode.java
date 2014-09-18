@@ -265,6 +265,10 @@ public abstract class FileMode {
     return modeBits;
   }
 
+  //
+  // Utilities for dealing with file modes
+  //
+  
   public static int makeExecutable(int fileMode) {
     return fileMode | 0111;
   }
