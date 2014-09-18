@@ -196,7 +196,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   //  -rw-r--r--  0 dain   staff    4144 Aug 20 18:01 bin/procname/Linux-x86_64/libprocname.so  
   //  
   @Test
-  public void testPreserverFileModeOnUnarchivedFiles() throws Exception {
+  public void testPreservervationOfFileModeOnUnarchivedFiles() throws Exception {
     File archive = getSourceArchive("launcher-0.93-bin." + getArchiveExtension());
     File outputDirectory = getOutputDirectory("preserve-filemode-" + getArchiveExtension());
     UnArchiver unArchiver = UnArchiver.builder().build();
