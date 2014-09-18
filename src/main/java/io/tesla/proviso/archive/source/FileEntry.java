@@ -1,12 +1,14 @@
 package io.tesla.proviso.archive.source;
 
 import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.FileMode;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 
 import com.google.common.io.ByteStreams;
 
@@ -44,11 +46,16 @@ public class FileEntry implements Entry {
 
   @Override
   public int getFileMode() {
-    return -1;
+    return FileMode.getFileMode(file);
   }
 
   @Override
   public boolean isDirectory() {
     return file.isDirectory();
+  }
+
+  @Override
+  public boolean isExecutable() {
+    return FileMode.EXECUTABLE_FILE.equals(getFileMode());
   }
 }

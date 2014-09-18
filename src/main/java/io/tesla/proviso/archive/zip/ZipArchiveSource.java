@@ -1,6 +1,7 @@
 package io.tesla.proviso.archive.zip;
 
 import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.FileMode;
 import io.tesla.proviso.archive.Source;
 
 import java.io.File;
@@ -76,6 +77,12 @@ public class ZipArchiveSource implements Source {
     @Override
     public boolean isDirectory() {
       return archiveEntry.isDirectory();
+    }
+
+    @Override
+    public boolean isExecutable() {
+      System.out.println(">>>> " + getFileMode());
+      return FileMode.EXECUTABLE_FILE.equals(getFileMode());
     }
   }
 

@@ -49,9 +49,11 @@ public class Archiver {
   public void archive(File archive, Source... sources) throws IOException {
     ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive);
     try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
+      //
       // collected archive entry paths mapped to true for explicitly provided entries
-      // and to false for implicitly created directory entries
-      // duplicate explicitly provided entries result in IllegalArgumentException
+      // and to false for implicitly created directory entries duplicate explicitly 
+      // provided entries result in IllegalArgumentException
+      //
       Map<String, Boolean> paths = new HashMap<>();
       for (Source source : sources) {
         for (Entry entry : source.entries()) {

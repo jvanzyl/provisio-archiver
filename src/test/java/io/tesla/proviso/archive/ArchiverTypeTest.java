@@ -131,16 +131,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     validator.assertContentOfEntryInArchive("4.txt", "4");
   }
     
-  //
-  // UnArchiver
-  //
-  
-  // test includes/excludes on unarchiving
-  
-  //
-  // File modes
-  //
-  @Test
+  @Test // This test is perfunctory because of functionality to satisfy the test below
   public void testSettingAndPreservationOfExecutables() throws Exception {    
     File sourceDirectory = getArchiveProject("apache-maven-3.0.4");
     Archiver archiver = Archiver.builder() //
@@ -152,8 +143,50 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     UnArchiver unArchiver = UnArchiver.builder().build();
     unArchiver.unarchive(archive, outputDirectory);
     assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
-    assertFilesIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
+    assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
   }
+
+  @Test
+  public void testSettingAndPreservationOfExecutablesWithSourcesOriginallyNonExecutable() throws Exception {    
+    //
+    // Our build.sh script is not executable in source form but we want to make it executable and
+    // make sure it is preserved in an archive/unarchive cycle.
+    //
+    String archiveDirectory = "archive-source-without-executables";
+    String archiveName = archiveDirectory + "." + getArchiveExtension();
+    File sourceDirectory = getArchiveProject(archiveDirectory);
+    Archiver archiver = Archiver.builder() //
+        .executable(archiveDirectory + "/build.sh") //
+        .build();
+    File archive = getTargetArchive(archiveName);
+    archiver.archive(archive, sourceDirectory);
+    File outputDirectory = getOutputDirectory(archiveDirectory);
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    unArchiver.unarchive(archive, outputDirectory);
+    System.out.println(outputDirectory);
+    assertFileIsExecutable(outputDirectory, archiveDirectory + "/build.sh");
+  }
+
+
+  @Test
+  public void testTransferringOfExecutablesFromSourceToArchive() throws Exception {
+    //
+    // There are executable scripts in the source for our archive and we want
+    // the filemode to be picked up correctly so that we can set the executable
+    // bit on the archive entries and we verify the executable bits remain
+    // for an archive/unarchive cycle.
+    //
+    File sourceDirectory = getArchiveProject("apache-maven-3.0.4");
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive("apache-maven-3.0.4-bin." + getArchiveExtension());
+    archiver.archive(archive, sourceDirectory);
+    File outputDirectory = getOutputDirectory("transferring-executables-" + getArchiveExtension());
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    unArchiver.unarchive(archive, outputDirectory);
+    assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
+    assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
+  }
+  
   
   @Test
   public void unarchive() throws Exception {

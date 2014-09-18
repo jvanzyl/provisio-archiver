@@ -3,6 +3,7 @@ package io.tesla.proviso.archive.zip;
 import io.tesla.proviso.archive.ArchiveHandler;
 import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.FileMode;
 import io.tesla.proviso.archive.Source;
 
 import java.io.File;
@@ -34,13 +35,20 @@ public class ZipArchiveHandler implements ArchiveHandler {
   }
 
   @Override
-  public ExtendedArchiveEntry createEntryFor(String entryName, Entry entry, boolean isExecutable) {
-    ExtendedZipArchiveEntry archiveEntry = new ExtendedZipArchiveEntry(entryName);
-    archiveEntry.setSize(entry.getSize());
-    if (isExecutable) {
-      archiveEntry.setUnixMode(0700);
+  public ExtendedArchiveEntry createEntryFor(String entryName, Entry archiveEntry, boolean isExecutable) {
+    ExtendedZipArchiveEntry entry = new ExtendedZipArchiveEntry(entryName);
+    entry.setSize(archiveEntry.getSize());
+    if (archiveEntry.getFileMode() != -1) {
+      entry.setUnixMode(archiveEntry.getFileMode());
+      if(isExecutable) {
+        entry.setUnixMode(FileMode.makeExecutable(entry.getUnixMode()));
+      }
+    } else {
+      if (isExecutable) {
+        entry.setUnixMode(FileMode.EXECUTABLE_FILE.getBits());
+      }
     }
-    return archiveEntry;
+    return entry;
   }
 
   @Override
@@ -48,4 +56,3 @@ public class ZipArchiveHandler implements ArchiveHandler {
     return new ZipArchiveSource(archive);
   }
 }
-

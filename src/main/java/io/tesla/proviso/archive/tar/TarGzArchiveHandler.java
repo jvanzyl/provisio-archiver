@@ -33,20 +33,22 @@ public class TarGzArchiveHandler implements ArchiveHandler {
 
   @Override
   public ArchiveOutputStream getOutputStream() throws IOException {
-    TarArchiveOutputStream aos = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
-    //aos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
-    return aos;
+    return new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
   }
 
   @Override
   public ExtendedArchiveEntry createEntryFor(String entryName, Entry archiveEntry, boolean isExecutable) {
     ExtendedTarArchiveEntry entry = new ExtendedTarArchiveEntry(entryName);
     entry.setSize(archiveEntry.getSize());
-    if (isExecutable) {
-      entry.setMode(FileMode.EXECUTABLE_FILE.getBits());
-    }     
-    if(archiveEntry.getFileMode() != -1) {
+    if (archiveEntry.getFileMode() != -1) {
       entry.setMode(archiveEntry.getFileMode());
+      if (isExecutable) {
+        entry.setMode(FileMode.makeExecutable(entry.getMode()));
+      }
+    } else {
+      if (isExecutable) {
+        entry.setMode(FileMode.EXECUTABLE_FILE.getBits());
+      }
     }
     return entry;
   }

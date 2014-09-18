@@ -9,7 +9,7 @@ public interface Entry {
   InputStream getInputStream() throws IOException;  
   long getSize();
   void writeEntry(OutputStream outputStream) throws IOException;
-  // this should be general filemode
   int getFileMode();
   boolean isDirectory();
+  boolean isExecutable();
 }

@@ -82,6 +82,6 @@ public class ArchiveEntrySourceTest extends ArchiverTest {
     UnArchiver unArchiver = UnArchiver.builder().build();
     unArchiver.unarchive(archive, outputDirectory);
     assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
-    assertFilesIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
+    assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
   }
 }

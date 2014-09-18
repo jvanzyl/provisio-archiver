@@ -44,8 +44,22 @@ package io.tesla.proviso.archive;
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
 
 /**
  * Constants describing various file modes recognized by GIT.
@@ -183,7 +197,9 @@ public abstract class FileMode {
         octalBytes[k] = tmp[p + k];
       }
     } else {
-      octalBytes = new byte[] { '0' };
+      octalBytes = new byte[] {
+        '0'
+      };
     }
   }
 
@@ -248,4 +264,46 @@ public abstract class FileMode {
   public int getBits() {
     return modeBits;
   }
+
+  public static int makeExecutable(int fileMode) {
+    return fileMode | 0111;
+  }
+  
+  public static int getFileMode(File file)  {    
+    Set<PosixFilePermission> posixPermissions;
+    try {
+      posixPermissions = Files.getPosixFilePermissions(file.toPath());
+    } catch (IOException e) {
+      return -1;
+    }    
+    int result = 0;
+    if (posixPermissions.contains(OWNER_READ)) {
+      result = result | 0400;
+    }
+    if (posixPermissions.contains(OWNER_WRITE)) {
+      result = result | 0200;
+    }
+    if (posixPermissions.contains(OWNER_EXECUTE)) {
+      result = result | 0100;
+    }
+    if (posixPermissions.contains(GROUP_READ)) {
+      result = result | 040;
+    }
+    if (posixPermissions.contains(GROUP_WRITE)) {
+      result = result | 020;
+    }
+    if (posixPermissions.contains(GROUP_EXECUTE)) {
+      result = result | 010;
+    }
+    if (posixPermissions.contains(OTHERS_READ)) {
+      result = result | 04;
+    }
+    if (posixPermissions.contains(OTHERS_WRITE)) {
+      result = result | 02;
+    }
+    if (posixPermissions.contains(OTHERS_EXECUTE)) {
+      result = result | 01;
+    }
+    return result;
+  }  
 }

@@ -45,4 +45,9 @@ public class DirectoryEntry implements Entry {
     return true;
   }
 
+  @Override
+  public boolean isExecutable() {
+    return false;
+  }
+
 }

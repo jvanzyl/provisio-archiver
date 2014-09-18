@@ -50,7 +50,7 @@ public abstract class ArchiverTest {
     assertPresenceAndContentOf(file, expectedContent);
   }
 
-  protected void assertFilesIsExecutable(File outputDirectory, String fileName) {
+  protected void assertFileIsExecutable(File outputDirectory, String fileName) {
     File file = new File(outputDirectory, fileName);
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not executable.", fileName), file.exists() && file.isFile() && file.canExecute());
   }

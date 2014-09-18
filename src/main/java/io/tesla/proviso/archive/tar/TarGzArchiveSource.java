@@ -10,15 +10,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
-
-//JVZ: This is really what the unarchiver needs to do its work...
 
 public class TarGzArchiveSource implements Source {
 
@@ -46,9 +42,9 @@ public class TarGzArchiveSource implements Source {
 
   class EntrySourceArchiveEntry implements Entry {
 
-    final ArchiveEntry archiveEntry;
+    final TarArchiveEntry archiveEntry;
 
-    public EntrySourceArchiveEntry(ArchiveEntry archiveEntry) {
+    public EntrySourceArchiveEntry(TarArchiveEntry archiveEntry) {
       this.archiveEntry = archiveEntry;
     }
 
@@ -73,28 +69,25 @@ public class TarGzArchiveSource implements Source {
       ByteStreams.copy(getInputStream(), outputStream);
     }
 
-    //
-    //JVZ: This is ugly as the mode is not encapsulated in the entry. Can probably patch the code.
-    //
     @Override
     public int getFileMode() {
-      if (archiveEntry instanceof ZipArchiveEntry) {
-        return ((ZipArchiveEntry)archiveEntry).getUnixMode();
-      } else if(archiveEntry instanceof TarArchiveEntry) {
-        return ((TarArchiveEntry)archiveEntry).getMode();        
-      }
-      return -1;
+      return archiveEntry.getMode();        
     }
 
     @Override
     public boolean isDirectory() {
       return archiveEntry.isDirectory();
     }
+
+    @Override
+    public boolean isExecutable() {
+      return false;
+    }
   }
 
   class ArchiveEntryIterator implements Iterator<Entry> {
 
-    ArchiveEntry archiveEntry;
+    TarArchiveEntry archiveEntry;
 
     @Override
     public Entry next() {
@@ -103,8 +96,8 @@ public class TarGzArchiveSource implements Source {
 
     @Override
     public boolean hasNext() {
-      try {
-        return (archiveEntry = archiveInputStream.getNextEntry()) != null;
+      try {        
+        return (archiveEntry = (TarArchiveEntry) archiveInputStream.getNextEntry()) != null;
       } catch (IOException e) {
         return false;
       }      
