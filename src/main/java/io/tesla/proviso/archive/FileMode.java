@@ -358,7 +358,6 @@ public abstract class FileMode {
       unix[1] = 'r';
     }
     if (isSet(mode, 0200)) {
-      result.add(OWNER_WRITE);
       unix[2] = 'w';
     }
     if (isSet(mode, 0100)) {
