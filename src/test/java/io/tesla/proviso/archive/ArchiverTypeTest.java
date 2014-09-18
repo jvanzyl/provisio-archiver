@@ -187,6 +187,23 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
   }
   
+  //
+  //  drwxr-xr-x  0 dain   staff       0 Aug 20 18:01 bin/                                                                                                                                                                              
+  //  -rwxr-xr-x  0 dain   staff    1450 Aug 20 18:01 bin/launcher                                                                                                                                                                      
+  //  -rwxr-xr-x  0 dain   staff   13762 Aug 20 18:01 bin/launcher.py                                                                                                                                                                   
+  //  drwxr-xr-x  0 0      0           0 Aug 20 18:01 bin/procname/                                                                                                                                                                     
+  //  drwxr-xr-x  0 dain   staff       0 Aug 20 18:01 bin/procname/Linux-x86_64/                                                                                                                                                        
+  //  -rw-r--r--  0 dain   staff    4144 Aug 20 18:01 bin/procname/Linux-x86_64/libprocname.so  
+  //  
+  @Test
+  public void testPreserverFileModeOnUnarchivedFiles() throws Exception {
+    File archive = getSourceArchive("launcher-0.93-bin." + getArchiveExtension());
+    File outputDirectory = getOutputDirectory("preserve-filemode-" + getArchiveExtension());
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    unArchiver.unarchive(archive, outputDirectory);
+    assertFileMode(outputDirectory, "bin/launcher", "-rwxr-xr-x");
+    assertFileMode(outputDirectory, "bin/launcher.py", "-rwxr-xr-x");
+  }
   
   @Test
   public void unarchive() throws Exception {
@@ -238,6 +255,8 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     assertDirectoryDoesNotExist(outputDirectory, "archive-with-entry-processor/src/main/java/${packagePath}");    
   }
 
+  
+  
   @Test
   public void testIntermediateDirectoryEntries() throws Exception {
     Archiver archiver = Archiver.builder().build();

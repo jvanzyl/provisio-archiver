@@ -12,6 +12,7 @@ import org.codehaus.plexus.util.FileUtils;
 public abstract class ArchiverTest {
 
   private String basedir;
+
   //
   // Assertions for tests
   //  
@@ -75,7 +76,7 @@ public abstract class ArchiverTest {
 
   protected final File getOutputDirectory(String name) throws IOException {
     File outputDirectory = new File(getBasedir(), "target/archives/" + name);
-    if(outputDirectory.exists()) {
+    if (outputDirectory.exists()) {
       FileUtils.deleteDirectory(outputDirectory);
     }
     return outputDirectory;
@@ -107,5 +108,11 @@ public abstract class ArchiverTest {
 
   protected final File getArchiveProject(String name) {
     return new File(getBasedir(), String.format("src/test/archives/%s", name));
+  }
+
+  protected void assertFileMode(File outputDirectory, String string, String expectedUnix) {
+    File f = new File(outputDirectory, string);
+    String unix = FileMode.toUnix(FileMode.getFileMode(f));
+    assertEquals(expectedUnix, unix);
   }
 }

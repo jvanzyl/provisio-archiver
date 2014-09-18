@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class UnArchiver {
   }
 
   public void unarchive(File archive, File outputDirectory) throws IOException {
-    unarchive(archive, outputDirectory, new NoopEntryProcessor());    
+    unarchive(archive, outputDirectory, new NoopEntryProcessor());
   }
 
   public void unarchive(File archive, File outputDirectory, UnarchivingEntryProcessor entryProcessor) throws IOException {
@@ -53,7 +54,7 @@ public class UnArchiver {
     //
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
-    }    
+    }
     Source source = ArchiverHelper.getArchiveHandler(archive).getArchiveSource();
     for (Entry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
@@ -95,7 +96,7 @@ public class UnArchiver {
       //
       // Process the entry name before any output is created on disk
       //
-      entryName =  entryProcessor.processName(entryName);
+      entryName = entryProcessor.processName(entryName);
       //
       // So with an entry we may want to take a set of entry in a set of directories and flatten them
       // into one directory, or we may want to preserve the directory structure.
@@ -119,14 +120,14 @@ public class UnArchiver {
       if (!outputFile.getParentFile().exists()) {
         createDir(outputFile.getParentFile());
       }
-      
-      try(OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+
+      try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
         entryProcessor.processStream(archiveEntry.getInputStream(), outputStream);
-      } 
+      }
       int mode = archiveEntry.getFileMode();
-      if ((mode & 0100) != 0) {
-        outputFile.setExecutable(true);
-      }     
+      if (mode != -1) {
+        Files.setPosixFilePermissions(outputFile.toPath(), FileMode.toPermissionsSet(mode));
+      }
     }
     source.close();
   }
@@ -171,10 +172,10 @@ public class UnArchiver {
 
     @Override
     public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
-      ByteStreams.copy(inputStream, outputStream);      
-    }    
+      ByteStreams.copy(inputStream, outputStream);
+    }
   }
-  
+
   public static class UnArchiverBuilder {
 
     private List<String> includes = new ArrayList<String>();
@@ -184,8 +185,8 @@ public class UnArchiver {
 
     public UnArchiverBuilder includes(String... includes) {
       List<String> i = Lists.newArrayList();
-      for(String include : includes) {
-        if(include != null) {
+      for (String include : includes) {
+        if (include != null) {
           i.add(include);
         }
       }
@@ -199,8 +200,8 @@ public class UnArchiver {
 
     public UnArchiverBuilder excludes(String... excludes) {
       List<String> i = Lists.newArrayList();
-      for(String exclude : excludes) {
-        if(exclude != null) {
+      for (String exclude : excludes) {
+        if (exclude != null) {
           i.add(exclude);
         }
       }

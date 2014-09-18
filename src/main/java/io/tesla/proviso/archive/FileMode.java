@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
@@ -216,7 +217,7 @@ public abstract class FileMode {
    * <p>
    * The mode is copied as a sequence of octal digits using the US-ASCII
    * character encoding. The sequence does not use a leading '0' prefix to
-   * indicate octal notation. This method is suitable for generation of a mode
+   * indicate octal notation. This method is suitable for generation of a mode  
    * string within a GIT tree object.
    * </p>
    *
@@ -268,18 +269,18 @@ public abstract class FileMode {
   //
   // Utilities for dealing with file modes
   //
-  
+
   public static int makeExecutable(int fileMode) {
     return fileMode | 0111;
   }
-  
-  public static int getFileMode(File file)  {    
+
+  public static int getFileMode(File file) {
     Set<PosixFilePermission> posixPermissions;
     try {
       posixPermissions = Files.getPosixFilePermissions(file.toPath());
     } catch (IOException e) {
       return -1;
-    }    
+    }
     int result = 0;
     if (posixPermissions.contains(OWNER_READ)) {
       result = result | 0400;
@@ -309,5 +310,82 @@ public abstract class FileMode {
       result = result | 01;
     }
     return result;
-  }  
+  }
+
+  public static Set<PosixFilePermission> toPermissionsSet(int mode) {
+    Set<PosixFilePermission> result = EnumSet.noneOf(PosixFilePermission.class);
+    if (isSet(mode, 0400)) {
+      result.add(OWNER_READ);
+    }
+    if (isSet(mode, 0200)) {
+      result.add(OWNER_WRITE);
+    }
+    if (isSet(mode, 0100)) {
+      result.add(OWNER_EXECUTE);
+    }
+
+    if (isSet(mode, 040)) {
+      result.add(GROUP_READ);
+    }
+    if (isSet(mode, 020)) {
+      result.add(GROUP_WRITE);
+    }
+    if (isSet(mode, 010)) {
+      result.add(GROUP_EXECUTE);
+    }
+    if (isSet(mode, 04)) {
+      result.add(OTHERS_READ);
+    }
+    if (isSet(mode, 02)) {
+      result.add(OTHERS_WRITE);
+    }
+    if (isSet(mode, 01)) {
+      result.add(OTHERS_EXECUTE);
+    }
+    return result;
+  }
+
+  //
+  // drwxrwxrwx
+  //
+  public static String toUnix(int mode) {
+    char[] unix = new char[10];    
+    for(int i = 0; i < 10; i++) {
+      unix[i] = '-';
+    }
+    Set<PosixFilePermission> result = EnumSet.noneOf(PosixFilePermission.class);
+    if (isSet(mode, 0400)) {
+      unix[1] = 'r';
+    }
+    if (isSet(mode, 0200)) {
+      result.add(OWNER_WRITE);
+      unix[2] = 'w';
+    }
+    if (isSet(mode, 0100)) {
+      unix[3] = 'x';
+    }
+    if (isSet(mode, 040)) {
+      unix[4] = 'r';
+    }
+    if (isSet(mode, 020)) {
+      unix[5] = 'w';
+    }
+    if (isSet(mode, 010)) {
+      unix[6] = 'x';
+    }
+    if (isSet(mode, 04)) {
+      unix[7] = 'r';
+    }
+    if (isSet(mode, 02)) {
+      unix[8] = 'w';
+    }
+    if (isSet(mode, 01)) {
+      unix[9] = 'x';
+    }
+    return new String(unix);
+  }
+
+  private static boolean isSet(int mode, int bit) {
+    return (mode & bit) == bit;
+  }
 }
