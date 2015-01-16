@@ -71,7 +71,7 @@ public class TarGzArchiveSource implements Source {
 
     @Override
     public int getFileMode() {
-      return archiveEntry.getMode();        
+      return archiveEntry.getMode();
     }
 
     @Override
@@ -96,13 +96,13 @@ public class TarGzArchiveSource implements Source {
 
     @Override
     public boolean hasNext() {
-      try {        
+      try {
         return (archiveEntry = (TarArchiveEntry) archiveInputStream.getNextEntry()) != null;
       } catch (IOException e) {
         return false;
-      }      
+      }
     }
-    
+
     @Override
     public void remove() {
       throw new UnsupportedOperationException("remove method not implemented");
@@ -113,7 +113,7 @@ public class TarGzArchiveSource implements Source {
   public void close() throws IOException {
     closer.close();
   }
-  
+
   @Override
   public boolean isDirectory() {
     return true;

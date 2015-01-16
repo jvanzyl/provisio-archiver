@@ -6,13 +6,13 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
   public ExtendedZipArchiveEntry(String name) {
-    super(name); 
+    super(name);
   }
 
   @Override
   public void setFileMode(int mode) {
     setUnixMode(mode);
-  }  
+  }
 
   @Override
   public int getFileMode() {

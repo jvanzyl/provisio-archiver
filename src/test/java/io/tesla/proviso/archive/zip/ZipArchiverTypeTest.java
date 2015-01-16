@@ -14,5 +14,5 @@ public class ZipArchiverTypeTest extends ArchiverTypeTest {
   @Override
   protected ArchiverValidator validator(File archive) throws IOException {
     return new ZipArchiveValidator(archive);
-  }   
+  }
 }

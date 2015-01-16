@@ -100,7 +100,7 @@ public class UnArchiver {
       //
       // So with an entry we may want to take a set of entry in a set of directories and flatten them
       // into one directory, or we may want to preserve the directory structure.
-      //      
+      //
       if (flatten) {
         entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
       } else {
@@ -146,22 +146,22 @@ public class UnArchiver {
     return SelectorUtils.match(includePattern, entry);
   }
 
-  //  
-  //    Archiver archiver = Archiver.builder()
-  //        .includes("**/*.java")
-  //        .includes(Iterable<String>)
-  //        .excludes("**/*.properties")
-  //        .excludes(Iterable<String>)
-  //        .flatten(true)
-  //        .useRoot(false)
-  //        .build();
+  //
+  // Archiver archiver = Archiver.builder()
+  // .includes("**/*.java")
+  // .includes(Iterable<String>)
+  // .excludes("**/*.properties")
+  // .excludes(Iterable<String>)
+  // .flatten(true)
+  // .useRoot(false)
+  // .build();
 
   public static UnArchiverBuilder builder() {
     return new UnArchiverBuilder();
   }
 
   /**
-   * {@EntryProcesor} that leaves the entry name and content as-is. 
+   * {@EntryProcesor} that leaves the entry name and content as-is.
    */
   class NoopEntryProcessor implements UnarchivingEntryProcessor {
 

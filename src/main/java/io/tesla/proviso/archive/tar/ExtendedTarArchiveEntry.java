@@ -11,7 +11,7 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
 
   @Override
   public void setFileMode(int mode) {
-    setMode(mode);    
+    setMode(mode);
   }
 
   @Override

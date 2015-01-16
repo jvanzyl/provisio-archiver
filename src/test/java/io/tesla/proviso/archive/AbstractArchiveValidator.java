@@ -22,10 +22,10 @@ public abstract class AbstractArchiveValidator implements ArchiverValidator {
 
   protected AbstractArchiveValidator(Source source) throws IOException {
     Multimap<String, String> entries = LinkedListMultimap.create();
-    for(Entry entry : source.entries()) {
+    for (Entry entry : source.entries()) {
       OutputStream outputStream = new ByteArrayOutputStream();
       ByteStreams.copy(entry.getInputStream(), outputStream);
-      entries.put(entry.getName(), outputStream.toString());      
+      entries.put(entry.getName(), outputStream.toString());
     }
     this.entries = entries;
   }

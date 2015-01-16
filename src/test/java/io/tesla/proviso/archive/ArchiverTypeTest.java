@@ -18,18 +18,19 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   // Each archiver type must implement these methods in their test class
   //
   protected abstract String getArchiveExtension();
+
   protected abstract ArchiverValidator validator(File archive) throws Exception;
-      
+
   //
   // Archiver
-  //  
+  //
   @Test
   public void createArchive() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
-    archiver.archive(archive, archiveDirectory);    
-    ArchiverValidator validator= validator(archive);
+    archiver.archive(archive, archiveDirectory);
+    ArchiverValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/0/", //
@@ -59,7 +60,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator= validator(archive);
+    ArchiverValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/4/", //
@@ -77,7 +78,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("excludes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator= validator(archive);
+    ArchiverValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/0/", //
@@ -104,7 +105,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("without-root-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator= validator(archive);
+    ArchiverValidator validator = validator(archive);
     validator.assertEntries("0/", "0/0.txt", "1/", "1/1.txt", "2/", "2/2.txt", "3/", "3/3.txt", "4/", "4/4.txt");
     validator.assertContentOfEntryInArchive("0/0.txt", "0");
     validator.assertContentOfEntryInArchive("1/1.txt", "1");
@@ -122,7 +123,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("flatten-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator= validator(archive);
+    ArchiverValidator validator = validator(archive);
     validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
     validator.assertContentOfEntryInArchive("0.txt", "0");
     validator.assertContentOfEntryInArchive("1.txt", "1");
@@ -130,9 +131,10 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     validator.assertContentOfEntryInArchive("3.txt", "3");
     validator.assertContentOfEntryInArchive("4.txt", "4");
   }
-    
-  @Test // This test is perfunctory because of functionality to satisfy the test below
-  public void testSettingAndPreservationOfExecutables() throws Exception {    
+
+  @Test
+  // This test is perfunctory because of functionality to satisfy the test below
+  public void testSettingAndPreservationOfExecutables() throws Exception {
     File sourceDirectory = getArchiveProject("apache-maven-3.0.4");
     Archiver archiver = Archiver.builder() //
         .executable("**/bin/mvn", "**/bin/mvnDebug", "**/bin/mvnyjp") //
@@ -147,7 +149,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   }
 
   @Test
-  public void testSettingAndPreservationOfExecutablesWithSourcesOriginallyNonExecutable() throws Exception {    
+  public void testSettingAndPreservationOfExecutablesWithSourcesOriginallyNonExecutable() throws Exception {
     //
     // Our build.sh script is not executable in source form but we want to make it executable and
     // make sure it is preserved in an archive/unarchive cycle.
@@ -186,15 +188,15 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
     assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
   }
-  
+
   //
-  //  drwxr-xr-x  0 dain   staff       0 Aug 20 18:01 bin/                                                                                                                                                                              
-  //  -rwxr-xr-x  0 dain   staff    1450 Aug 20 18:01 bin/launcher                                                                                                                                                                      
-  //  -rwxr-xr-x  0 dain   staff   13762 Aug 20 18:01 bin/launcher.py                                                                                                                                                                   
-  //  drwxr-xr-x  0 0      0           0 Aug 20 18:01 bin/procname/                                                                                                                                                                     
-  //  drwxr-xr-x  0 dain   staff       0 Aug 20 18:01 bin/procname/Linux-x86_64/                                                                                                                                                        
-  //  -rw-r--r--  0 dain   staff    4144 Aug 20 18:01 bin/procname/Linux-x86_64/libprocname.so  
-  //  
+  // drwxr-xr-x 0 dain staff 0 Aug 20 18:01 bin/
+  // -rwxr-xr-x 0 dain staff 1450 Aug 20 18:01 bin/launcher
+  // -rwxr-xr-x 0 dain staff 13762 Aug 20 18:01 bin/launcher.py
+  // drwxr-xr-x 0 0 0 0 Aug 20 18:01 bin/procname/
+  // drwxr-xr-x 0 dain staff 0 Aug 20 18:01 bin/procname/Linux-x86_64/
+  // -rw-r--r-- 0 dain staff 4144 Aug 20 18:01 bin/procname/Linux-x86_64/libprocname.so
+  //
   @Test
   public void testPreservervationOfFileModeOnUnarchivedFiles() throws Exception {
     File archive = getSourceArchive("launcher-0.93-bin." + getArchiveExtension());
@@ -204,18 +206,18 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     assertFileMode(outputDirectory, "bin/launcher", "-rwxr-xr-x");
     assertFileMode(outputDirectory, "bin/launcher.py", "-rwxr-xr-x");
   }
-  
+
   @Test
   public void unarchive() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder().build();
-    File archive = getTargetArchive("create-archive-0." + getArchiveExtension());    
-    
-    archiver.archive(archive, archiveDirectory);    
+    File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
+
+    archiver.archive(archive, archiveDirectory);
     UnArchiver unArchiver = UnArchiver.builder().build();
     File outputDirectory = getOutputDirectory("archive-0-extracted/" + getArchiveExtension());
     unArchiver.unarchive(archive, outputDirectory);
-    
+
     assertPresenceAndSizeOf(file(outputDirectory, "archive-0/0/0.txt"), 1);
     assertPresenceAndContentOf(file(outputDirectory, "archive-0/0/0.txt"), "0");
     assertPresenceAndSizeOf(file(outputDirectory, "archive-0/1/1.txt"), 1);
@@ -233,36 +235,36 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     String name = "archive-with-entry-processor";
     File archiveDirectory = getArchiveProject(name);
     Archiver archiver = Archiver.builder().build();
-    File archive = getTargetArchive(name + "." + getArchiveExtension());    
-    
-    archiver.archive(archive, archiveDirectory);    
+    File archive = getTargetArchive(name + "." + getArchiveExtension());
+
+    archiver.archive(archive, archiveDirectory);
     UnArchiver unArchiver = UnArchiver.builder().build();
     File outputDirectory = getOutputDirectory(name + "-extracted/" + getArchiveExtension());
     unArchiver.unarchive(archive, outputDirectory, new UnarchivingEntryProcessor() {
-      
+
       @Override
       public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
-        ByteStreams.copy(new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT"), outputStream);                   
+        ByteStreams.copy(new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT"), outputStream);
       }
-      
+
       @Override
       public String processName(String name) {
         name = name.replace("${packagePath}", "io/takari/app");
         return name;
       }
-    });    
+    });
     assertPresenceAndContentOf(file(outputDirectory, "archive-with-entry-processor/src/main/java/io/takari/app/file.txt"), "PROCESSED_TEXT");
-    assertDirectoryDoesNotExist(outputDirectory, "archive-with-entry-processor/src/main/java/${packagePath}");    
+    assertDirectoryDoesNotExist(outputDirectory, "archive-with-entry-processor/src/main/java/${packagePath}");
   }
 
-  
-  
+
+
   @Test
   public void testIntermediateDirectoryEntries() throws Exception {
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
     archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
-    ArchiverValidator validator= validator(archive);
+    ArchiverValidator validator = validator(archive);
     validator.assertEntries("1/", "1/2/", "1/2/file.txt");
   }
 

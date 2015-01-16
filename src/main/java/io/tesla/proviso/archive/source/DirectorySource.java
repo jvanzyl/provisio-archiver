@@ -20,9 +20,9 @@ public class DirectorySource implements Source {
     this.sourceDirectories = sourceDirectories;
   }
 
-  public DirectorySource(List<String> sourceDirectories) {    
+  public DirectorySource(List<String> sourceDirectories) {
     this.sourceDirectories = new File[sourceDirectories.size()];
-    for(int i = 0; i < sourceDirectories.size(); i++) {
+    for (int i = 0; i < sourceDirectories.size(); i++) {
       this.sourceDirectories[i] = new File(sourceDirectories.get(i));
     }
   }
@@ -31,11 +31,11 @@ public class DirectorySource implements Source {
   public Iterable<Entry> entries() {
     return new Iterable<Entry>() {
       @Override
-      public Iterator<Entry> iterator() {        
+      public Iterator<Entry> iterator() {
         DirectoryEntryIterator[] iterators = new DirectoryEntryIterator[sourceDirectories.length];
-        for(int i = 0; i < iterators.length;i++) {
+        for (int i = 0; i < iterators.length; i++) {
           iterators[i] = new DirectoryEntryIterator(sourceDirectories[i]);
-        }        
+        }
         return Iterators.concat(iterators);
       }
     };
@@ -53,8 +53,8 @@ public class DirectorySource implements Source {
       scanner.scan();
       List<String> entries = Lists.newArrayList();
       String includedFiles[] = scanner.getIncludedFiles();
-      for(String includedFile : includedFiles) {
-        if(!includedFile.isEmpty()) {
+      for (String includedFile : includedFiles) {
+        if (!includedFile.isEmpty()) {
           entries.add(includedFile);
         }
       }
@@ -79,12 +79,11 @@ public class DirectorySource implements Source {
     public void remove() {
       throw new UnsupportedOperationException("remove method not implemented");
     }
-  }  
+  }
 
   @Override
-  public void close() throws IOException {
-  }
-  
+  public void close() throws IOException {}
+
   @Override
   public boolean isDirectory() {
     return true;

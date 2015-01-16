@@ -6,5 +6,6 @@ import java.io.OutputStream;
 
 public interface UnarchivingEntryProcessor {
   String processName(String name);
+
   void processStream(InputStream inputStream, OutputStream outputStream) throws IOException;
 }

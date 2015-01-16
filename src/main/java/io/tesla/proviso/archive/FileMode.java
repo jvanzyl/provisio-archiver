@@ -65,9 +65,7 @@ import java.util.Set;
 /**
  * Constants describing various file modes recognized by GIT.
  * <p>
- * GIT uses a subset of the available UNIX file permission bits. The
- * <code>FileMode</code> class provides access to constants defining the modes
- * actually used by GIT.
+ * GIT uses a subset of the available UNIX file permission bits. The <code>FileMode</code> class provides access to constants defining the modes actually used by GIT.
  * </p>
  */
 public abstract class FileMode {
@@ -148,26 +146,23 @@ public abstract class FileMode {
   /**
    * Convert a set of mode bits into a FileMode enumerated value.
    *
-   * @param bits
-   *            the mode bits the caller has somehow obtained.
+   * @param bits the mode bits the caller has somehow obtained.
    * @return the FileMode instance that represents the given bits.
    */
   public static final FileMode fromBits(final int bits) {
     switch (bits & TYPE_MASK) {
-    case TYPE_MISSING:
-      if (bits == 0)
-        return MISSING;
-      break;
-    case TYPE_TREE:
-      return TREE;
-    case TYPE_FILE:
-      if ((bits & 0111) != 0)
-        return EXECUTABLE_FILE;
-      return REGULAR_FILE;
-    case TYPE_SYMLINK:
-      return SYMLINK;
-    case TYPE_GITLINK:
-      return GITLINK;
+      case TYPE_MISSING:
+        if (bits == 0) return MISSING;
+        break;
+      case TYPE_TREE:
+        return TREE;
+      case TYPE_FILE:
+        if ((bits & 0111) != 0) return EXECUTABLE_FILE;
+        return REGULAR_FILE;
+      case TYPE_SYMLINK:
+        return SYMLINK;
+      case TYPE_GITLINK:
+        return GITLINK;
     }
 
     return new FileMode(bits) {
@@ -198,9 +193,7 @@ public abstract class FileMode {
         octalBytes[k] = tmp[p + k];
       }
     } else {
-      octalBytes = new byte[] {
-        '0'
-      };
+      octalBytes = new byte[] {'0'};
     }
   }
 
@@ -215,16 +208,12 @@ public abstract class FileMode {
   /**
    * Copy this mode as a sequence of octal US-ASCII bytes.
    * <p>
-   * The mode is copied as a sequence of octal digits using the US-ASCII
-   * character encoding. The sequence does not use a leading '0' prefix to
-   * indicate octal notation. This method is suitable for generation of a mode  
-   * string within a GIT tree object.
+   * The mode is copied as a sequence of octal digits using the US-ASCII character encoding. The sequence does not use a leading '0' prefix to indicate octal notation. This method is suitable for
+   * generation of a mode string within a GIT tree object.
    * </p>
    *
-   * @param os
-   *            stream to copy the mode to.
-   * @throws IOException
-   *             the stream encountered an error during the copy.
+   * @param os stream to copy the mode to.
+   * @throws IOException the stream encountered an error during the copy.
    */
   public void copyTo(final OutputStream os) throws IOException {
     os.write(octalBytes);
@@ -233,15 +222,11 @@ public abstract class FileMode {
   /**
    * Copy this mode as a sequence of octal US-ASCII bytes.
    *
-   * The mode is copied as a sequence of octal digits using the US-ASCII
-   * character encoding. The sequence does not use a leading '0' prefix to
-   * indicate octal notation. This method is suitable for generation of a mode
-   * string within a GIT tree object.
+   * The mode is copied as a sequence of octal digits using the US-ASCII character encoding. The sequence does not use a leading '0' prefix to indicate octal notation. This method is suitable for
+   * generation of a mode string within a GIT tree object.
    *
-   * @param buf
-   *            buffer to copy the mode to.
-   * @param ptr
-   *            position within {@code buf} for first digit.
+   * @param buf buffer to copy the mode to.
+   * @param ptr position within {@code buf} for first digit.
    */
   public void copyTo(byte[] buf, int ptr) {
     System.arraycopy(octalBytes, 0, buf, ptr, octalBytes.length);
@@ -349,8 +334,8 @@ public abstract class FileMode {
   // drwxrwxrwx
   //
   public static String toUnix(int mode) {
-    char[] unix = new char[10];    
-    for(int i = 0; i < 10; i++) {
+    char[] unix = new char[10];
+    for (int i = 0; i < 10; i++) {
       unix[i] = '-';
     }
     Set<PosixFilePermission> result = EnumSet.noneOf(PosixFilePermission.class);

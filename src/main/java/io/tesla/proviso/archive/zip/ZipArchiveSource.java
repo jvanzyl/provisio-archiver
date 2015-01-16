@@ -20,7 +20,7 @@ public class ZipArchiveSource implements Source {
 
   private ZipFile zipFile;
   private Enumeration<ZipArchiveEntry> entries;
-  
+
   public ZipArchiveSource(File archive) {
     try {
       zipFile = new ZipFile(archive);
@@ -97,7 +97,7 @@ public class ZipArchiveSource implements Source {
     public boolean hasNext() {
       return entries.hasMoreElements();
     }
-    
+
     @Override
     public void remove() {
       throw new UnsupportedOperationException("remove method not implemented");
@@ -108,7 +108,7 @@ public class ZipArchiveSource implements Source {
   public void close() throws IOException {
     zipFile.close();
   }
-  
+
   @Override
   public boolean isDirectory() {
     return true;

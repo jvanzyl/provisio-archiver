@@ -15,7 +15,7 @@ public abstract class ArchiverTest {
 
   //
   // Assertions for tests
-  //  
+  //
   protected void assertDirectoryExists(File outputDirectory, String directoryName) {
     File directory = new File(outputDirectory, directoryName);
     assertTrue(String.format("We expect to find the directory %s, but it doesn't exist or is not a directory.", directoryName), directory.exists() && directory.isDirectory());
@@ -58,7 +58,7 @@ public abstract class ArchiverTest {
 
   //
   // Helper methods for tests
-  //  
+  //
   protected final String getBasedir() {
     if (null == basedir) {
       basedir = System.getProperty("basedir", new File("").getAbsolutePath());

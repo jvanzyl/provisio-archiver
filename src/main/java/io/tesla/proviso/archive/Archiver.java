@@ -51,7 +51,7 @@ public class Archiver {
     try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
       //
       // collected archive entry paths mapped to true for explicitly provided entries
-      // and to false for implicitly created directory entries duplicate explicitly 
+      // and to false for implicitly created directory entries duplicate explicitly
       // provided entries result in IllegalArgumentException
       //
       Map<String, Boolean> paths = new HashMap<>();
