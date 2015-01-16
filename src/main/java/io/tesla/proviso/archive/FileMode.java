@@ -263,7 +263,7 @@ public abstract class FileMode {
     Set<PosixFilePermission> posixPermissions;
     try {
       posixPermissions = Files.getPosixFilePermissions(file.toPath());
-    } catch (IOException e) {
+    } catch (IOException | UnsupportedOperationException e) {
       return -1;
     }
     int result = 0;

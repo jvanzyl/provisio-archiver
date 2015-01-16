@@ -55,7 +55,7 @@ public class DirectorySource implements Source {
       String includedFiles[] = scanner.getIncludedFiles();
       for (String includedFile : includedFiles) {
         if (!includedFile.isEmpty()) {
-          entries.add(includedFile);
+          entries.add(includedFile.replace('\\', '/'));
         }
       }
       this.files = entries.toArray(new String[entries.size()]);
@@ -71,7 +71,7 @@ public class DirectorySource implements Source {
     public Entry next() {
       String pathRelativeToSourceDirectory = files[currentFileIndex++];
       File file = new File(sourceDirectory, pathRelativeToSourceDirectory);
-      String archiveEntryName = String.format("%s/%s", sourceDirectory.getName(), pathRelativeToSourceDirectory);
+      String archiveEntryName = String.format("%s/%s", sourceDirectory.getName().replace('\\', '/'), pathRelativeToSourceDirectory);
       return new FileEntry(archiveEntryName, file);
     }
 

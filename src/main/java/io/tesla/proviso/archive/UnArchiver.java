@@ -126,7 +126,11 @@ public class UnArchiver {
       }
       int mode = archiveEntry.getFileMode();
       if (mode != -1) {
-        Files.setPosixFilePermissions(outputFile.toPath(), FileMode.toPermissionsSet(mode));
+        try {
+          Files.setPosixFilePermissions(outputFile.toPath(), FileMode.toPermissionsSet(mode));
+        } catch (UnsupportedOperationException e) {
+          // ignore, must be windows
+        }
       }
     }
     source.close();

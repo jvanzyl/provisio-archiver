@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.codehaus.plexus.util.Os;
 import org.codehaus.swizzle.stream.ReplaceStringInputStream;
+import org.junit.Assume;
 import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
@@ -199,6 +201,8 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   //
   @Test
   public void testPreservervationOfFileModeOnUnarchivedFiles() throws Exception {
+    Assume.assumeFalse(Os.isFamily(Os.FAMILY_WINDOWS));
+
     File archive = getSourceArchive("launcher-0.93-bin." + getArchiveExtension());
     File outputDirectory = getOutputDirectory("preserve-filemode-" + getArchiveExtension());
     UnArchiver unArchiver = UnArchiver.builder().build();
