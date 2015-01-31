@@ -9,7 +9,7 @@ public class ArchiverHelper {
 
   public static ArchiveHandler getArchiveHandler(File archive) {
     ArchiveHandler archiveHandler;
-    if (archive.getName().endsWith(".zip") || archive.getName().endsWith(".jar")) {
+    if (isZip(archive)) {
       archiveHandler = new ZipArchiveHandler(archive);
     } else if (archive.getName().endsWith(".tgz") || archive.getName().endsWith("tar.gz")) {
       archiveHandler = new TarGzArchiveHandler(archive);
@@ -19,4 +19,9 @@ public class ArchiverHelper {
     return archiveHandler;
   }
 
+  private static boolean isZip(File file) {
+    return file.getName().endsWith(".zip") || //
+        file.getName().endsWith(".jar") || //
+        file.getName().endsWith(".war");
+  }
 }
