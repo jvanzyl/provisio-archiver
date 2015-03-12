@@ -247,7 +247,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     unArchiver.unarchive(archive, outputDirectory, new UnarchivingEntryProcessor() {
 
       @Override
-      public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+      public void processStream(String entryName, InputStream inputStream, OutputStream outputStream) throws IOException {
         ByteStreams.copy(new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT"), outputStream);
       }
 

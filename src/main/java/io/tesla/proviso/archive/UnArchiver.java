@@ -13,8 +13,6 @@ import java.util.List;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.codehaus.plexus.util.SelectorUtils;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -32,16 +30,14 @@ import com.google.common.io.ByteStreams;
 @Singleton
 public class UnArchiver {
 
-  private final List<String> includes;
-  private final List<String> excludes;
+  private final Selector selector;
   private final boolean useRoot;
   private final boolean flatten;
 
   public UnArchiver(List<String> includes, List<String> excludes, boolean useRoot, boolean flatten) {
-    this.includes = includes;
-    this.excludes = excludes;
     this.useRoot = useRoot;
     this.flatten = flatten;
+    this.selector = new Selector(includes, excludes);
   }
 
   public void unarchive(File archive, File outputDirectory) throws IOException {
@@ -61,36 +57,7 @@ public class UnArchiver {
       if (useRoot == false) {
         entryName = entryName.substring(entryName.indexOf('/') + 1);
       }
-      //
-      // If we get an exclusion that matches then just carry on.
-      //
-      boolean exclude = false;
-      if (!excludes.isEmpty()) {
-        for (String excludePattern : excludes) {
-          if (isExcluded(excludePattern, entryName)) {
-            exclude = true;
-            break;
-          }
-        }
-      }
-      if (exclude) {
-        continue;
-      }
-      //
-      // need useRoot = false and step in so just truncate the beginning of the name entry
-      //
-      boolean include = false;
-      if (!includes.isEmpty()) {
-        for (String includePattern : includes) {
-          if (isIncluded(includePattern, entryName)) {
-            include = true;
-            break;
-          }
-        }
-      } else {
-        include = true;
-      }
-      if (include == false) {
+      if (!selector.include(entryName)) {
         continue;
       }
       //
@@ -122,7 +89,7 @@ public class UnArchiver {
       }
 
       try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-        entryProcessor.processStream(archiveEntry.getInputStream(), outputStream);
+        entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
       }
       int mode = archiveEntry.getFileMode();
       if (mode != -1) {
@@ -140,14 +107,6 @@ public class UnArchiver {
     if (dir.exists() == false) {
       dir.mkdirs();
     }
-  }
-
-  private boolean isExcluded(String excludePattern, String entry) {
-    return SelectorUtils.match(excludePattern, entry);
-  }
-
-  private boolean isIncluded(String includePattern, String entry) {
-    return SelectorUtils.match(includePattern, entry);
   }
 
   //
@@ -170,12 +129,12 @@ public class UnArchiver {
   class NoopEntryProcessor implements UnarchivingEntryProcessor {
 
     @Override
-    public String processName(String name) {
-      return name;
+    public String processName(String entryName) {
+      return entryName;
     }
 
     @Override
-    public void processStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+    public void processStream(String entryName, InputStream inputStream, OutputStream outputStream) throws IOException {
       ByteStreams.copy(inputStream, outputStream);
     }
   }
