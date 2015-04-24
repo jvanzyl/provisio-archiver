@@ -1,8 +1,8 @@
 package io.tesla.proviso.archive.tar;
 
-import io.tesla.proviso.archive.ExtendedArchiveEntry;
-
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
 
 public class ExtendedTarArchiveEntry extends TarArchiveEntry implements ExtendedArchiveEntry {
   public ExtendedTarArchiveEntry(String name) {
@@ -17,5 +17,10 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   @Override
   public int getFileMode() {
     return getMode();
+  }
+
+  @Override
+  public void setTime(long time) {
+    setModTime(time);
   }
 }

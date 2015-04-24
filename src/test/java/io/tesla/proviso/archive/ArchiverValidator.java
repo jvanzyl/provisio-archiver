@@ -7,5 +7,7 @@ public interface ArchiverValidator {
 
   public void assertContentOfEntryInArchive(String entryName, String expectedEntryContent) throws IOException;
 
+  public void assertTimeOfEntryInArchive(String entryName, long time) throws IOException;
+
   public void assertEntries(String... entries) throws IOException;
 }

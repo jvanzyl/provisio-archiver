@@ -1,8 +1,8 @@
 package io.tesla.proviso.archive.zip;
 
-import io.tesla.proviso.archive.ExtendedArchiveEntry;
-
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
   public ExtendedZipArchiveEntry(String name) {
@@ -17,5 +17,10 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   @Override
   public int getFileMode() {
     return getUnixMode();
+  }
+
+  @Override
+  public void setTime(long time) {
+    super.setTime(time);
   }
 }

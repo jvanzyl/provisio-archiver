@@ -1,8 +1,5 @@
 package io.tesla.proviso.archive;
 
-import io.tesla.proviso.archive.source.DirectoryEntry;
-import io.tesla.proviso.archive.source.DirectorySource;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,20 +15,35 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import io.tesla.proviso.archive.source.DirectoryEntry;
+import io.tesla.proviso.archive.source.DirectorySource;
+
 public class Archiver {
+
+  public static final long DOS_EPOCH_IN_JAVA_TIME = 315561600000L;
+  // ZIP timestamps have a resolution of 2 seconds.
+  // see http://www.info-zip.org/FAQ.html#limits
+  public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
 
   private final List<String> includes;
   private final List<String> excludes;
   private final List<String> executables;
   private final boolean useRoot;
   private final boolean flatten;
+  private final boolean normalize;
 
-  private Archiver(List<String> includes, List<String> excludes, List<String> executables, boolean useRoot, boolean flatten) {
+  private Archiver(List<String> includes,
+                   List<String> excludes,
+                   List<String> executables,
+                   boolean useRoot,
+                   boolean flatten,
+                   boolean normalize) {
     this.includes = includes;
     this.excludes = excludes;
     this.executables = executables;
     this.useRoot = useRoot;
     this.flatten = flatten;
+    this.normalize = normalize;
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -107,6 +119,7 @@ public class Archiver {
             if (!paths.containsKey(directoryName)) {
               paths.put(directoryName, Boolean.FALSE);
               ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
+              directoryEntry.setTime(newEntryTimeMillis(entryName));
               aos.putArchiveEntry(directoryEntry);
               aos.closeArchiveEntry();
             }
@@ -114,6 +127,7 @@ public class Archiver {
           if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
             ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+            archiveEntry.setTime(newEntryTimeMillis(entryName));
             aos.putArchiveEntry(archiveEntry);
             entry.writeEntry(aos);
             aos.closeArchiveEntry();
@@ -142,6 +156,31 @@ public class Archiver {
     return directoryNames;
   }
 
+  /**
+   * Returns the normalized timestamp for a jar entry based on its name. This is necessary since javac will, when loading a class X, prefer a source file to a class file, if both files have the same
+   * timestamp. Therefore, we need to adjust the timestamp for class files to slightly after the normalized time.
+   * 
+   * @param name The name of the file for which we should return the normalized timestamp.
+   * @return the time for a new Jar file entry in milliseconds since the epoch.
+   */
+  private long normalizedTimestamp(String name) {
+    if (name.endsWith(".class")) {
+      return DOS_EPOCH_IN_JAVA_TIME + MINIMUM_TIMESTAMP_INCREMENT;
+    } else {
+      return DOS_EPOCH_IN_JAVA_TIME;
+    }
+  }
+
+  /**
+   * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link JarCreator#DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link System#currentTimeMillis()} otherwise.
+   *
+   * @param filename The name of the file for which we are entering the time
+   * @return the time for a new Jar file entry in milliseconds since the epoch.
+   */
+  private long newEntryTimeMillis(String filename) {
+    return normalize ? normalizedTimestamp(filename) : System.currentTimeMillis();
+  }
+
   public static ArchiverBuilder builder() {
     return new ArchiverBuilder();
   }
@@ -152,6 +191,7 @@ public class Archiver {
     private List<String> executables = Lists.newArrayList();
     private boolean useRoot = true;
     private boolean flatten = false;
+    private boolean normalize = false;
 
     public ArchiverBuilder includes(String... includes) {
       return includes(ImmutableList.copyOf(includes));
@@ -176,8 +216,18 @@ public class Archiver {
       return this;
     }
 
+    /**
+     * Enables or disables the Jar entry normalization.
+     *
+     * @param normalize If true the timestamps of Jar entries will be set to the DOS epoch.
+     */
+    public ArchiverBuilder normalize(boolean normalize) {
+      this.normalize = normalize;
+      return this;
+    }
+
     public Archiver build() {
-      return new Archiver(includes, excludes, executables, useRoot, flatten);
+      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize);
     }
 
     public ArchiverBuilder executable(String... executables) {

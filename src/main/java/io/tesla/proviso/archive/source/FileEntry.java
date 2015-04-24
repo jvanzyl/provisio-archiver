@@ -1,16 +1,15 @@
 package io.tesla.proviso.archive.source;
 
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.FileMode;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
 
 import com.google.common.io.ByteStreams;
+
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.FileMode;
 
 public class FileEntry implements Entry {
 
@@ -22,14 +21,17 @@ public class FileEntry implements Entry {
     this.file = file;
   }
 
+  @Override
   public String getName() {
     return name;
   }
 
+  @Override
   public InputStream getInputStream() throws IOException {
     return new FileInputStream(file);
   }
 
+  @Override
   public long getSize() {
     return file.length();
   }
@@ -57,5 +59,10 @@ public class FileEntry implements Entry {
   @Override
   public boolean isExecutable() {
     return FileMode.EXECUTABLE_FILE.equals(getFileMode());
+  }
+
+  @Override
+  public long getTime() {
+    return file.lastModified();
   }
 }

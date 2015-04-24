@@ -8,4 +8,7 @@ public interface ExtendedArchiveEntry extends ArchiveEntry {
   int getFileMode();
 
   void setSize(long size);
+
+  void setTime(long time);
+
 }

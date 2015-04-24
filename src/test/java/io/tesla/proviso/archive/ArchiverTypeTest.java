@@ -1,7 +1,5 @@
 package io.tesla.proviso.archive;
 
-import io.tesla.proviso.archive.source.FileSource;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +11,8 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
+
+import io.tesla.proviso.archive.source.FileSource;
 
 public abstract class ArchiverTypeTest extends ArchiverTest {
 
@@ -279,5 +279,42 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")), new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
     ArchiverValidator validator = validator(archive);
     validator.assertEntries("1/", "1/2/", "1/2/file.txt");
+  }
+
+  @Test
+  public void validateArchiveHasDOSEpochTimes() throws Exception {
+    File archiveDirectory = getArchiveProject("archive-time-0");
+    Archiver archiver = Archiver.builder().normalize(true).build();
+    File archive = getTargetArchive("create-archive-time-0." + getArchiveExtension());
+    archiver.archive(archive, archiveDirectory);
+    ArchiverValidator validator = validator(archive);
+
+    validator.assertEntries("archive-time-0/", //
+        "archive-time-0/0/", //
+        "archive-time-0/0/0.txt", //
+        "archive-time-0/1/", //
+        "archive-time-0/1/1.txt", //
+        "archive-time-0/2/", //
+        "archive-time-0/2/2.txt", //
+        "archive-time-0/3/", //
+        "archive-time-0/3/3.txt", //
+        "archive-time-0/4/", //
+        "archive-time-0/4/4.txt", //
+        "archive-time-0/4/Foo.class" //
+    );
+
+    validator.assertContentOfEntryInArchive("archive-time-0/0/0.txt", "0");
+    validator.assertContentOfEntryInArchive("archive-time-0/1/1.txt", "1");
+    validator.assertContentOfEntryInArchive("archive-time-0/2/2.txt", "2");
+    validator.assertContentOfEntryInArchive("archive-time-0/3/3.txt", "3");
+    validator.assertContentOfEntryInArchive("archive-time-0/4/4.txt", "4");
+    validator.assertContentOfEntryInArchive("archive-time-0/4/Foo.class", "Foo.class");
+
+    validator.assertTimeOfEntryInArchive("archive-time-0/0/0.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
+    validator.assertTimeOfEntryInArchive("archive-time-0/1/1.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
+    validator.assertTimeOfEntryInArchive("archive-time-0/2/2.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
+    validator.assertTimeOfEntryInArchive("archive-time-0/3/3.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
+    validator.assertTimeOfEntryInArchive("archive-time-0/4/4.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
+    validator.assertTimeOfEntryInArchive("archive-time-0/4/Foo.class", Archiver.DOS_EPOCH_IN_JAVA_TIME + Archiver.MINIMUM_TIMESTAMP_INCREMENT);
   }
 }

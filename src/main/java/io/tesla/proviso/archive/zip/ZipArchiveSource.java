@@ -1,9 +1,5 @@
 package io.tesla.proviso.archive.zip;
 
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.FileMode;
-import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +11,10 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 
 import com.google.common.io.ByteStreams;
+
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.FileMode;
+import io.tesla.proviso.archive.Source;
 
 public class ZipArchiveSource implements Source {
 
@@ -83,6 +83,11 @@ public class ZipArchiveSource implements Source {
     public boolean isExecutable() {
       System.out.println(">>>> " + getFileMode());
       return FileMode.EXECUTABLE_FILE.equals(getFileMode());
+    }
+
+    @Override
+    public long getTime() {
+      return archiveEntry.getTime();
     }
   }
 

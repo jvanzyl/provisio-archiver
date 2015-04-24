@@ -1,9 +1,5 @@
 package io.tesla.proviso.archive.tar;
 
-import io.tesla.proviso.archive.ArchiverHelper;
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +11,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
+
+import io.tesla.proviso.archive.ArchiverHelper;
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.Source;
 
 public class TarGzArchiveSource implements Source {
 
@@ -82,6 +82,11 @@ public class TarGzArchiveSource implements Source {
     @Override
     public boolean isExecutable() {
       return false;
+    }
+
+    @Override
+    public long getTime() {
+      return archiveEntry.getModTime().getTime();
     }
   }
 

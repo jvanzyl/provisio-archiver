@@ -18,4 +18,6 @@ public interface Entry {
   boolean isDirectory();
 
   boolean isExecutable();
+
+  long getTime();
 }
