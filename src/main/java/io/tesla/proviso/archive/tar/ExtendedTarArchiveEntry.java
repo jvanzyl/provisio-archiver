@@ -1,12 +1,20 @@
 package io.tesla.proviso.archive.tar;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
+import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
 
 public class ExtendedTarArchiveEntry extends TarArchiveEntry implements ExtendedArchiveEntry {
-  public ExtendedTarArchiveEntry(String name) {
-    super(name);
+
+  private Entry entry;
+
+  public ExtendedTarArchiveEntry(String entryName, Entry entry) {
+    super(entryName);
+    this.entry = entry;
   }
 
   @Override
@@ -22,5 +30,10 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   @Override
   public void setTime(long time) {
     setModTime(time);
+  }
+
+  @Override
+  public void writeEntry(OutputStream outputStream) throws IOException {
+    entry.writeEntry(outputStream);
   }
 }

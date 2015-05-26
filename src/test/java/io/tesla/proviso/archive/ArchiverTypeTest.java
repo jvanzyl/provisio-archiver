@@ -1,5 +1,7 @@
 package io.tesla.proviso.archive;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +12,8 @@ import org.codehaus.swizzle.stream.ReplaceStringInputStream;
 import org.junit.Assume;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
 
 import io.tesla.proviso.archive.source.FileSource;
@@ -316,5 +320,26 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     validator.assertTimeOfEntryInArchive("archive-time-0/3/3.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
     validator.assertTimeOfEntryInArchive("archive-time-0/4/4.txt", Archiver.DOS_EPOCH_IN_JAVA_TIME);
     validator.assertTimeOfEntryInArchive("archive-time-0/4/Foo.class", Archiver.DOS_EPOCH_IN_JAVA_TIME + Archiver.MINIMUM_TIMESTAMP_INCREMENT);
+  }
+
+  @Test
+  public void validateArchiveNormalized() throws Exception {
+    Archiver archiver = Archiver.builder().normalize(true).build();
+    File archive = getTargetArchive("deterministicOrdering-0." + getArchiveExtension());
+    // StringListSource with reverse order
+    archiver.archive(archive, new StringListSource(ImmutableList.of("e", "d", "c", "b", "a")));
+    ArchiverValidator validator = validator(archive);
+    validator.assertSortedEntries("a", "b", "c", "d", "e");
+    String hash0 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
+    System.out.println(hash0);
+
+    archive = getTargetArchive("deterministicOrdering-1." + getArchiveExtension());
+    // StringListSource with "random" order
+    archiver.archive(archive, new StringListSource(ImmutableList.of("c", "e", "d", "a", "b")));
+    validator = validator(archive);
+    validator.assertSortedEntries("a", "b", "c", "d", "e");
+    String hash1 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
+    System.out.println(hash1);
+    assertEquals("We expect a normalized archives to have the same outer hash.", hash0, hash1);
   }
 }

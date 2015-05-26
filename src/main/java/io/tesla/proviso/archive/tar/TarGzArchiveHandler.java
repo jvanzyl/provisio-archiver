@@ -1,9 +1,5 @@
 package io.tesla.proviso.archive.tar;
 
-import io.tesla.proviso.archive.ArchiveHandlerSupport;
-import io.tesla.proviso.archive.ExtendedArchiveEntry;
-import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -16,6 +12,11 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
+import io.tesla.proviso.archive.ArchiveHandlerSupport;
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
+
 public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
   private final File archive;
@@ -25,8 +26,8 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
   }
 
   @Override
-  public ExtendedArchiveEntry newEntry(String entryName) {
-    return new ExtendedTarArchiveEntry(entryName);
+  public ExtendedArchiveEntry newEntry(String entryName, Entry entry) {
+    return new ExtendedTarArchiveEntry(entryName, entry);
   }
 
   @Override

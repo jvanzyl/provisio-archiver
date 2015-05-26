@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.codehaus.plexus.util.SelectorUtils;
@@ -24,6 +25,9 @@ public class Archiver {
   // ZIP timestamps have a resolution of 2 seconds.
   // see http://www.info-zip.org/FAQ.html#limits
   public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
+  // Map from Jar entry names to files. Use TreeMap so we can establish a canonical order for the
+  // entries regardless in what order they get added.
+  private final Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
   private final List<String> includes;
   private final List<String> excludes;
@@ -119,18 +123,13 @@ public class Archiver {
             if (!paths.containsKey(directoryName)) {
               paths.put(directoryName, Boolean.FALSE);
               ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
-              directoryEntry.setTime(newEntryTimeMillis(entryName));
-              aos.putArchiveEntry(directoryEntry);
-              aos.closeArchiveEntry();
+              addEntry(directoryName, directoryEntry, aos);
             }
           }
           if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
             ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
-            archiveEntry.setTime(newEntryTimeMillis(entryName));
-            aos.putArchiveEntry(archiveEntry);
-            entry.writeEntry(aos);
-            aos.closeArchiveEntry();
+            addEntry(entryName, archiveEntry, aos);
           } else {
             if (Boolean.TRUE.equals(paths.get(entryName))) {
               throw new IllegalArgumentException("Duplicate archive entry " + entryName);
@@ -138,6 +137,13 @@ public class Archiver {
           }
         }
         source.close();
+      }
+
+      if (!entries.isEmpty()) {
+        for (Map.Entry<String, ExtendedArchiveEntry> entry : entries.entrySet()) {
+          ExtendedArchiveEntry archiveEntry = entry.getValue();
+          writeEntry(archiveEntry, aos);
+        }
       }
     }
   }
@@ -180,6 +186,35 @@ public class Archiver {
   private long newEntryTimeMillis(String filename) {
     return normalize ? normalizedTimestamp(filename) : System.currentTimeMillis();
   }
+
+  /**
+   * Adds an entry to the Jar file, normalizing the name.
+   *
+   * @param entryName the name of the entry in the Jar file
+   * @param fileName the name of the input file for the entry
+   */
+  private void addEntry(String entryName, ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
+    if (entryName.startsWith("/")) {
+      entryName = entryName.substring(1);
+    } else if (entryName.startsWith("./")) {
+      entryName = entryName.substring(2);
+    }
+    if (normalize) {
+      entry.setTime(newEntryTimeMillis(entryName));
+      entries.put(entryName, entry);
+    } else {
+      writeEntry(entry, aos);
+    }
+  }
+
+  private void writeEntry(ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
+    aos.putArchiveEntry(entry);
+    if (!entry.isDirectory()) {
+      entry.writeEntry(aos);
+    }
+    aos.closeArchiveEntry();
+  }
+
 
   public static ArchiverBuilder builder() {
     return new ArchiverBuilder();

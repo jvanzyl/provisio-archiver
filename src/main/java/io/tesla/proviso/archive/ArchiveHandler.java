@@ -12,7 +12,7 @@ public interface ArchiveHandler {
 
   ExtendedArchiveEntry createEntryFor(String entryName, Entry entry, boolean isExecutable);
 
-  ExtendedArchiveEntry newEntry(String entryName);
+  ExtendedArchiveEntry newEntry(String entryName, Entry entry);
 
   Source getArchiveSource();
 }

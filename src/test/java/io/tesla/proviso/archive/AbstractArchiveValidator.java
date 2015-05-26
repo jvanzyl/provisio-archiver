@@ -53,6 +53,25 @@ public abstract class AbstractArchiveValidator implements ArchiverValidator {
   }
 
   @Override
+  public void assertSortedEntries(String... expectedEntries) throws IOException {
+    String expected = toString(Arrays.asList(expectedEntries));
+    List<String> actual = new ArrayList<>();
+    for (Map.Entry<String, TestEntry> entry : entries.entries()) {
+      actual.add(entry.getKey());
+    }
+    assertEquals("Archive entries", expected, toNonSortedString(actual));
+  }
+
+  private String toNonSortedString(Collection<String> strings) {
+    List<String> sorted = new ArrayList<>(strings);
+    StringBuilder sb = new StringBuilder();
+    for (String string : sorted) {
+      sb.append(string).append('\n');
+    }
+    return sb.toString();
+  }
+
+  @Override
   public void assertNumberOfEntriesInArchive(int expectedEntries) throws IOException {
     assertEquals("Number of archive entries", expectedEntries, entries.size());
   }

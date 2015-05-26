@@ -15,6 +15,7 @@ public class DirectoryEntry implements Entry {
     if (!name.endsWith("/")) {
       throw new IllegalArgumentException();
     }
+    this.name = name;
   }
 
   @Override

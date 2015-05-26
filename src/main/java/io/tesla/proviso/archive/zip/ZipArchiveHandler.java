@@ -1,9 +1,5 @@
 package io.tesla.proviso.archive.zip;
 
-import io.tesla.proviso.archive.ArchiveHandlerSupport;
-import io.tesla.proviso.archive.ExtendedArchiveEntry;
-import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,6 +10,11 @@ import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 
+import io.tesla.proviso.archive.ArchiveHandlerSupport;
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
+
 public class ZipArchiveHandler extends ArchiveHandlerSupport {
 
   private final File archive;
@@ -23,8 +24,8 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
   }
 
   @Override
-  public ExtendedArchiveEntry newEntry(String entryName) {
-    return new ExtendedZipArchiveEntry(entryName);
+  public ExtendedArchiveEntry newEntry(String entryName, Entry entry) {
+    return new ExtendedZipArchiveEntry(entryName, entry);
   }
 
   @Override

@@ -5,7 +5,7 @@ public abstract class ArchiveHandlerSupport implements ArchiveHandler {
 
   @Override
   public ExtendedArchiveEntry createEntryFor(String entryName, Entry archiveEntry, boolean isExecutable) {
-    ExtendedArchiveEntry entry = newEntry(entryName);
+    ExtendedArchiveEntry entry = newEntry(entryName, archiveEntry);
     entry.setSize(archiveEntry.getSize());
     //
     // If we have a valid file mode then use it for the entry we are creating

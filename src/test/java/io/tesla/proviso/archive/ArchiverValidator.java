@@ -10,4 +10,6 @@ public interface ArchiverValidator {
   public void assertTimeOfEntryInArchive(String entryName, long time) throws IOException;
 
   public void assertEntries(String... entries) throws IOException;
+
+  public void assertSortedEntries(String... entries) throws IOException;
 }

@@ -1,12 +1,20 @@
 package io.tesla.proviso.archive.zip;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
+import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
-  public ExtendedZipArchiveEntry(String name) {
-    super(name);
+
+  private Entry entry;
+
+  public ExtendedZipArchiveEntry(String entryName, Entry entry) {
+    super(entryName);
+    this.entry = entry;
   }
 
   @Override
@@ -22,5 +30,10 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   @Override
   public void setTime(long time) {
     super.setTime(time);
+  }
+
+  @Override
+  public void writeEntry(OutputStream outputStream) throws IOException {
+    entry.writeEntry(outputStream);
   }
 }
