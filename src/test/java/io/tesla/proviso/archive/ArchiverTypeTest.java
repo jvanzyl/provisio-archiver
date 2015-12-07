@@ -142,6 +142,35 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   }
 
   @Test
+  public void createArchiveWithPrefix() throws Exception {
+    File archiveDirectory = getArchiveProject("archive-0");
+    Archiver archiver = Archiver.builder() //
+        .withPrefix("prefix/") //
+        .build();
+    File archive = getTargetArchive("with-prefix-archive-0." + getArchiveExtension());
+    archiver.archive(archive, archiveDirectory);
+    ArchiverValidator validator = validator(archive);
+    validator.assertEntries(
+        "prefix/",
+        "prefix/archive-0/",
+        "prefix/archive-0/0/",
+        "prefix/archive-0/0/0.txt",
+        "prefix/archive-0/1/",
+        "prefix/archive-0/1/1.txt",
+        "prefix/archive-0/2/",
+        "prefix/archive-0/2/2.txt",
+        "prefix/archive-0/3/",
+        "prefix/archive-0/3/3.txt",
+        "prefix/archive-0/4/",
+        "prefix/archive-0/4/4.txt");
+    validator.assertContentOfEntryInArchive("prefix/archive-0/0/0.txt", "0");
+    validator.assertContentOfEntryInArchive("prefix/archive-0/1/1.txt", "1");
+    validator.assertContentOfEntryInArchive("prefix/archive-0/2/2.txt", "2");
+    validator.assertContentOfEntryInArchive("prefix/archive-0/3/3.txt", "3");
+    validator.assertContentOfEntryInArchive("prefix/archive-0/4/4.txt", "4");
+  }
+
+  @Test
   public void createArchiveUsingFlatten() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder() //

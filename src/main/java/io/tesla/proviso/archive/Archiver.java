@@ -25,8 +25,6 @@ public class Archiver {
   // ZIP timestamps have a resolution of 2 seconds.
   // see http://www.info-zip.org/FAQ.html#limits
   public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
-  // Map from Jar entry names to files. Use TreeMap so we can establish a canonical order for the
-  // entries regardless in what order they get added.
   private final Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
   private final List<String> includes;
@@ -35,19 +33,22 @@ public class Archiver {
   private final boolean useRoot;
   private final boolean flatten;
   private final boolean normalize;
+  private final String prefix;
 
   private Archiver(List<String> includes,
                    List<String> excludes,
                    List<String> executables,
                    boolean useRoot,
                    boolean flatten,
-                   boolean normalize) {
+                   boolean normalize,
+                   String prefix) {
     this.includes = includes;
     this.excludes = excludes;
     this.executables = executables;
     this.useRoot = useRoot;
     this.flatten = flatten;
     this.normalize = normalize;
+    this.prefix = prefix;
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -107,6 +108,9 @@ public class Archiver {
               continue;
             }
             entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
+          }
+          if (prefix != null) {
+            entryName = prefix + entryName;
           }
           boolean isExecutable = false;
           for (String executable : executables) {
@@ -228,6 +232,7 @@ public class Archiver {
     private boolean useRoot = true;
     private boolean flatten = false;
     private boolean normalize = false;
+    private String prefix;
 
     public ArchiverBuilder includes(String... includes) {
       return includes(ImmutableList.copyOf(includes));
@@ -262,10 +267,6 @@ public class Archiver {
       return this;
     }
 
-    public Archiver build() {
-      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize);
-    }
-
     public ArchiverBuilder executable(String... executables) {
       return executable(ImmutableList.copyOf(executables));
     }
@@ -278,6 +279,15 @@ public class Archiver {
     public ArchiverBuilder flatten(boolean flatten) {
       this.flatten = flatten;
       return this;
+    }
+
+    public ArchiverBuilder withPrefix(String prefix) {
+      this.prefix = prefix;
+      return this;
+    }
+
+    public Archiver build() {
+      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix);
     }
   }
 }
