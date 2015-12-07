@@ -88,9 +88,10 @@ public class Archiver {
           }
           boolean include = true;
           if (!includes.isEmpty()) {
+            include = false;
             for (String includePattern : includes) {
-              if (!SelectorUtils.match(includePattern, entryName)) {
-                include = false;
+              if (SelectorUtils.match(includePattern, entryName)) {
+                include = true;
                 break;
               }
             }

@@ -77,6 +77,27 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
   }
 
   @Test
+  public void createArchiveWithMultipleIncludes() throws Exception {
+    File archiveDirectory = getArchiveProject("archive-0");
+    Archiver archiver = Archiver.builder() //
+        .includes("**/3.txt") //
+        .includes("**/4.txt") //
+        .build();
+    File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
+    archiver.archive(archive, archiveDirectory);
+    ArchiverValidator validator = validator(archive);
+
+    validator.assertEntries("archive-0/", //
+        "archive-0/3/", //
+        "archive-0/3/3.txt", //
+        "archive-0/4/", //
+        "archive-0/4/4.txt" //
+    );
+
+    validator.assertContentOfEntryInArchive("archive-0/4/4.txt", "4");
+  }
+
+  @Test
   public void createArchiveWithExcludes() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder() //
@@ -171,7 +192,6 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File outputDirectory = getOutputDirectory(archiveDirectory);
     UnArchiver unArchiver = UnArchiver.builder().build();
     unArchiver.unarchive(archive, outputDirectory);
-    System.out.println(outputDirectory);
     assertFileIsExecutable(outputDirectory, archiveDirectory + "/build.sh");
   }
 
@@ -331,7 +351,6 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     ArchiverValidator validator = validator(archive);
     validator.assertSortedEntries("a", "b", "c", "d", "e");
     String hash0 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
-    System.out.println(hash0);
 
     archive = getTargetArchive("deterministicOrdering-1." + getArchiveExtension());
     // StringListSource with "random" order
@@ -339,7 +358,6 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     validator = validator(archive);
     validator.assertSortedEntries("a", "b", "c", "d", "e");
     String hash1 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
-    System.out.println(hash1);
     assertEquals("We expect a normalized archives to have the same outer hash.", hash0, hash1);
   }
 }
