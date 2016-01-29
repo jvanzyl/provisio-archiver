@@ -1,9 +1,9 @@
 package io.tesla.proviso.archive;
 
+import java.io.File;
+
 import io.tesla.proviso.archive.tar.TarGzArchiveHandler;
 import io.tesla.proviso.archive.zip.ZipArchiveHandler;
-
-import java.io.File;
 
 public class ArchiverHelper {
 
@@ -22,6 +22,8 @@ public class ArchiverHelper {
   private static boolean isZip(File file) {
     return file.getName().endsWith(".zip") || //
         file.getName().endsWith(".jar") || //
-        file.getName().endsWith(".war");
+        file.getName().endsWith(".war") ||
+        file.getName().endsWith(".hpi") ||
+        file.getName().endsWith(".jpi");
   }
 }
