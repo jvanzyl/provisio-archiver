@@ -389,4 +389,14 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     String hash1 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
     assertEquals("We expect a normalized archives to have the same outer hash.", hash0, hash1);
   }
+
+  @Test
+  public void validateArchiveWithLongPath() throws Exception {
+    Archiver archiver = Archiver.builder().useRoot(false).posixLongFileMode(true).build();
+    File archive = getTargetArchive("archive-with-long-path." + getArchiveExtension());
+    File archiveDirectory = getArchiveProject("archive-with-long-path");
+    archiver.archive(archive, archiveDirectory);
+    ArchiverValidator validator = validator(archive);
+    validator.assertContentOfEntryInArchive("one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/thirteen/fourteen/fifteen/sixteen/seventeen/entry.txt", "entry.txt");
+  }
 }

@@ -20,9 +20,11 @@ import io.tesla.proviso.archive.Source;
 public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
   private final File archive;
+  private final boolean posixLongFileMode;
 
-  public TarGzArchiveHandler(File archive) {
+  public TarGzArchiveHandler(File archive, boolean posixLongFileMode) {
     this.archive = archive;
+    this.posixLongFileMode = posixLongFileMode;
   }
 
   @Override
@@ -37,7 +39,11 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
   @Override
   public ArchiveOutputStream getOutputStream() throws IOException {
-    return new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
+    TarArchiveOutputStream stream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
+    if (posixLongFileMode) {
+      stream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+    }
+    return stream;
   }
 
   @Override

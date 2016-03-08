@@ -7,12 +7,12 @@ import io.tesla.proviso.archive.zip.ZipArchiveHandler;
 
 public class ArchiverHelper {
 
-  public static ArchiveHandler getArchiveHandler(File archive) {
+  public static ArchiveHandler getArchiveHandler(File archive, boolean posixLongFileMode) {
     ArchiveHandler archiveHandler;
     if (isZip(archive)) {
       archiveHandler = new ZipArchiveHandler(archive);
     } else if (archive.getName().endsWith(".tgz") || archive.getName().endsWith("tar.gz")) {
-      archiveHandler = new TarGzArchiveHandler(archive);
+      archiveHandler = new TarGzArchiveHandler(archive, posixLongFileMode);
     } else {
       throw new RuntimeException("Cannot detect how to read " + archive.getName());
     }

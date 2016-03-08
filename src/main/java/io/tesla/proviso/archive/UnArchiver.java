@@ -20,8 +20,8 @@ import com.google.common.io.ByteStreams;
 
 // useRoot
 // directories
-//   includes
-//   excludes
+// includes
+// excludes
 
 // There should be a full inventory of what has gone into the archive
 // make a fluent interface
@@ -51,7 +51,7 @@ public class UnArchiver {
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
     }
-    Source source = ArchiverHelper.getArchiveHandler(archive).getArchiveSource();
+    Source source = ArchiverHelper.getArchiveHandler(archive, false).getArchiveSource();
     for (Entry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
       if (useRoot == false) {

@@ -34,6 +34,7 @@ public class Archiver {
   private final boolean flatten;
   private final boolean normalize;
   private final String prefix;
+  private final boolean posixLongFileMode;
 
   private Archiver(List<String> includes,
                    List<String> excludes,
@@ -41,7 +42,8 @@ public class Archiver {
                    boolean useRoot,
                    boolean flatten,
                    boolean normalize,
-                   String prefix) {
+                   String prefix,
+                   boolean posixLongFileMode) {
     this.includes = includes;
     this.excludes = excludes;
     this.executables = executables;
@@ -49,6 +51,7 @@ public class Archiver {
     this.flatten = flatten;
     this.normalize = normalize;
     this.prefix = prefix;
+    this.posixLongFileMode = posixLongFileMode;
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -64,7 +67,7 @@ public class Archiver {
   }
 
   public void archive(File archive, Source... sources) throws IOException {
-    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive);
+    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode);
     try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
       //
       // collected archive entry paths mapped to true for explicitly provided entries
@@ -233,6 +236,7 @@ public class Archiver {
     private boolean flatten = false;
     private boolean normalize = false;
     private String prefix;
+    private boolean posixLongFileMode;
 
     public ArchiverBuilder includes(String... includes) {
       return includes(ImmutableList.copyOf(includes));
@@ -286,8 +290,13 @@ public class Archiver {
       return this;
     }
 
+    public ArchiverBuilder posixLongFileMode(boolean posixLongFileMode) {
+      this.posixLongFileMode = posixLongFileMode;
+      return this;
+    }
+
     public Archiver build() {
-      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix);
+      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix, posixLongFileMode);
     }
   }
 }
