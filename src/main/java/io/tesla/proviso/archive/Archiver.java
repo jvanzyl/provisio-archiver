@@ -35,6 +35,7 @@ public class Archiver {
   private final boolean normalize;
   private final String prefix;
   private final boolean posixLongFileMode;
+  private final Selector selector;
 
   private Archiver(List<String> includes,
                    List<String> excludes,
@@ -52,6 +53,7 @@ public class Archiver {
     this.normalize = normalize;
     this.prefix = prefix;
     this.posixLongFileMode = posixLongFileMode;
+    this.selector = new Selector(includes, excludes);
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -78,29 +80,7 @@ public class Archiver {
       for (Source source : sources) {
         for (Entry entry : source.entries()) {
           String entryName = entry.getName();
-          boolean exclude = false;
-          if (!excludes.isEmpty()) {
-            for (String excludePattern : excludes) {
-              if (SelectorUtils.match(excludePattern, entryName)) {
-                exclude = true;
-                break;
-              }
-            }
-          }
-          if (exclude) {
-            continue;
-          }
-          boolean include = true;
-          if (!includes.isEmpty()) {
-            include = false;
-            for (String includePattern : includes) {
-              if (SelectorUtils.match(includePattern, entryName)) {
-                include = true;
-                break;
-              }
-            }
-          }
-          if (!include) {
+          if (!selector.include(entryName)) {
             continue;
           }
           if (!useRoot && source.isDirectory()) {
