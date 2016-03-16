@@ -27,8 +27,6 @@ public class Archiver {
   public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
   private final Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
-  private final List<String> includes;
-  private final List<String> excludes;
   private final List<String> executables;
   private final boolean useRoot;
   private final boolean flatten;
@@ -45,8 +43,6 @@ public class Archiver {
                    boolean normalize,
                    String prefix,
                    boolean posixLongFileMode) {
-    this.includes = includes;
-    this.excludes = excludes;
     this.executables = executables;
     this.useRoot = useRoot;
     this.flatten = flatten;
