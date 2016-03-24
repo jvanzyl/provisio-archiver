@@ -4,12 +4,15 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>takari</artifactId>
-    <version>17</version>
+    <version>21-SNAPSHOT</version>
   </parent>
   <packaging>takari-jar</packaging>
   <artifactId>takari-archiver</artifactId>
   <version>0.1.14-SNAPSHOT</version>
   <name>Provisio :: Archiver</name>
+  <properties>
+    <takari.testJar>true</takari.testJar>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.guava</groupId>
