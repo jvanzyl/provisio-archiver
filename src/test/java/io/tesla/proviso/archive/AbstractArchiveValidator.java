@@ -18,7 +18,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 
-public abstract class AbstractArchiveValidator implements ArchiverValidator {
+public abstract class AbstractArchiveValidator implements ArchiveValidator {
 
   protected final ListMultimap<String, TestEntry> entries;
 

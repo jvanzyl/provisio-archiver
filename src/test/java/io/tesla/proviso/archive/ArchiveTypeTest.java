@@ -1,5 +1,16 @@
 package io.tesla.proviso.archive;
 
+import static io.tesla.proviso.archive.FileSystemAssert.assertDirectoryDoesNotExist;
+import static io.tesla.proviso.archive.FileSystemAssert.assertDirectoryExists;
+import static io.tesla.proviso.archive.FileSystemAssert.assertFileIsExecutable;
+import static io.tesla.proviso.archive.FileSystemAssert.assertFileMode;
+import static io.tesla.proviso.archive.FileSystemAssert.assertPresenceAndContentOf;
+import static io.tesla.proviso.archive.FileSystemAssert.assertPresenceAndSizeOf;
+import static io.tesla.proviso.archive.FileSystemAssert.file;
+import static io.tesla.proviso.archive.FileSystemAssert.getArchiveProject;
+import static io.tesla.proviso.archive.FileSystemAssert.getOutputDirectory;
+import static io.tesla.proviso.archive.FileSystemAssert.getSourceArchive;
+import static io.tesla.proviso.archive.FileSystemAssert.getTargetArchive;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -18,14 +29,16 @@ import com.google.common.io.ByteStreams;
 
 import io.tesla.proviso.archive.source.FileSource;
 
-public abstract class ArchiverTypeTest extends ArchiverTest {
+public abstract class ArchiveTypeTest {
 
   //
   // Each archiver type must implement these methods in their test class
   //
   protected abstract String getArchiveExtension();
 
-  protected abstract ArchiverValidator validator(File archive) throws Exception;
+  protected ArchiveValidator validator(File archive) throws Exception {
+    return ArchiveValidatorHelper.getArchiveValidator(archive);
+  }
 
   //
   // Archiver
@@ -36,7 +49,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/0/", //
@@ -66,7 +79,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/4/", //
@@ -85,7 +98,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("includes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/3/", //
@@ -105,7 +118,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("excludes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
 
     validator.assertEntries("archive-0/", //
         "archive-0/0/", //
@@ -132,7 +145,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("without-root-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertEntries("0/", "0/0.txt", "1/", "1/1.txt", "2/", "2/2.txt", "3/", "3/3.txt", "4/", "4/4.txt");
     validator.assertContentOfEntryInArchive("0/0.txt", "0");
     validator.assertContentOfEntryInArchive("1/1.txt", "1");
@@ -149,7 +162,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("with-prefix-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertEntries(
         "prefix/",
         "prefix/archive-0/",
@@ -179,7 +192,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
         .build();
     File archive = getTargetArchive("flatten-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
     validator.assertContentOfEntryInArchive("0.txt", "0");
     validator.assertContentOfEntryInArchive("1.txt", "1");
@@ -321,7 +334,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
     archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertEntries("1/", "1/2/", "1/2/file.txt");
   }
 
@@ -330,7 +343,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("create-intermediate-directories." + getArchiveExtension());
     archiver.archive(archive, new FileSource("1/2/file.txt", new File("src/test/files/0.txt")), new FileSource("1/2/file.txt", new File("src/test/files/0.txt")));
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertEntries("1/", "1/2/", "1/2/file.txt");
   }
 
@@ -340,7 +353,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     Archiver archiver = Archiver.builder().normalize(true).build();
     File archive = getTargetArchive("create-archive-time-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
 
     validator.assertEntries("archive-time-0/", //
         "archive-time-0/0/", //
@@ -377,7 +390,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("deterministicOrdering-0." + getArchiveExtension());
     // StringListSource with reverse order
     archiver.archive(archive, new StringListSource(ImmutableList.of("e", "d", "c", "b", "a")));
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertSortedEntries("a", "b", "c", "d", "e");
     String hash0 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
 
@@ -396,7 +409,7 @@ public abstract class ArchiverTypeTest extends ArchiverTest {
     File archive = getTargetArchive("archive-with-long-path." + getArchiveExtension());
     File archiveDirectory = getArchiveProject("archive-with-long-path");
     archiver.archive(archive, archiveDirectory);
-    ArchiverValidator validator = validator(archive);
+    ArchiveValidator validator = validator(archive);
     validator.assertContentOfEntryInArchive("one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/thirteen/fourteen/fifteen/sixteen/seventeen/entry.txt", "entry.txt");
   }
 }

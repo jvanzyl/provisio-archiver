@@ -9,72 +9,76 @@ import java.io.IOException;
 
 import org.codehaus.plexus.util.FileUtils;
 
-public abstract class ArchiverTest {
+public class FileSystemAssert {
 
-  private String basedir;
-
-  //
-  // Assertions for tests
-  //
-  protected void assertDirectoryExists(File outputDirectory, String directoryName) {
+  public static void assertDirectoryExists(File outputDirectory, String directoryName) {
     File directory = new File(outputDirectory, directoryName);
     assertTrue(String.format("We expect to find the directory %s, but it doesn't exist or is not a directory.", directoryName), directory.exists() && directory.isDirectory());
   }
 
-  protected void assertDirectoryDoesNotExist(File outputDirectory, String directoryName) {
+  public static void assertDirectoryDoesNotExist(File outputDirectory, String directoryName) {
     File directory = new File(outputDirectory, directoryName);
     assertFalse(String.format("We expect not to find the directory %s, but it is there.", directoryName), directory.exists() && directory.isDirectory());
   }
 
-  protected void assertFilesExists(File outputDirectory, String fileName) {
+  public static void assertFilesExists(File outputDirectory, String fileName) {
     File file = new File(outputDirectory, fileName);
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", fileName), file.exists() && file.isFile());
   }
 
-  protected void assertPresenceAndSizeOf(File file, int size) {
+  public static void assertPresenceAndSizeOf(File file, int size) {
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", file.getName()), file.exists() && file.isFile());
     assertEquals(String.format("We expect the file to be size = %s, but it not.", size), size, file.length());
   }
 
-  protected void assertPresenceAndSizeOf(File outputDirectory, String fileName, int size) {
+  public static void assertPresenceAndSizeOf(File outputDirectory, String fileName, int size) {
     File file = new File(outputDirectory, fileName);
     assertPresenceAndSizeOf(file, size);
   }
 
-  protected void assertPresenceAndContentOf(File file, String expectedContent) throws IOException {
+  public static void assertPresenceAndContentOf(File file, String expectedContent) throws IOException {
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a file.", file.getName()), file.exists() && file.isFile());
     assertEquals(String.format("We expect the content of the file to be %s, but is not.", expectedContent), expectedContent, FileUtils.fileRead(file));
   }
 
-  protected void assertPresenceAndContentOf(File outputDirectory, String fileName, String expectedContent) throws IOException {
+  public static void assertPresenceAndContentOf(File outputDirectory, String fileName, String expectedContent) throws IOException {
     File file = new File(outputDirectory, fileName);
     assertPresenceAndContentOf(file, expectedContent);
   }
 
-  protected void assertFileIsExecutable(File outputDirectory, String fileName) {
+  public static void assertFileIsExecutable(File outputDirectory, String fileName) {
     File file = new File(outputDirectory, fileName);
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not executable.", fileName), file.exists() && file.isFile() && file.canExecute());
+  }
+
+  public static void assertFileMode(File outputDirectory, String string, String expectedUnix) {
+    File f = new File(outputDirectory, string);
+    String unix = FileMode.toUnix(FileMode.getFileMode(f));
+    assertEquals(expectedUnix, unix);
   }
 
   //
   // Helper methods for tests
   //
-  protected final String getBasedir() {
+
+  private static String basedir;
+
+  public static final String getBasedir() {
     if (null == basedir) {
       basedir = System.getProperty("basedir", new File("").getAbsolutePath());
     }
     return basedir;
   }
 
-  protected File file(File outputDirectory, String fileName) {
+  public static File file(File outputDirectory, String fileName) {
     return new File(outputDirectory, fileName);
   }
 
-  protected final File getOutputDirectory() {
+  public static final File getOutputDirectory() {
     return new File(getBasedir(), "target/archives");
   }
 
-  protected final File getOutputDirectory(String name) throws IOException {
+  public static final File getOutputDirectory(String name) throws IOException {
     File outputDirectory = new File(getBasedir(), "target/archives/" + name);
     if (outputDirectory.exists()) {
       FileUtils.deleteDirectory(outputDirectory);
@@ -82,23 +86,23 @@ public abstract class ArchiverTest {
     return outputDirectory;
   }
 
-  protected final File getSourceArchiveDirectory() {
+  public static final File getSourceArchiveDirectory() {
     return new File(getBasedir(), "src/test/archives");
   }
 
-  protected final File getSourceArchive(String name) {
+  public static final File getSourceArchive(String name) {
     return new File(getSourceArchiveDirectory(), name);
   }
 
-  protected final File getSourceFileDirectory() {
+  public static final File getSourceFileDirectory() {
     return new File(getBasedir(), "src/test/files");
   }
 
-  protected final File getSourceFile(String name) {
+  public static final File getSourceFile(String name) {
     return new File(getSourceFileDirectory(), name);
   }
 
-  protected final File getTargetArchive(String name) {
+  public static final File getTargetArchive(String name) {
     File archive = new File(getOutputDirectory(), name);
     if (!archive.getParentFile().exists()) {
       archive.getParentFile().mkdirs();
@@ -106,13 +110,7 @@ public abstract class ArchiverTest {
     return archive;
   }
 
-  protected final File getArchiveProject(String name) {
+  public static final File getArchiveProject(String name) {
     return new File(getBasedir(), String.format("src/test/archives/%s", name));
-  }
-
-  protected void assertFileMode(File outputDirectory, String string, String expectedUnix) {
-    File f = new File(outputDirectory, string);
-    String unix = FileMode.toUnix(FileMode.getFileMode(f));
-    assertEquals(expectedUnix, unix);
   }
 }
