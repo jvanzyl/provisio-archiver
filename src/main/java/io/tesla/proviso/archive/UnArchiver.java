@@ -33,11 +33,13 @@ public class UnArchiver {
   private final Selector selector;
   private final boolean useRoot;
   private final boolean flatten;
+  private final boolean posixLongFileMode;
 
-  public UnArchiver(List<String> includes, List<String> excludes, boolean useRoot, boolean flatten) {
+  public UnArchiver(List<String> includes, List<String> excludes, boolean useRoot, boolean flatten, boolean posixLongFileMode) {
     this.useRoot = useRoot;
     this.flatten = flatten;
     this.selector = new Selector(includes, excludes);
+    this.posixLongFileMode = posixLongFileMode;
   }
 
   public void unarchive(File archive, File outputDirectory) throws IOException {
@@ -51,7 +53,7 @@ public class UnArchiver {
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
     }
-    Source source = ArchiverHelper.getArchiveHandler(archive, false).getArchiveSource();
+    Source source = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode).getArchiveSource();
     for (Entry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
       if (useRoot == false) {
@@ -145,6 +147,7 @@ public class UnArchiver {
     private List<String> excludes = new ArrayList<String>();
     private boolean useRoot = true;
     private boolean flatten = false;
+    private boolean posixLongFileMode;
 
     public UnArchiverBuilder includes(String... includes) {
       List<String> i = Lists.newArrayList();
@@ -186,8 +189,13 @@ public class UnArchiver {
       return this;
     }
 
+    public UnArchiverBuilder posixLongFileMode(boolean posixLongFileMode) {
+      this.posixLongFileMode = posixLongFileMode;
+      return this;
+    }
+
     public UnArchiver build() {
-      return new UnArchiver(includes, excludes, useRoot, flatten);
+      return new UnArchiver(includes, excludes, useRoot, flatten, posixLongFileMode);
     }
   }
 }
