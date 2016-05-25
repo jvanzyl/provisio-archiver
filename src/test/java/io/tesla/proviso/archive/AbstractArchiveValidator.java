@@ -1,6 +1,7 @@
 package io.tesla.proviso.archive;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -46,6 +47,11 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
   @Override
   public void assertEntryExists(String expectedEntry) throws IOException {
     assertTrue("Expected to find " + expectedEntry, entries.containsKey(expectedEntry));
+  }
+
+  @Override
+  public void assertEntryDoesntExist(String missingEntry) throws IOException {
+    assertFalse("Expected not to find " + missingEntry, entries.containsKey(missingEntry));
   }
 
   private String toString(Collection<String> strings) {

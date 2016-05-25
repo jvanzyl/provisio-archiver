@@ -11,6 +11,8 @@ public interface ArchiveValidator {
 
   public void assertEntryExists(String expectedEntry) throws IOException;
 
+  public void assertEntryDoesntExist(String expectedEntry) throws IOException;
+
   public void assertEntries(String... entries) throws IOException;
 
   public void assertSortedEntries(String... entries) throws IOException;
