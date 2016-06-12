@@ -1,6 +1,6 @@
 language: java
 jdk: 
-  - 8u91-b02
+  - 1.8.0_92-b14
 maven: 3.3.9
 script:
   - mvn clean install
