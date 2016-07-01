@@ -1,5 +1,6 @@
 package io.tesla.proviso.archive;
 
+import io.tesla.proviso.archive.perms.FileMode;
 
 public abstract class ArchiveHandlerSupport implements ArchiveHandler {
 

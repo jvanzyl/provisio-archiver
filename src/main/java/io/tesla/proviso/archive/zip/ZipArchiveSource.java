@@ -13,8 +13,8 @@ import org.apache.commons.compress.archivers.zip.ZipFile;
 import com.google.common.io.ByteStreams;
 
 import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.FileMode;
 import io.tesla.proviso.archive.Source;
+import io.tesla.proviso.archive.perms.FileMode;
 
 public class ZipArchiveSource implements Source {
 
@@ -23,7 +23,7 @@ public class ZipArchiveSource implements Source {
 
   public ZipArchiveSource(File archive) {
     try {
-      zipFile = new ZipFile(archive) {
+      zipFile = new ZipFile(archive, "UTF8", true) {
         @Override
         protected void finalize() throws Throwable {
           super.close();
@@ -86,7 +86,6 @@ public class ZipArchiveSource implements Source {
 
     @Override
     public boolean isExecutable() {
-      System.out.println(">>>> " + getFileMode());
       return FileMode.EXECUTABLE_FILE.equals(getFileMode());
     }
 

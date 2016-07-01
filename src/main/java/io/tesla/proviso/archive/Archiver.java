@@ -199,7 +199,6 @@ public class Archiver {
     aos.closeArchiveEntry();
   }
 
-
   public static ArchiverBuilder builder() {
     return new ArchiverBuilder();
   }

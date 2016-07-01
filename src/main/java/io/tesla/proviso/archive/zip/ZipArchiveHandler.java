@@ -30,7 +30,7 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
 
   @Override
   public ArchiveInputStream getInputStream() throws IOException {
-    return new ZipArchiveInputStream(new FileInputStream(archive));
+    return new ZipArchiveInputStream(new FileInputStream(archive), "UTF8", true, true);
   }
 
   @Override

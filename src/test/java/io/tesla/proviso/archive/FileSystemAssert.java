@@ -9,6 +9,8 @@ import java.io.IOException;
 
 import org.codehaus.plexus.util.FileUtils;
 
+import io.tesla.proviso.archive.perms.FileMode;
+
 public class FileSystemAssert {
 
   public static void assertDirectoryExists(File outputDirectory, String directoryName) {

@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import com.google.common.io.ByteStreams;
 
 import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.FileMode;
+import io.tesla.proviso.archive.perms.FileMode;
 
 public class FileEntry implements Entry {
 

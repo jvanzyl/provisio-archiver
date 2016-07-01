@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -17,6 +19,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
+
+import io.tesla.proviso.archive.perms.FileMode;
+import io.tesla.proviso.archive.perms.PosixModes;
 
 // useRoot
 // directories
@@ -94,15 +99,30 @@ public class UnArchiver {
         entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
       }
       int mode = archiveEntry.getFileMode();
-      if (mode != -1) {
-        try {
-          Files.setPosixFilePermissions(outputFile.toPath(), FileMode.toPermissionsSet(mode));
-        } catch (UnsupportedOperationException e) {
-          // ignore, must be windows
+      //
+      // Currently zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong or
+      // it's not being stored directly. So in the case of unpacking an zip archive we don't want to produce files
+      // that are unreadble or unusable so we'll give files 0644 and directories 0755
+      //
+      if (mode > 0) {
+        setFilePermissions(outputFile, FileMode.toPermissionsSet(mode));
+      } else {
+        if (archiveEntry.isDirectory()) {
+          setFilePermissions(outputFile, PosixModes.intModeToPosix(0755));
+        } else {
+          setFilePermissions(outputFile, PosixModes.intModeToPosix(0644));
         }
       }
     }
     source.close();
+  }
+
+  private void setFilePermissions(File file, Set<PosixFilePermission> perms) throws IOException {
+    try {
+      Files.setPosixFilePermissions(file.toPath(), perms);
+    } catch (UnsupportedOperationException e) {
+      // ignore, must be windows
+    }
   }
 
   private void createDir(File dir) {

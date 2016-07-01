@@ -1,4 +1,4 @@
-package io.tesla.proviso.archive;
+package io.tesla.proviso.archive.perms;
 
 /*
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
