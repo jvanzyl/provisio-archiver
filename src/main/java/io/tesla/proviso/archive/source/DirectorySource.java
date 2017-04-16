@@ -1,8 +1,5 @@
 package io.tesla.proviso.archive.source;
 
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -12,6 +9,10 @@ import org.codehaus.plexus.util.DirectoryScanner;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.ObjectArrays;
+
+import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.Source;
 
 public class DirectorySource implements Source {
   private final File[] sourceDirectories;
@@ -52,8 +53,8 @@ public class DirectorySource implements Source {
       scanner.setCaseSensitive(true);
       scanner.scan();
       List<String> entries = Lists.newArrayList();
-      String includedFiles[] = scanner.getIncludedFiles();
-      for (String includedFile : includedFiles) {
+      // We need to include the directories to preserved the archiving of empty directories
+      for (String includedFile : ObjectArrays.concat(scanner.getIncludedFiles(), scanner.getIncludedDirectories(), String.class)) {
         if (!includedFile.isEmpty()) {
           entries.add(includedFile.replace('\\', '/'));
         }

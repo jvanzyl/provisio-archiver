@@ -111,10 +111,31 @@ public abstract class ArchiveTypeTest {
   }
 
   @Test
+  public void createArchiveWithEmptyDirectories() throws Exception {
+    File archiveDirectory = getArchiveProject("archive-with-empty-directories");
+    System.out.println(archiveDirectory);
+    Archiver archiver = Archiver.builder().build();
+    File archive = getTargetArchive("archive-with-empty-directories." + getArchiveExtension());
+    archiver.archive(archive, archiveDirectory);
+    System.out.println(archive);
+    ArchiveValidator validator = validator(archive);
+    validator.assertEntries("archive-with-empty-directories/", //
+        "archive-with-empty-directories/0/", //
+        "archive-with-empty-directories/1/", //
+        "archive-with-empty-directories/2/", //
+        "archive-with-empty-directories/3/", //
+        "archive-with-empty-directories/4/");
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    File outputDirectory = getOutputDirectory("archive-with-empty-directories/" + getArchiveExtension());
+    unArchiver.unarchive(archive, outputDirectory);
+  }
+
+
+  @Test
   public void createArchiveWithExcludes() throws Exception {
     File archiveDirectory = getArchiveProject("archive-0");
     Archiver archiver = Archiver.builder() //
-        .excludes("**/4.txt") //
+        .excludes("**/4**") // We want to exclude all items with "4" which includes the directory entry
         .build();
     File archive = getTargetArchive("excludes-archive-0." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
