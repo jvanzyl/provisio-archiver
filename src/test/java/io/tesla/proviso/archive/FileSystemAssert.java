@@ -115,4 +115,17 @@ public class FileSystemAssert {
   public static final File getArchiveProject(String name) {
     return new File(getBasedir(), String.format("src/test/archives/%s", name));
   }
+
+  // Git no longer seems to checkout empty directories. I don't recall this being an issue in the past, but
+  // it's likely I just never did a clean checkout and noticed before. jvz.
+  public static final File getArchiveProjectWithEmptyDirectories() {
+    File directory = new File(getBasedir(),"target/generated-archives/archive-with-empty-directories");
+    new File(directory, "0").mkdirs();
+    new File(directory, "1").mkdirs();
+    new File(directory, "2").mkdirs();
+    new File(directory, "3").mkdirs();
+    new File(directory, "3").mkdirs();
+    new File(directory, "4").mkdirs();
+    return directory;
+  }
 }

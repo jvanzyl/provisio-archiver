@@ -8,6 +8,7 @@ import static io.tesla.proviso.archive.FileSystemAssert.assertPresenceAndContent
 import static io.tesla.proviso.archive.FileSystemAssert.assertPresenceAndSizeOf;
 import static io.tesla.proviso.archive.FileSystemAssert.file;
 import static io.tesla.proviso.archive.FileSystemAssert.getArchiveProject;
+import static io.tesla.proviso.archive.FileSystemAssert.getArchiveProjectWithEmptyDirectories;
 import static io.tesla.proviso.archive.FileSystemAssert.getOutputDirectory;
 import static io.tesla.proviso.archive.FileSystemAssert.getSourceArchive;
 import static io.tesla.proviso.archive.FileSystemAssert.getTargetArchive;
@@ -112,12 +113,10 @@ public abstract class ArchiveTypeTest {
 
   @Test
   public void createArchiveWithEmptyDirectories() throws Exception {
-    File archiveDirectory = getArchiveProject("archive-with-empty-directories");
-    System.out.println(archiveDirectory);
+    File archiveDirectory = getArchiveProjectWithEmptyDirectories();
     Archiver archiver = Archiver.builder().build();
     File archive = getTargetArchive("archive-with-empty-directories." + getArchiveExtension());
     archiver.archive(archive, archiveDirectory);
-    System.out.println(archive);
     ArchiveValidator validator = validator(archive);
     validator.assertEntries("archive-with-empty-directories/", //
         "archive-with-empty-directories/0/", //
