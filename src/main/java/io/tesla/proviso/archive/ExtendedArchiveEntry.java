@@ -15,4 +15,6 @@ public interface ExtendedArchiveEntry extends ArchiveEntry {
   void setTime(long time);
 
   void writeEntry(OutputStream outputStream) throws IOException;
+
+  boolean isHardLink();
 }

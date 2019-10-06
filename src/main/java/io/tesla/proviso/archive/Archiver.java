@@ -1,11 +1,15 @@
 package io.tesla.proviso.archive;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import io.tesla.proviso.archive.tar.ExtendedTarArchiveEntry;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
@@ -34,6 +38,8 @@ public class Archiver {
   private final String prefix;
   private final boolean posixLongFileMode;
   private final Selector selector;
+  private final Map<String,Entry> fileNames;
+  private boolean useHardLinks;
 
   private Archiver(List<String> includes,
                    List<String> excludes,
@@ -42,7 +48,8 @@ public class Archiver {
                    boolean flatten,
                    boolean normalize,
                    String prefix,
-                   boolean posixLongFileMode) {
+                   boolean posixLongFileMode,
+                   boolean useHardLinks) {
     this.executables = executables;
     this.useRoot = useRoot;
     this.flatten = flatten;
@@ -50,6 +57,8 @@ public class Archiver {
     this.prefix = prefix;
     this.posixLongFileMode = posixLongFileMode;
     this.selector = new Selector(includes, excludes);
+    this.fileNames = Maps.newLinkedHashMap();
+    this.useHardLinks = useHardLinks;
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -65,7 +74,7 @@ public class Archiver {
   }
 
   public void archive(File archive, Source... sources) throws IOException {
-    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode);
+    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode, this);
     try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
       //
       // collected archive entry paths mapped to true for explicitly provided entries
@@ -73,7 +82,7 @@ public class Archiver {
       // provided entries result in IllegalArgumentException
       //
       Map<String, Boolean> paths = new HashMap<>();
-      for (Source source : sources) {
+       for (Source source : sources) {
         for (Entry entry : source.entries()) {
           String entryName = entry.getName();
           if (!selector.include(entryName)) {
@@ -113,6 +122,7 @@ public class Archiver {
           if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
             ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+            fileNames.put(fileNameOf(entry), entry);
             addEntry(entryName, archiveEntry, aos);
           } else {
             if (Boolean.TRUE.equals(paths.get(entryName))) {
@@ -193,14 +203,28 @@ public class Archiver {
 
   private void writeEntry(ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
     aos.putArchiveEntry(entry);
-    if (!entry.isDirectory()) {
-      entry.writeEntry(aos);
+    if(!entry.isHardLink()) {
+      if (!entry.isDirectory()) {
+        entry.writeEntry(aos);
+      }
     }
     aos.closeArchiveEntry();
   }
 
   public static ArchiverBuilder builder() {
     return new ArchiverBuilder();
+  }
+
+  public Entry alreadyProcessed(Entry entry) {
+    return fileNames.get(fileNameOf(entry));
+  }
+
+  public boolean useHardLinks() {
+    return useHardLinks;
+  }
+
+  private String fileNameOf(Entry entry) {
+    return entry.getName().substring(entry.getName().lastIndexOf('/') + 1);
   }
 
   public static class ArchiverBuilder {
@@ -212,6 +236,7 @@ public class Archiver {
     private boolean normalize = false;
     private String prefix;
     private boolean posixLongFileMode;
+    private boolean useHardLinks;
 
     public ArchiverBuilder includes(String... includes) {
       return includes(ImmutableList.copyOf(includes));
@@ -270,8 +295,13 @@ public class Archiver {
       return this;
     }
 
+    public ArchiverBuilder useHardLinks(boolean useHardLinks) {
+      this.useHardLinks = useHardLinks;
+      return this;
+    }
+
     public Archiver build() {
-      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix, posixLongFileMode);
+      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix, posixLongFileMode, useHardLinks);
     }
   }
 }

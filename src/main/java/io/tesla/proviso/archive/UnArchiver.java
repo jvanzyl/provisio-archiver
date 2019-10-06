@@ -58,7 +58,7 @@ public class UnArchiver {
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
     }
-    Source source = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode).getArchiveSource();
+    Source source = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode, null).getArchiveSource();
     for (Entry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
       if (useRoot == false) {

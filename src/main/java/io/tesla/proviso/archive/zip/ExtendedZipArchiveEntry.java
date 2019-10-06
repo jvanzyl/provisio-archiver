@@ -36,4 +36,9 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   public void writeEntry(OutputStream outputStream) throws IOException {
     entry.writeEntry(outputStream);
   }
+
+  @Override
+  public boolean isHardLink() {
+    return false;
+  }
 }

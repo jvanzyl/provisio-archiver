@@ -24,7 +24,7 @@ public class TarGzArchiveSource implements Source {
   public TarGzArchiveSource(File archive) {
     closer = Closer.create();
     try {
-      archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive, false).getInputStream());
+      archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive, false, null).getInputStream());
     } catch (IOException e) {
       throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
     }

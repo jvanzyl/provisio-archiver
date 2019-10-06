@@ -1,5 +1,6 @@
 package io.tesla.proviso.archive.tar;
 
+import io.tesla.proviso.archive.Archiver;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +10,7 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
@@ -21,15 +23,27 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
   private final File archive;
   private final boolean posixLongFileMode;
+  private final Archiver archiver;
 
-  public TarGzArchiveHandler(File archive, boolean posixLongFileMode) {
+  public TarGzArchiveHandler(File archive, boolean posixLongFileMode, Archiver archiver) {
     this.archive = archive;
     this.posixLongFileMode = posixLongFileMode;
+    this.archiver = archiver;
   }
 
   @Override
   public ExtendedArchiveEntry newEntry(String entryName, Entry entry) {
-    return new ExtendedTarArchiveEntry(entryName, entry);
+    if(archiver != null && archiver.useHardLinks()) {
+      Entry source = archiver.alreadyProcessed(entry);
+      if(source != null) {
+        ExtendedTarArchiveEntry tarArchiveEntry = new ExtendedTarArchiveEntry(entryName, TarConstants.LF_LINK);
+        tarArchiveEntry.setLinkName(source.getName());
+        return tarArchiveEntry;
+      }
+    }
+    ExtendedTarArchiveEntry tarArchiveEntry = new ExtendedTarArchiveEntry(entryName, entry);
+    tarArchiveEntry.setSize(entry.getSize());
+    return tarArchiveEntry;
   }
 
   @Override
