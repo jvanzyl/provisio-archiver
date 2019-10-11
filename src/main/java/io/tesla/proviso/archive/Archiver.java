@@ -1,27 +1,20 @@
 package io.tesla.proviso.archive;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import io.tesla.proviso.archive.tar.ExtendedTarArchiveEntry;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import io.tesla.proviso.archive.source.DirectoryEntry;
+import io.tesla.proviso.archive.source.DirectorySource;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.codehaus.plexus.util.SelectorUtils;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
-import io.tesla.proviso.archive.source.DirectoryEntry;
-import io.tesla.proviso.archive.source.DirectorySource;
 
 public class Archiver {
 
@@ -36,29 +29,17 @@ public class Archiver {
   private final boolean flatten;
   private final boolean normalize;
   private final String prefix;
-  private final boolean posixLongFileMode;
   private final Selector selector;
-  private final Map<String,Entry> fileNames;
-  private boolean useHardLinks;
+  private final ArchiverBuilder builder;
 
-  private Archiver(List<String> includes,
-                   List<String> excludes,
-                   List<String> executables,
-                   boolean useRoot,
-                   boolean flatten,
-                   boolean normalize,
-                   String prefix,
-                   boolean posixLongFileMode,
-                   boolean useHardLinks) {
-    this.executables = executables;
-    this.useRoot = useRoot;
-    this.flatten = flatten;
-    this.normalize = normalize;
-    this.prefix = prefix;
-    this.posixLongFileMode = posixLongFileMode;
-    this.selector = new Selector(includes, excludes);
-    this.fileNames = Maps.newLinkedHashMap();
-    this.useHardLinks = useHardLinks;
+  private Archiver(ArchiverBuilder builder) {
+    this.builder = builder;
+    this.executables = builder.executables;
+    this.useRoot = builder.useRoot;
+    this.flatten = builder.flatten;
+    this.normalize = builder.normalize;
+    this.prefix = builder.prefix;
+    this.selector = new Selector(builder.includes, builder.excludes);
   }
 
   public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -74,7 +55,8 @@ public class Archiver {
   }
 
   public void archive(File archive, Source... sources) throws IOException {
-    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode, this);
+    ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, builder);
+
     try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
       //
       // collected archive entry paths mapped to true for explicitly provided entries
@@ -82,7 +64,7 @@ public class Archiver {
       // provided entries result in IllegalArgumentException
       //
       Map<String, Boolean> paths = new HashMap<>();
-       for (Source source : sources) {
+      for (Source source : sources) {
         for (Entry entry : source.entries()) {
           String entryName = entry.getName();
           if (!selector.include(entryName)) {
@@ -122,7 +104,6 @@ public class Archiver {
           if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
             ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
-            fileNames.put(fileNameOf(entry), entry);
             addEntry(entryName, archiveEntry, aos);
           } else {
             if (Boolean.TRUE.equals(paths.get(entryName))) {
@@ -159,7 +140,7 @@ public class Archiver {
   /**
    * Returns the normalized timestamp for a jar entry based on its name. This is necessary since javac will, when loading a class X, prefer a source file to a class file, if both files have the same
    * timestamp. Therefore, we need to adjust the timestamp for class files to slightly after the normalized time.
-   * 
+   *
    * @param name The name of the file for which we should return the normalized timestamp.
    * @return the time for a new Jar file entry in milliseconds since the epoch.
    */
@@ -172,7 +153,7 @@ public class Archiver {
   }
 
   /**
-   * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link JarCreator#DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link System#currentTimeMillis()} otherwise.
+   * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link #DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link System#currentTimeMillis()} otherwise.
    *
    * @param filename The name of the file for which we are entering the time
    * @return the time for a new Jar file entry in milliseconds since the epoch.
@@ -185,7 +166,6 @@ public class Archiver {
    * Adds an entry to the Jar file, normalizing the name.
    *
    * @param entryName the name of the entry in the Jar file
-   * @param fileName the name of the input file for the entry
    */
   private void addEntry(String entryName, ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
     if (entryName.startsWith("/")) {
@@ -203,7 +183,7 @@ public class Archiver {
 
   private void writeEntry(ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
     aos.putArchiveEntry(entry);
-    if(!entry.isHardLink()) {
+    if (!entry.isHardLink()) {
       if (!entry.isDirectory()) {
         entry.writeEntry(aos);
       }
@@ -215,28 +195,18 @@ public class Archiver {
     return new ArchiverBuilder();
   }
 
-  public Entry alreadyProcessed(Entry entry) {
-    return fileNames.get(fileNameOf(entry));
-  }
-
-  public boolean useHardLinks() {
-    return useHardLinks;
-  }
-
-  private String fileNameOf(Entry entry) {
-    return entry.getName().substring(entry.getName().lastIndexOf('/') + 1);
-  }
-
   public static class ArchiverBuilder {
-    private List<String> includes = Lists.newArrayList();
-    private List<String> excludes = Lists.newArrayList();
-    private List<String> executables = Lists.newArrayList();
-    private boolean useRoot = true;
-    private boolean flatten = false;
-    private boolean normalize = false;
-    private String prefix;
-    private boolean posixLongFileMode;
-    private boolean useHardLinks;
+
+    List<String> includes = Lists.newArrayList();
+    List<String> excludes = Lists.newArrayList();
+    List<String> executables = Lists.newArrayList();
+    boolean useRoot = true;
+    boolean flatten = false;
+    boolean normalize = false;
+    String prefix;
+    boolean posixLongFileMode;
+    List<String> hardLinkIncludes = Lists.newArrayList();
+    List<String> hardLinkExcludes = Lists.newArrayList();
 
     public ArchiverBuilder includes(String... includes) {
       return includes(ImmutableList.copyOf(includes));
@@ -295,13 +265,26 @@ public class Archiver {
       return this;
     }
 
-    public ArchiverBuilder useHardLinks(boolean useHardLinks) {
-      this.useHardLinks = useHardLinks;
+    public ArchiverBuilder hardLinkIncludes(String... hardLinkIncludes) {
+      return hardLinkIncludes(ImmutableList.copyOf(hardLinkIncludes));
+    }
+
+    public ArchiverBuilder hardLinkIncludes(Iterable<String> hardLinkIncludes) {
+      Iterables.addAll(this.hardLinkIncludes, hardLinkIncludes);
+      return this;
+    }
+
+    public ArchiverBuilder hardLinkExcludes(String... hardLinkExcludes) {
+      return hardLinkExcludes(ImmutableList.copyOf(hardLinkExcludes));
+    }
+
+    public ArchiverBuilder hardLinkExcludes(Iterable<String> hardLinkExcludes) {
+      Iterables.addAll(this.hardLinkExcludes, hardLinkExcludes);
       return this;
     }
 
     public Archiver build() {
-      return new Archiver(includes, excludes, executables, useRoot, flatten, normalize, prefix, posixLongFileMode, useHardLinks);
+      return new Archiver(this);
     }
   }
 }

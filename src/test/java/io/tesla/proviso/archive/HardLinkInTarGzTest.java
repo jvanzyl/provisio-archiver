@@ -2,7 +2,10 @@ package io.tesla.proviso.archive;
 
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,6 +36,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     if (!fileDuplicatedInTarGzArchive.getParentFile().exists()) {
       fileDuplicatedInTarGzArchive.getParentFile().mkdirs();
     }
+
     try (OutputStream outputStream = new FileOutputStream(fileDuplicatedInTarGzArchive)) {
       JarRandomContentProvider provider = new JarRandomContentProvider(5); // 5242880
       provider.writeTo(outputStream);
@@ -44,11 +48,13 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
         .entry("3/foo-1.0.jar", fileDuplicatedInTarGzArchive)
         .entry("4/foo-1.0.jar", fileDuplicatedInTarGzArchive)
         .entry("5/foo-1.0.jar", fileDuplicatedInTarGzArchive)
+        .entry("6/same.txt", "super") // same name, different content
+        .entry("7/same.txt", "monkey") // same name, different content
         .build();
 
     Archiver archiver = Archiver.builder()
+        .hardLinkIncludes("**/*.jar")
         .posixLongFileMode(true)
-        .useHardLinks(true)
         .build();
 
     File archive = new File(getBasedir(), "target/hardlink.tar.gz");
@@ -72,8 +78,12 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     // 09 hardlink/2/foo-1.0.jar link to hardlink/3/foo-1.0.jar
     // 10 hardlink/5/
     // 11 hardlink/5/foo-1.0.jar link to hardlink/2/foo-1.0.jar
+    // 12 hardlink/6/
+    // 13 hardlink/6/same.txt
+    // 14 hardlink/7/
+    // 15 hardlink/7/same.txt
     //
-    validator.assertNumberOfEntriesInArchive(11);
+    validator.assertNumberOfEntriesInArchive(15);
 
     validator.assertEntries(
         "hardlink/",
@@ -86,7 +96,11 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
         "hardlink/4/",
         "hardlink/4/foo-1.0.jar",
         "hardlink/5/",
-        "hardlink/5/foo-1.0.jar"
+        "hardlink/5/foo-1.0.jar",
+        "hardlink/6/",
+        "hardlink/6/same.txt",
+        "hardlink/7/",
+        "hardlink/7/same.txt"
     );
 
     //
@@ -97,6 +111,8 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     validator.assertSizeOfEntryInArchive("hardlink/3/foo-1.0.jar", 0);
     validator.assertSizeOfEntryInArchive("hardlink/4/foo-1.0.jar", 0);
     validator.assertSizeOfEntryInArchive("hardlink/5/foo-1.0.jar", 0);
+    validator.assertSizeOfEntryInArchive("hardlink/6/same.txt", 5);
+    validator.assertSizeOfEntryInArchive("hardlink/7/same.txt", 6);
 
     //
     // We'll assume some compression even on the random content and the tar.gz should be smaller
@@ -119,6 +135,11 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
       return this;
     }
 
+    TarGzLayoutBuilder entry(String name, String content) {
+      entries.add(new Entry(name, content));
+      return this;
+    }
+
     TarGzLayout build() throws IOException {
       for (Entry entry : entries) {
         File file = new File(tarGzDirectory, entry.name());
@@ -127,14 +148,11 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
             file.getParentFile().mkdirs();
           }
           Files.copy(entry.file().toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } else {
+        } else if (entry.content() != null) {
           if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
           }
-          try (OutputStream outputStream = new FileOutputStream(file)) {
-            JarRandomContentProvider provider = new JarRandomContentProvider(entry.sizeInMb());
-            provider.writeTo(outputStream);
-          }
+          Files.copy(new ByteArrayInputStream(entry.content().getBytes()), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
       }
       return new TarGzLayout();
@@ -142,35 +160,34 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
   }
 
   public static class TarGzLayout {
-
   }
 
   public static class Entry {
 
     String name;
-    int sizeInMb;
     File file;
+    String content;
 
     public Entry(String name, File file) {
       this.name = name;
       this.file = file;
     }
 
-    public Entry(String name, int sizeInMb) {
+    public Entry(String name, String content) {
       this.name = name;
-      this.sizeInMb = sizeInMb;
+      this.content = content;
     }
 
     public String name() {
       return name;
     }
 
-    public int sizeInMb() {
-      return sizeInMb;
-    }
-
     public File file() {
       return file;
+    }
+
+    public String content() {
+      return content;
     }
   }
 

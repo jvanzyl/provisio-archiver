@@ -1,5 +1,11 @@
 package io.tesla.proviso.archive;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
+import io.tesla.proviso.archive.perms.FileMode;
+import io.tesla.proviso.archive.perms.PosixModes;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,25 +17,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Named;
 import javax.inject.Singleton;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
-
-import io.tesla.proviso.archive.perms.FileMode;
-import io.tesla.proviso.archive.perms.PosixModes;
-
-// useRoot
-// directories
-// includes
-// excludes
-
-// There should be a full inventory of what has gone into the archive
-// make a fluent interface
 
 @Named
 @Singleton
@@ -38,13 +27,13 @@ public class UnArchiver {
   private final Selector selector;
   private final boolean useRoot;
   private final boolean flatten;
-  private final boolean posixLongFileMode;
+  private final UnArchiverBuilder builder;
 
-  public UnArchiver(List<String> includes, List<String> excludes, boolean useRoot, boolean flatten, boolean posixLongFileMode) {
-    this.useRoot = useRoot;
-    this.flatten = flatten;
-    this.selector = new Selector(includes, excludes);
-    this.posixLongFileMode = posixLongFileMode;
+  public UnArchiver(UnArchiverBuilder builder) {
+    this.builder = builder;
+    this.useRoot = builder.useRoot;
+    this.flatten = builder.flatten;
+    this.selector = new Selector(builder.includes, builder.excludes);
   }
 
   public void unarchive(File archive, File outputDirectory) throws IOException {
@@ -58,7 +47,7 @@ public class UnArchiver {
     if (outputDirectory.exists() == false) {
       outputDirectory.mkdirs();
     }
-    Source source = ArchiverHelper.getArchiveHandler(archive, posixLongFileMode, null).getArchiveSource();
+    Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
     for (Entry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
       if (useRoot == false) {
@@ -163,11 +152,11 @@ public class UnArchiver {
 
   public static class UnArchiverBuilder {
 
-    private List<String> includes = new ArrayList<String>();
-    private List<String> excludes = new ArrayList<String>();
-    private boolean useRoot = true;
-    private boolean flatten = false;
-    private boolean posixLongFileMode;
+    List<String> includes = new ArrayList<String>();
+    List<String> excludes = new ArrayList<String>();
+    boolean useRoot = true;
+    boolean flatten = false;
+    boolean posixLongFileMode;
 
     public UnArchiverBuilder includes(String... includes) {
       List<String> i = Lists.newArrayList();
@@ -215,7 +204,7 @@ public class UnArchiver {
     }
 
     public UnArchiver build() {
-      return new UnArchiver(includes, excludes, useRoot, flatten, posixLongFileMode);
+      return new UnArchiver(this);
     }
   }
 }

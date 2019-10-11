@@ -1,5 +1,6 @@
 package io.tesla.proviso.archive.tar;
 
+import io.tesla.proviso.archive.UnArchiver.UnArchiverBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,7 @@ public class TarGzArchiveSource implements Source {
   public TarGzArchiveSource(File archive) {
     closer = Closer.create();
     try {
-      archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive, false, null).getInputStream());
+      archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive, new UnArchiverBuilder()).getInputStream());
     } catch (IOException e) {
       throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
     }
@@ -32,12 +33,7 @@ public class TarGzArchiveSource implements Source {
 
   @Override
   public Iterable<Entry> entries() {
-    return new Iterable<Entry>() {
-      @Override
-      public Iterator<Entry> iterator() {
-        return new ArchiveEntryIterator();
-      }
-    };
+    return () -> new ArchiveEntryIterator();
   }
 
   class EntrySourceArchiveEntry implements Entry {
