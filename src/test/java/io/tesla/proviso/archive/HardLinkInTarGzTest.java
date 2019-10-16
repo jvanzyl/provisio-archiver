@@ -135,6 +135,9 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/5/foo-1.0.jar");
     assertFileIsNotHardLink(unpackedTarGzDirectory, "hardlink/6/same.txt");
     assertFileIsNotHardLink(unpackedTarGzDirectory, "hardlink/7/same.txt");
+
+    // And now unpack it again and make sure it overwrites the files
+    unArchiver.unarchive(archive, unpackedTarGzDirectory);
   }
 
   public static class TarGzLayoutBuilder {

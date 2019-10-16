@@ -84,8 +84,10 @@ public class UnArchiver {
         createDir(outputFile.getParentFile());
       }
 
-      if(archiveEntry.isHardLink()) {
+      if (archiveEntry.isHardLink()) {
         File hardLinkSource = new File(outputDirectory, archiveEntry.getHardLinkPath());
+        // Remove any existing file or link as Files.createLink has no option to overwrite
+        Files.deleteIfExists(outputFile.toPath());
         Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
       } else {
         try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
