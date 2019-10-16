@@ -32,7 +32,7 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   }
 
   public boolean isHardLink() {
-    return entry != null && entry.getHardLinkPath() != null;
+    return hardLink;
   }
 
   @Override

@@ -64,7 +64,7 @@ public class FileSystemAssert {
     boolean hardlink = Files.getAttribute(file.toPath(), "unix:nlink" ).equals(5);
     assertFalse(String.format("We expect to find the file %s, but is a hardlink and it should not be.", fileName), file.exists() && file.isFile() && hardlink);
   }
-  
+
   public static void assertFileMode(File outputDirectory, String string, String expectedUnix) {
     File f = new File(outputDirectory, string);
     String unix = FileMode.toUnix(FileMode.getFileMode(f));
