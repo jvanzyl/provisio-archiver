@@ -36,6 +36,11 @@ public class FileEntry implements ExtendedArchiveEntry {
   }
 
   @Override
+  public String getHardLinkPath() {
+    return null;
+  }
+
+  @Override
   public long getSize() {
     return file.length();
   }

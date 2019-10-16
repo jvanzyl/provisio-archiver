@@ -55,6 +55,11 @@ public class StringListSource implements Source {
     }
 
     @Override
+    public String getHardLinkPath() {
+      return null;
+    }
+
+    @Override
     public long getSize() {
       return name.length();
     }

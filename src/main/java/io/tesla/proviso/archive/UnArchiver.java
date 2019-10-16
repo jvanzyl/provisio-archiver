@@ -84,9 +84,15 @@ public class UnArchiver {
         createDir(outputFile.getParentFile());
       }
 
-      try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-        entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
+      if(archiveEntry.isHardLink()) {
+        File hardLinkSource = new File(outputDirectory, archiveEntry.getHardLinkPath());
+        Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
+      } else {
+        try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+          entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
+        }
       }
+
       int mode = archiveEntry.getFileMode();
       //
       // Currently zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong or

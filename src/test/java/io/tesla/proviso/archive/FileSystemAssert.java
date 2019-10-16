@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 import io.tesla.proviso.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.codehaus.plexus.util.FileUtils;
 
 public class FileSystemAssert {
@@ -51,6 +53,18 @@ public class FileSystemAssert {
     assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not executable.", fileName), file.exists() && file.isFile() && file.canExecute());
   }
 
+  public static void assertFileIsHardLink(File outputDirectory, String fileName) throws Exception {
+    File file = new File(outputDirectory, fileName);
+    boolean hardlink = Files.getAttribute( file.toPath(), "unix:nlink" ).equals(5);
+    assertTrue(String.format("We expect to find the file %s, but it doesn't exist or is not a hardlink.", fileName), file.exists() && file.isFile() && hardlink);
+  }
+
+  public static void assertFileIsNotHardLink(File outputDirectory, String fileName) throws Exception {
+    File file = new File(outputDirectory, fileName);
+    boolean hardlink = Files.getAttribute(file.toPath(), "unix:nlink" ).equals(5);
+    assertFalse(String.format("We expect to find the file %s, but is a hardlink and it should not be.", fileName), file.exists() && file.isFile() && hardlink);
+  }
+  
   public static void assertFileMode(File outputDirectory, String string, String expectedUnix) {
     File f = new File(outputDirectory, string);
     String unix = FileMode.toUnix(FileMode.getFileMode(f));

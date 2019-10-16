@@ -54,7 +54,12 @@ public class TarGzArchiveSource implements Source {
 
     @Override
     public boolean isHardLink() {
-      return false;
+      return archiveEntry.isLink();
+    }
+
+    @Override
+    public String getHardLinkPath() {
+      return archiveEntry.getLinkName();
     }
 
     @Override

@@ -118,16 +118,23 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     //
     assertTrue(archive.length() < fileDuplicatedInTarGzArchive.length());
 
-    // Now let's unpack and make sure the hardlinks are preserved
-
+    //
+    // Now let's unpack and make sure the hardlinks are preserved on unpacking
+    //
     UnArchiver unArchiver = UnArchiver.builder().build();
     File unpackedTarGzDirectory = new File(getBasedir(), "target/hardlink-unpacked");
-    //if (unpackedTarGzDirectory.exists()) {
-    //  FileUtils.deleteDirectory(unpackedTarGzDirectory);
-    //}
+    if (unpackedTarGzDirectory.exists()) {
+      FileUtils.deleteDirectory(unpackedTarGzDirectory);
+    }
+
     unArchiver.unarchive(archive, unpackedTarGzDirectory);
 
-
+    assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/2/foo-1.0.jar");
+    assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/3/foo-1.0.jar");
+    assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/4/foo-1.0.jar");
+    assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/5/foo-1.0.jar");
+    assertFileIsNotHardLink(unpackedTarGzDirectory, "hardlink/6/same.txt");
+    assertFileIsNotHardLink(unpackedTarGzDirectory, "hardlink/7/same.txt");
   }
 
   public static class TarGzLayoutBuilder {

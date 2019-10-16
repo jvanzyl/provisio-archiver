@@ -46,6 +46,11 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   }
 
   @Override
+  public String getHardLinkPath() {
+    return null;
+  }
+
+  @Override
   public boolean isExecutable() {
     return false;
   }

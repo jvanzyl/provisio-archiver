@@ -20,6 +20,8 @@ public interface ExtendedArchiveEntry extends ArchiveEntry {
 
   boolean isHardLink();
 
+  String getHardLinkPath();
+
   boolean isExecutable();
 
   long getTime();

@@ -62,6 +62,11 @@ public class ZipArchiveSource implements Source {
     }
 
     @Override
+    public String getHardLinkPath() {
+      return null;
+    }
+
+    @Override
     public long getSize() {
       return archiveEntry.getSize();
     }
