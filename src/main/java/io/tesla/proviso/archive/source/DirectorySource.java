@@ -1,18 +1,15 @@
 package io.tesla.proviso.archive.source;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.ObjectArrays;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-
 import org.codehaus.plexus.util.DirectoryScanner;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.ObjectArrays;
-
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.Source;
 
 public class DirectorySource implements Source {
   private final File[] sourceDirectories;
@@ -21,28 +18,18 @@ public class DirectorySource implements Source {
     this.sourceDirectories = sourceDirectories;
   }
 
-  public DirectorySource(List<String> sourceDirectories) {
-    this.sourceDirectories = new File[sourceDirectories.size()];
-    for (int i = 0; i < sourceDirectories.size(); i++) {
-      this.sourceDirectories[i] = new File(sourceDirectories.get(i));
-    }
-  }
-
   @Override
-  public Iterable<Entry> entries() {
-    return new Iterable<Entry>() {
-      @Override
-      public Iterator<Entry> iterator() {
-        DirectoryEntryIterator[] iterators = new DirectoryEntryIterator[sourceDirectories.length];
-        for (int i = 0; i < iterators.length; i++) {
-          iterators[i] = new DirectoryEntryIterator(sourceDirectories[i]);
-        }
-        return Iterators.concat(iterators);
+  public Iterable<ExtendedArchiveEntry> entries() {
+    return () -> {
+      DirectoryEntryIterator[] iterators = new DirectoryEntryIterator[sourceDirectories.length];
+      for (int i = 0; i < iterators.length; i++) {
+        iterators[i] = new DirectoryEntryIterator(sourceDirectories[i]);
       }
+      return Iterators.concat(iterators);
     };
   }
 
-  class DirectoryEntryIterator implements Iterator<Entry> {
+  class DirectoryEntryIterator implements Iterator<ExtendedArchiveEntry> {
     final String[] files;
     final File sourceDirectory;
     int currentFileIndex;
@@ -69,7 +56,7 @@ public class DirectorySource implements Source {
     }
 
     @Override
-    public Entry next() {
+    public ExtendedArchiveEntry next() {
       String pathRelativeToSourceDirectory = files[currentFileIndex++];
       File file = new File(sourceDirectory, pathRelativeToSourceDirectory);
       String archiveEntryName = String.format("%s/%s", sourceDirectory.getName().replace('\\', '/'), pathRelativeToSourceDirectory);

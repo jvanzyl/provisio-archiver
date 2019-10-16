@@ -1,18 +1,16 @@
 package io.tesla.proviso.archive.zip;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-
-import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
 
-  private Entry entry;
+  private ExtendedArchiveEntry entry;
 
-  public ExtendedZipArchiveEntry(String entryName, Entry entry) {
+  public ExtendedZipArchiveEntry(String entryName, ExtendedArchiveEntry entry) {
     super(entryName);
     this.entry = entry;
   }
@@ -38,7 +36,17 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   }
 
   @Override
+  public InputStream getInputStream() throws IOException {
+    return entry.getInputStream();
+  }
+
+  @Override
   public boolean isHardLink() {
+    return false;
+  }
+
+  @Override
+  public boolean isExecutable() {
     return false;
   }
 }

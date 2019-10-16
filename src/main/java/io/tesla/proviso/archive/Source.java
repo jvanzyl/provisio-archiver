@@ -3,7 +3,7 @@ package io.tesla.proviso.archive;
 import java.io.IOException;
 
 public interface Source {
-  Iterable<Entry> entries();
+  Iterable<ExtendedArchiveEntry> entries();
 
   boolean isDirectory();
 

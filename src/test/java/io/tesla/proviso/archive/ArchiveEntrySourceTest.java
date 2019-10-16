@@ -1,10 +1,8 @@
 package io.tesla.proviso.archive;
 
-import java.io.File;
-
-import org.junit.Test;
-
 import io.tesla.proviso.archive.tar.TarGzArchiveSource;
+import java.io.File;
+import org.junit.Test;
 
 public class ArchiveEntrySourceTest extends FileSystemAssert {
 

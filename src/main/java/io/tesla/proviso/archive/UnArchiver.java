@@ -48,7 +48,7 @@ public class UnArchiver {
       outputDirectory.mkdirs();
     }
     Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
-    for (Entry archiveEntry : source.entries()) {
+    for (ExtendedArchiveEntry archiveEntry : source.entries()) {
       String entryName = archiveEntry.getName();
       if (useRoot == false) {
         entryName = entryName.substring(entryName.indexOf('/') + 1);

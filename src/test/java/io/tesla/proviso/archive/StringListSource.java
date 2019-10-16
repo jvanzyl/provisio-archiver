@@ -1,13 +1,13 @@
 package io.tesla.proviso.archive;
 
+import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.io.ByteStreams;
 
 public class StringListSource implements Source {
 
@@ -18,13 +18,8 @@ public class StringListSource implements Source {
   }
 
   @Override
-  public Iterable<Entry> entries() {
-    return new Iterable<Entry>() {
-      @Override
-      public Iterator<Entry> iterator() {
-        return new StringEntryIterator(entries.iterator());
-      }
-    };
+  public Iterable<ExtendedArchiveEntry> entries() {
+    return () -> new StringEntryIterator(entries.iterator());
   }
 
   @Override
@@ -36,7 +31,7 @@ public class StringListSource implements Source {
   public void close() throws IOException {
   }
 
-  class StringEntry implements Entry {
+  class StringEntry implements ExtendedArchiveEntry {
 
     final String name;
     
@@ -53,7 +48,12 @@ public class StringListSource implements Source {
     public InputStream getInputStream() throws IOException {
       return new ByteArrayInputStream(name.getBytes());
     }
-    
+
+    @Override
+    public boolean isHardLink() {
+      return false;
+    }
+
     @Override
     public long getSize() {
       return name.length();
@@ -65,13 +65,27 @@ public class StringListSource implements Source {
     }
 
     @Override
+    public void setFileMode(int mode) {}
+
+    @Override
     public int getFileMode() {
       return 0;
     }
 
     @Override
+    public void setSize(long size) {}
+
+    @Override
+    public void setTime(long time) {}
+
+    @Override
     public boolean isDirectory() {
       return false;
+    }
+
+    @Override
+    public Date getLastModifiedDate() {
+      return null;
     }
 
     @Override
@@ -85,7 +99,7 @@ public class StringListSource implements Source {
     }
   }
   
-  class StringEntryIterator implements Iterator<Entry> {
+  class StringEntryIterator implements Iterator<ExtendedArchiveEntry> {
 
     final Iterator<String> delegate;
     
@@ -99,7 +113,7 @@ public class StringListSource implements Source {
     }
 
     @Override
-    public Entry next() {
+    public ExtendedArchiveEntry next() {
       return new StringEntry(delegate.next());
     }
 

@@ -1,20 +1,18 @@
 package io.tesla.proviso.archive.zip;
 
+import com.google.common.io.ByteStreams;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
+import io.tesla.proviso.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
-
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
-
-import com.google.common.io.ByteStreams;
-
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.Source;
-import io.tesla.proviso.archive.perms.FileMode;
 
 public class ZipArchiveSource implements Source {
 
@@ -36,16 +34,11 @@ public class ZipArchiveSource implements Source {
   }
 
   @Override
-  public Iterable<Entry> entries() {
-    return new Iterable<Entry>() {
-      @Override
-      public Iterator<Entry> iterator() {
-        return new ArchiveEntryIterator();
-      }
-    };
+  public Iterable<ExtendedArchiveEntry> entries() {
+    return () -> new ArchiveEntryIterator();
   }
 
-  class EntrySourceArchiveEntry implements Entry {
+  class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
 
     final ZipArchiveEntry archiveEntry;
 
@@ -64,6 +57,11 @@ public class ZipArchiveSource implements Source {
     }
 
     @Override
+    public boolean isHardLink() {
+      return false;
+    }
+
+    @Override
     public long getSize() {
       return archiveEntry.getSize();
     }
@@ -75,13 +73,27 @@ public class ZipArchiveSource implements Source {
     }
 
     @Override
+    public void setFileMode(int mode) {}
+
+    @Override
     public int getFileMode() {
       return archiveEntry.getUnixMode();
     }
 
     @Override
+    public void setSize(long size) {}
+
+    @Override
+    public void setTime(long time) {}
+
+    @Override
     public boolean isDirectory() {
       return archiveEntry.isDirectory();
+    }
+
+    @Override
+    public Date getLastModifiedDate() {
+      return null;
     }
 
     @Override
@@ -95,10 +107,10 @@ public class ZipArchiveSource implements Source {
     }
   }
 
-  class ArchiveEntryIterator implements Iterator<Entry> {
+  class ArchiveEntryIterator implements Iterator<ExtendedArchiveEntry> {
 
     @Override
-    public Entry next() {
+    public ExtendedArchiveEntry next() {
       return new EntrySourceArchiveEntry(entries.nextElement());
     }
 

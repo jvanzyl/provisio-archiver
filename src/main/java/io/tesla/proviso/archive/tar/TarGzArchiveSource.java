@@ -1,21 +1,19 @@
 package io.tesla.proviso.archive.tar;
 
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Closer;
+import io.tesla.proviso.archive.ArchiverHelper;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
 import io.tesla.proviso.archive.UnArchiver.UnArchiverBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 import java.util.Iterator;
-
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Closer;
-
-import io.tesla.proviso.archive.ArchiverHelper;
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.Source;
 
 public class TarGzArchiveSource implements Source {
 
@@ -32,11 +30,11 @@ public class TarGzArchiveSource implements Source {
   }
 
   @Override
-  public Iterable<Entry> entries() {
+  public Iterable<ExtendedArchiveEntry> entries() {
     return () -> new ArchiveEntryIterator();
   }
 
-  class EntrySourceArchiveEntry implements Entry {
+  class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
 
     final TarArchiveEntry archiveEntry;
 
@@ -55,6 +53,11 @@ public class TarGzArchiveSource implements Source {
     }
 
     @Override
+    public boolean isHardLink() {
+      return false;
+    }
+
+    @Override
     public long getSize() {
       return archiveEntry.getSize();
     }
@@ -66,13 +69,27 @@ public class TarGzArchiveSource implements Source {
     }
 
     @Override
+    public void setFileMode(int mode) {}
+
+    @Override
     public int getFileMode() {
       return archiveEntry.getMode();
     }
 
     @Override
+    public void setSize(long size) {}
+
+    @Override
+    public void setTime(long time) {}
+
+    @Override
     public boolean isDirectory() {
       return archiveEntry.isDirectory();
+    }
+
+    @Override
+    public Date getLastModifiedDate() {
+      return null;
     }
 
     @Override
@@ -86,12 +103,12 @@ public class TarGzArchiveSource implements Source {
     }
   }
 
-  class ArchiveEntryIterator implements Iterator<Entry> {
+  class ArchiveEntryIterator implements Iterator<ExtendedArchiveEntry> {
 
     TarArchiveEntry archiveEntry;
 
     @Override
-    public Entry next() {
+    public ExtendedArchiveEntry next() {
       return new EntrySourceArchiveEntry(archiveEntry);
     }
 

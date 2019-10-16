@@ -1,8 +1,7 @@
 package io.tesla.proviso.archive.source;
 
-import io.tesla.proviso.archive.Entry;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
 import io.tesla.proviso.archive.Source;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -23,12 +22,13 @@ public class FileSource implements Source {
   }
 
   @Override
-  public Iterable<Entry> entries() {
-    return Collections.<Entry>singleton(new FileEntry(archiveEntryName, file));
+  public Iterable<ExtendedArchiveEntry> entries() {
+    return Collections.singleton(new FileEntry(archiveEntryName, file));
   }
 
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+  }
 
   @Override
   public boolean isDirectory() {

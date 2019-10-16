@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.base.Function;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -25,7 +24,7 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
 
   protected AbstractArchiveValidator(Source source) throws IOException {
     ListMultimap<String, TestEntry> entries = LinkedListMultimap.create();
-    for (Entry entry : source.entries()) {
+    for (ExtendedArchiveEntry entry : source.entries()) {
       OutputStream outputStream = new ByteArrayOutputStream();
       ByteStreams.copy(entry.getInputStream(), outputStream);
       entries.put(entry.getName(), new TestEntry(entry.getName(), outputStream.toString(), entry.getTime(), entry.getSize()));

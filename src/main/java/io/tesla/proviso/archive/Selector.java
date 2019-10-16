@@ -2,7 +2,6 @@ package io.tesla.proviso.archive;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.codehaus.plexus.util.SelectorUtils;
 
 public class Selector {

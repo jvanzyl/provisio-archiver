@@ -1,16 +1,14 @@
 package io.tesla.proviso.archive.tar;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-
-import io.tesla.proviso.archive.Entry;
 import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
 public class ExtendedTarArchiveEntry extends TarArchiveEntry implements ExtendedArchiveEntry {
 
-  private Entry entry;
+  private ExtendedArchiveEntry entry;
   private boolean hardLink;
 
   public ExtendedTarArchiveEntry(String entryName, byte linkFlag) {
@@ -18,7 +16,7 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
     this.hardLink = true;
   }
 
-  public ExtendedTarArchiveEntry(String entryName, Entry entry) {
+  public ExtendedTarArchiveEntry(String entryName, ExtendedArchiveEntry entry) {
     super(entryName);
     this.entry = entry;
   }
@@ -38,6 +36,16 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   }
 
   @Override
+  public boolean isExecutable() {
+    return false;
+  }
+
+  @Override
+  public long getTime() {
+    return 0;
+  }
+
+  @Override
   public void setTime(long time) {
     setModTime(time);
   }
@@ -47,5 +55,10 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
     if(!hardLink) {
       entry.writeEntry(outputStream);
     }
+  }
+
+  @Override
+  public InputStream getInputStream() throws IOException {
+    return entry.getInputStream();
   }
 }

@@ -1,9 +1,7 @@
 package io.tesla.proviso.archive;
 
-import java.io.File;
-
 import io.tesla.proviso.archive.tar.TarGzArchiveSource;
-import java.io.IOException;
+import java.io.File;
 
 public class TarGzArchiveValidator extends AbstractArchiveValidator {
 

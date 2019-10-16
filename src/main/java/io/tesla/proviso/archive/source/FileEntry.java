@@ -1,17 +1,16 @@
 package io.tesla.proviso.archive.source;
 
+import com.google.common.io.ByteStreams;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.perms.FileMode;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 
-import com.google.common.io.ByteStreams;
-
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.perms.FileMode;
-
-public class FileEntry implements Entry {
+public class FileEntry implements ExtendedArchiveEntry {
 
   private final String name;
   private final File file;
@@ -32,6 +31,11 @@ public class FileEntry implements Entry {
   }
 
   @Override
+  public boolean isHardLink() {
+    return false;
+  }
+
+  @Override
   public long getSize() {
     return file.length();
   }
@@ -47,13 +51,27 @@ public class FileEntry implements Entry {
   }
 
   @Override
+  public void setFileMode(int mode) {}
+
+  @Override
   public int getFileMode() {
     return FileMode.getFileMode(file);
   }
 
   @Override
+  public void setSize(long size) {}
+
+  @Override
+  public void setTime(long time) {}
+
+  @Override
   public boolean isDirectory() {
     return file.isDirectory();
+  }
+
+  @Override
+  public Date getLastModifiedDate() {
+    return null;
   }
 
   @Override

@@ -1,19 +1,16 @@
 package io.tesla.proviso.archive.zip;
 
+import io.tesla.proviso.archive.ArchiveHandlerSupport;
+import io.tesla.proviso.archive.ExtendedArchiveEntry;
+import io.tesla.proviso.archive.Source;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
-
-import io.tesla.proviso.archive.ArchiveHandlerSupport;
-import io.tesla.proviso.archive.Entry;
-import io.tesla.proviso.archive.ExtendedArchiveEntry;
-import io.tesla.proviso.archive.Source;
 
 public class ZipArchiveHandler extends ArchiveHandlerSupport {
 
@@ -24,7 +21,7 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
   }
 
   @Override
-  public ExtendedArchiveEntry newEntry(String entryName, Entry entry) {
+  public ExtendedArchiveEntry newEntry(String entryName, ExtendedArchiveEntry entry) {
     return new ExtendedZipArchiveEntry(entryName, entry);
   }
 
@@ -34,12 +31,12 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
   }
 
   @Override
-  public ArchiveOutputStream getOutputStream() throws IOException {
-    return new ZipArchiveOutputStream(new FileOutputStream(archive));
+  public Source getArchiveSource() {
+    return new ZipArchiveSource(archive);
   }
 
   @Override
-  public Source getArchiveSource() {
-    return new ZipArchiveSource(archive);
+  public ArchiveOutputStream getOutputStream() throws IOException {
+    return new ZipArchiveOutputStream(new FileOutputStream(archive));
   }
 }

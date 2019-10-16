@@ -2,9 +2,7 @@ package io.tesla.proviso.archive;
 
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -119,6 +117,17 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     // than the large JAR in the archive.
     //
     assertTrue(archive.length() < fileDuplicatedInTarGzArchive.length());
+
+    // Now let's unpack and make sure the hardlinks are preserved
+
+    UnArchiver unArchiver = UnArchiver.builder().build();
+    File unpackedTarGzDirectory = new File(getBasedir(), "target/hardlink-unpacked");
+    //if (unpackedTarGzDirectory.exists()) {
+    //  FileUtils.deleteDirectory(unpackedTarGzDirectory);
+    //}
+    unArchiver.unarchive(archive, unpackedTarGzDirectory);
+
+
   }
 
   public static class TarGzLayoutBuilder {

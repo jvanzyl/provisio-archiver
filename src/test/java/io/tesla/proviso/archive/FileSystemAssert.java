@@ -4,12 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import io.tesla.proviso.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
-
 import org.codehaus.plexus.util.FileUtils;
-
-import io.tesla.proviso.archive.perms.FileMode;
 
 public class FileSystemAssert {
 

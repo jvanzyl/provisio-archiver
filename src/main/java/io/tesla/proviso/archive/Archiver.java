@@ -65,7 +65,7 @@ public class Archiver {
       //
       Map<String, Boolean> paths = new HashMap<>();
       for (Source source : sources) {
-        for (Entry entry : source.entries()) {
+        for (ExtendedArchiveEntry entry : source.entries()) {
           String entryName = entry.getName();
           if (!selector.include(entryName)) {
             continue;

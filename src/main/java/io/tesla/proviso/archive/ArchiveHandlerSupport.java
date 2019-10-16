@@ -5,7 +5,7 @@ import io.tesla.proviso.archive.perms.FileMode;
 public abstract class ArchiveHandlerSupport implements ArchiveHandler {
 
   @Override
-  public ExtendedArchiveEntry createEntryFor(String entryName, Entry archiveEntry, boolean isExecutable) {
+  public ExtendedArchiveEntry createEntryFor(String entryName, ExtendedArchiveEntry archiveEntry, boolean isExecutable) {
     ExtendedArchiveEntry entry = newEntry(entryName, archiveEntry);
     // If we have a valid file mode then use it for the entry we are creating
     if (archiveEntry.getFileMode() != -1) {
