@@ -49,7 +49,7 @@ public class UnArchiver {
     }
     Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
     for (ExtendedArchiveEntry archiveEntry : source.entries()) {
-      String entryName = mutateEntryPathIfRequired(archiveEntry, entryProcessor);
+      String entryName = adjustPath(archiveEntry.getName(), entryProcessor);
 
       if (!selector.include(entryName)) {
         continue;
@@ -73,8 +73,7 @@ public class UnArchiver {
       }
 
       if (archiveEntry.isHardLink()) {
-        String hardLinkPath = mutateEntryPathIfRequired(archiveEntry, entryProcessor);
-        File hardLinkSource = new File(outputDirectory, hardLinkPath);
+        File hardLinkSource = new File(outputDirectory, adjustPath(archiveEntry.getHardLinkPath(), entryProcessor));
         // Remove any existing file or link as Files.createLink has no option to overwrite
         Files.deleteIfExists(outputFile.toPath());
         Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
@@ -103,8 +102,7 @@ public class UnArchiver {
     source.close();
   }
 
-  private String mutateEntryPathIfRequired(ExtendedArchiveEntry archiveEntry, UnarchivingEntryProcessor entryProcessor) {
-    String entryName = archiveEntry.isHardLink() ? archiveEntry.getHardLinkPath() : archiveEntry.getName();
+  private String adjustPath(String entryName, UnarchivingEntryProcessor entryProcessor) {
     if (useRoot == false) {
       entryName = entryName.substring(entryName.indexOf('/') + 1);
     }
