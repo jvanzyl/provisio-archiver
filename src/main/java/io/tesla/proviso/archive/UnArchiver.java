@@ -49,29 +49,17 @@ public class UnArchiver {
     }
     Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
     for (ExtendedArchiveEntry archiveEntry : source.entries()) {
-      String entryName = archiveEntry.getName();
-      if (useRoot == false) {
-        entryName = entryName.substring(entryName.indexOf('/') + 1);
-      }
+      String entryName = mutateEntryPathIfRequired(archiveEntry, entryProcessor);
+
       if (!selector.include(entryName)) {
         continue;
       }
-      //
-      // Process the entry name before any output is created on disk
-      //
-      entryName = entryProcessor.processName(entryName);
-      //
-      // So with an entry we may want to take a set of entry in a set of directories and flatten them
-      // into one directory, or we may want to preserve the directory structure.
-      //
-      if (flatten) {
-        entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
-      } else {
-        if (archiveEntry.isDirectory()) {
-          createDir(new File(outputDirectory, entryName));
-          continue;
-        }
+
+      if (archiveEntry.isDirectory()) {
+        createDir(new File(outputDirectory, entryName));
+        continue;
       }
+
       File outputFile = new File(outputDirectory, entryName);
       //
       // If we take an archive and flatten it into the output directory the first entry will
@@ -85,7 +73,8 @@ public class UnArchiver {
       }
 
       if (archiveEntry.isHardLink()) {
-        File hardLinkSource = new File(outputDirectory, archiveEntry.getHardLinkPath());
+        String hardLinkPath = mutateEntryPathIfRequired(archiveEntry, entryProcessor);
+        File hardLinkSource = new File(outputDirectory, hardLinkPath);
         // Remove any existing file or link as Files.createLink has no option to overwrite
         Files.deleteIfExists(outputFile.toPath());
         Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
@@ -112,6 +101,21 @@ public class UnArchiver {
       }
     }
     source.close();
+  }
+
+  private String mutateEntryPathIfRequired(ExtendedArchiveEntry archiveEntry, UnarchivingEntryProcessor entryProcessor) {
+    String entryName = archiveEntry.isHardLink() ? archiveEntry.getHardLinkPath() : archiveEntry.getName();
+    if (useRoot == false) {
+      entryName = entryName.substring(entryName.indexOf('/') + 1);
+    }
+    // Process the entry name before any output is created on disk
+    entryName = entryProcessor.processName(entryName);
+    // So with an entry we may want to take a set of entry in a set of directories and flatten them
+    // into one directory, or we may want to preserve the directory structure.
+    if (flatten) {
+      entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
+    }
+    return entryName;
   }
 
   private void setFilePermissions(File file, Set<PosixFilePermission> perms) throws IOException {
