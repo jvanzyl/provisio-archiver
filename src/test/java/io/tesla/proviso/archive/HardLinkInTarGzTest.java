@@ -138,6 +138,20 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
 
     // And now unpack it again and make sure it overwrites the files
     unArchiver.unarchive(archive, unpackedTarGzDirectory);
+
+    // Now unpack the archive with hardlink deref'ing enabled and make sure there are no hardlinks
+    UnArchiver hardlinkDerefUnArchiver = UnArchiver.builder().dereferenceHardlinks(true).build();
+    File unpackedTarGzDirectoryForHardlinkDeref = new File(getBasedir(), "target/hardlink-unpacked-hardlink-deref");
+    if (unpackedTarGzDirectoryForHardlinkDeref.exists()) {
+      FileUtils.deleteDirectory(unpackedTarGzDirectoryForHardlinkDeref);
+    }
+    hardlinkDerefUnArchiver.unarchive(archive, unpackedTarGzDirectoryForHardlinkDeref);
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/2/foo-1.0.jar");
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/3/foo-1.0.jar");
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/4/foo-1.0.jar");
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/5/foo-1.0.jar");
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/6/same.txt");
+    assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/7/same.txt");
   }
 
   public static class TarGzLayoutBuilder {

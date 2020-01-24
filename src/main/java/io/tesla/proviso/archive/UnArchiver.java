@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +28,14 @@ public class UnArchiver {
   private final Selector selector;
   private final boolean useRoot;
   private final boolean flatten;
+  private final boolean dereferenceHardlinks;
   private final UnArchiverBuilder builder;
 
   public UnArchiver(UnArchiverBuilder builder) {
     this.builder = builder;
     this.useRoot = builder.useRoot;
     this.flatten = builder.flatten;
+    this.dereferenceHardlinks = builder.dereferenceHardlinks;
     this.selector = new Selector(builder.includes, builder.excludes);
   }
 
@@ -74,9 +77,13 @@ public class UnArchiver {
 
       if (archiveEntry.isHardLink()) {
         File hardLinkSource = new File(outputDirectory, adjustPath(archiveEntry.getHardLinkPath(), entryProcessor));
-        // Remove any existing file or link as Files.createLink has no option to overwrite
-        Files.deleteIfExists(outputFile.toPath());
-        Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
+        if(dereferenceHardlinks) {
+          Files.copy(hardLinkSource.toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+          // Remove any existing file or link as Files.createLink has no option to overwrite
+          Files.deleteIfExists(outputFile.toPath());
+          Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
+        }
       } else {
         try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
           entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
@@ -167,6 +174,7 @@ public class UnArchiver {
     boolean useRoot = true;
     boolean flatten = false;
     boolean posixLongFileMode;
+    boolean dereferenceHardlinks = false;
 
     public UnArchiverBuilder includes(String... includes) {
       List<String> i = Lists.newArrayList();
@@ -210,6 +218,11 @@ public class UnArchiver {
 
     public UnArchiverBuilder posixLongFileMode(boolean posixLongFileMode) {
       this.posixLongFileMode = posixLongFileMode;
+      return this;
+    }
+
+    public UnArchiverBuilder dereferenceHardlinks(boolean dereferenceHardlinks) {
+      this.dereferenceHardlinks = dereferenceHardlinks;
       return this;
     }
 

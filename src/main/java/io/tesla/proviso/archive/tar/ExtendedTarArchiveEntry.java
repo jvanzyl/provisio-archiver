@@ -31,6 +31,7 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
     return getMode();
   }
 
+  @Override
   public boolean isHardLink() {
     return hardLink;
   }
