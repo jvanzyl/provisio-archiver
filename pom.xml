@@ -38,12 +38,6 @@
     </dependency>
     <!-- Testing -->
     <dependency>
-      <groupId>io.airlift</groupId>
-      <artifactId>command</artifactId>
-      <version>0.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.codehaus.swizzle</groupId>
       <artifactId>swizzle-stream</artifactId>
       <version>1.6.2</version>
