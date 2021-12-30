@@ -1,8 +1,6 @@
 package ca.vanzyl.provisio.archive.tar;
 
 import ca.vanzyl.provisio.archive.Selector;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import ca.vanzyl.provisio.archive.ArchiveHandlerSupport;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
@@ -12,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -30,11 +29,11 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
   public TarGzArchiveHandler(File archive, boolean posixLongFileMode, List<String> hardLinkIncludes, List<String> hardLinkExcludes) {
     this.archive = archive;
     this.posixLongFileMode = posixLongFileMode;
-    this.processedFilesNames = Maps.newTreeMap();
+    this.processedFilesNames = new TreeMap<>();
     if (hardLinkIncludes.size() > 0 || hardLinkExcludes.size() > 0) {
       this.hardLinkSelector = new Selector(hardLinkIncludes, hardLinkExcludes);
     } else {
-      this.hardLinkSelector = new Selector(null, ImmutableList.of("**/**"));
+      this.hardLinkSelector = new Selector(null, List.of("**/**"));
     }
   }
 

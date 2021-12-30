@@ -3,13 +3,12 @@ package ca.vanzyl.provisio.archive.source;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.ObjectArrays;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 import org.codehaus.plexus.util.DirectoryScanner;
 
 public class DirectorySource implements Source {
@@ -40,14 +39,13 @@ public class DirectorySource implements Source {
       scanner.setBasedir(sourceDirectory);
       scanner.setCaseSensitive(true);
       scanner.scan();
-      List<String> entries = Lists.newArrayList();
+      List<String> entries = new ArrayList<>();
       // We need to include the directories to preserved the archiving of empty directories
-      for (String includedFile : ObjectArrays.concat(scanner.getIncludedFiles(), scanner.getIncludedDirectories(), String.class)) {
-        if (!includedFile.isEmpty()) {
-          entries.add(includedFile.replace('\\', '/'));
+      Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories()).flatMap(Stream::of).sorted().forEach(f -> {
+        if (!f.isEmpty()) {
+          entries.add(f.replace('\\', '/'));
         }
-      }
-      Collections.sort(entries);
+      });
       this.files = entries.toArray(new String[0]);
       this.sourceDirectory = sourceDirectory;
     }

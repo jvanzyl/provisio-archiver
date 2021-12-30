@@ -1,10 +1,8 @@
 package ca.vanzyl.provisio.archive.zip;
 
-import ca.vanzyl.provisio.archive.perms.FileMode;
-import com.google.common.io.ByteStreams;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
-
+import ca.vanzyl.provisio.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +73,7 @@ public class ZipArchiveSource implements Source {
     @Override
     public void writeEntry(OutputStream outputStream) throws IOException {
       // We specifically do not close the entry because if you do then you can't read anymore archive entries from the stream
-      ByteStreams.copy(getInputStream(), outputStream);
+      getInputStream().transferTo(outputStream);
     }
 
     @Override

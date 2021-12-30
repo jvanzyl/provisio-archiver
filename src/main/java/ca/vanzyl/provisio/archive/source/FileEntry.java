@@ -1,7 +1,6 @@
 package ca.vanzyl.provisio.archive.source;
 
 import ca.vanzyl.provisio.archive.perms.FileMode;
-import com.google.common.io.ByteStreams;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 
 import java.io.File;
@@ -52,7 +51,7 @@ public class FileEntry implements ExtendedArchiveEntry {
       return;
     }
     try (InputStream entryInputStream = getInputStream()) {
-      ByteStreams.copy(entryInputStream, outputStream);
+      entryInputStream.transferTo(outputStream);
     }
   }
 
