@@ -30,7 +30,7 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
   public TarGzArchiveHandler(File archive, boolean posixLongFileMode, List<String> hardLinkIncludes, List<String> hardLinkExcludes) {
     this.archive = archive;
     this.posixLongFileMode = posixLongFileMode;
-    this.processedFilesNames = Maps.newLinkedHashMap();
+    this.processedFilesNames = Maps.newTreeMap();
     if (hardLinkIncludes.size() > 0 || hardLinkExcludes.size() > 0) {
       this.hardLinkSelector = new Selector(hardLinkIncludes, hardLinkExcludes);
     } else {
