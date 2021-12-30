@@ -108,6 +108,13 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
     assertEquals(String.format("Archive entry %s time", entryName), time, values.get(0).longValue());
   }
 
+  @Override
+  public void showEntries() {
+    entries.values().forEach(entry -> {
+      System.out.println(entry.name + " -> " + entry.size);
+    });
+  }
+
   class TestEntry {
 
     String name;

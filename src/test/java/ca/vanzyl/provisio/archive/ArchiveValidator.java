@@ -19,4 +19,6 @@ public interface ArchiveValidator {
   void assertEntries(String... entries) throws IOException;
 
   void assertSortedEntries(String... entries) throws IOException;
+
+  void showEntries();
 }

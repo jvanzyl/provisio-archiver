@@ -51,6 +51,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
         .build();
 
     Archiver archiver = Archiver.builder()
+        .normalize(true)
         .hardLinkIncludes("**/*.jar")
         .posixLongFileMode(true)
         .build();
@@ -63,6 +64,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     // with the hardlinks being used in the archive.
     //
     ArchiveValidator validator = new TarGzArchiveValidator(archive);
+    validator.showEntries();
 
     //
     // 01 hardlink/
