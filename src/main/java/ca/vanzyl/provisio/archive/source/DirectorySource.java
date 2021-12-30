@@ -2,7 +2,6 @@ package ca.vanzyl.provisio.archive.source;
 
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
-import com.google.common.collect.Iterators;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,47 +19,44 @@ public class DirectorySource implements Source {
 
   @Override
   public Iterable<ExtendedArchiveEntry> entries() {
-    return () -> {
-      DirectoryEntryIterator[] iterators = new DirectoryEntryIterator[sourceDirectories.length];
-      for (int i = 0; i < iterators.length; i++) {
-        iterators[i] = new DirectoryEntryIterator(sourceDirectories[i]);
-      }
-      return Iterators.concat(iterators);
-    };
+    return () -> new DirectoryEntryIterator(sourceDirectories);
   }
 
   static class DirectoryEntryIterator implements Iterator<ExtendedArchiveEntry> {
-    final String[] files;
-    final File sourceDirectory;
+    final List<FileEntry> files = new ArrayList<>();
     int currentFileIndex;
 
-    DirectoryEntryIterator(File sourceDirectory) {
-      DirectoryScanner scanner = new DirectoryScanner();
-      scanner.setBasedir(sourceDirectory);
-      scanner.setCaseSensitive(true);
-      scanner.scan();
-      List<String> entries = new ArrayList<>();
-      // We need to include the directories to preserved the archiving of empty directories
-      Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories()).flatMap(Stream::of).sorted().forEach(f -> {
-        if (!f.isEmpty()) {
-          entries.add(f.replace('\\', '/'));
-        }
-      });
-      this.files = entries.toArray(new String[0]);
-      this.sourceDirectory = sourceDirectory;
+    DirectoryEntryIterator(File[] sourceDirectories) {
+      for(File sourceDirectory : sourceDirectories) {
+        String normalizedSourceDirectory = sourceDirectory.getName().replace('\\', '/');
+        DirectoryScanner scanner = new DirectoryScanner();
+        scanner.setBasedir(sourceDirectory);
+        scanner.setCaseSensitive(true);
+        scanner.scan();
+        //
+        // We need to include the directories to preserved the archiving of empty directories. We are also sorting in natural
+        // order because it seems that on the Linux with GitHub Actions the files are coming off the disk not naturally sorted.
+        // I thought this was always the case, but apparently not. Sorting here makes sure that everything beyond this point
+        // will be in sorted order as our reproducibility model depends on this fact.
+        //
+        Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories()).flatMap(Stream::of).sorted().forEach(f -> {
+          if (!f.isEmpty()) {
+            File file = new File(sourceDirectory, f);
+            String archiveEntryName = normalizedSourceDirectory + "/" + f.replace('\\', '/');
+            files.add(new FileEntry(archiveEntryName, file));
+          }
+        });
+      }
     }
 
     @Override
     public boolean hasNext() {
-      return currentFileIndex != files.length;
+      return currentFileIndex != files.size();
     }
 
     @Override
     public ExtendedArchiveEntry next() {
-      String pathRelativeToSourceDirectory = files[currentFileIndex++];
-      File file = new File(sourceDirectory, pathRelativeToSourceDirectory);
-      String archiveEntryName = String.format("%s/%s", sourceDirectory.getName().replace('\\', '/'), pathRelativeToSourceDirectory);
-      return new FileEntry(archiveEntryName, file);
+      return files.get(currentFileIndex++);
     }
 
     @Override
@@ -76,5 +72,4 @@ public class DirectorySource implements Source {
   public boolean isDirectory() {
     return true;
   }
-
 }

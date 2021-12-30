@@ -4,10 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,17 +12,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public abstract class AbstractArchiveValidator implements ArchiveValidator {
 
-  protected final ListMultimap<String, TestEntry> entries;
+  protected final MultiMap<String, TestEntry> entries;
 
   protected AbstractArchiveValidator(Source source) throws IOException {
-    ListMultimap<String, TestEntry> entries = LinkedListMultimap.create();
+    MultiMap<String, TestEntry> entries = new MultiMap<>();
     for (ExtendedArchiveEntry entry : source.entries()) {
       OutputStream outputStream = new ByteArrayOutputStream();
-      ByteStreams.copy(entry.getInputStream(), outputStream);
+      entry.getInputStream().transferTo(outputStream);
       entries.put(entry.getName(), new TestEntry(entry.getName(), outputStream.toString(), entry.getTime(), entry.getSize()));
     }
     this.entries = entries;
@@ -36,7 +33,7 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
   public void assertEntries(String... expectedEntries) throws IOException {
     String expected = toString(Arrays.asList(expectedEntries));
     List<String> actual = new ArrayList<>();
-    for (Map.Entry<String, TestEntry> entry : entries.entries()) {
+    for (Entry<String, List<TestEntry>> entry : entries.entries()) {
       actual.add(entry.getKey());
     }
     assertEquals("Archive entries", expected, toString(actual));
@@ -66,7 +63,7 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
   public void assertSortedEntries(String... expectedEntries) throws IOException {
     String expected = toString(Arrays.asList(expectedEntries));
     List<String> actual = new ArrayList<>();
-    for (Map.Entry<String, TestEntry> entry : entries.entries()) {
+    for (Entry<String, List<TestEntry>> entry : entries.entries()) {
       actual.add(entry.getKey());
     }
     assertEquals("Archive entries", expected, toNonSortedString(actual));
@@ -88,34 +85,35 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
 
   @Override
   public void assertContentOfEntryInArchive(String entryName, String expectedEntryContent) {
-    List<String> values = Lists.transform(entries.get(entryName), input -> input.content);
+    List<String> values = entries.get(entryName).stream().map(e -> e.content).collect(Collectors.toList());
     assertEquals(String.format("Number of archive entries with path  %s", entryName), 1, values.size());
     assertEquals(String.format("Archive entry %s contents", entryName), expectedEntryContent, values.get(0));
   }
 
   @Override
   public void assertSizeOfEntryInArchive(String entryName, long size) {
-    List<Long> values = Lists.transform(entries.get(entryName), input -> input.size);
+    List<Long> values = entries.get(entryName).stream().map(e -> e.size).collect(Collectors.toList());
     assertEquals(String.format("Number of archive entries with path %s", entryName), 1, values.size());
     assertEquals(String.format("Archive entry %s size", entryName), size, (long) values.get(0));
   }
 
-
   @Override
   public void assertTimeOfEntryInArchive(String entryName, long time) {
-    List<Long> values = Lists.transform(entries.get(entryName), input -> input.time);
+    List<Long> values = entries.get(entryName).stream().map(e -> e.time).collect(Collectors.toList());
     assertEquals(String.format("Number of archive entries with path  %s", entryName), 1, values.size());
     assertEquals(String.format("Archive entry %s time", entryName), time, values.get(0).longValue());
   }
 
   @Override
   public void showEntries() {
+    System.out.println();
     entries.values().forEach(entry -> {
       System.out.println(entry.name + " -> " + entry.size);
     });
+    System.out.println();
   }
 
-  class TestEntry {
+  static class TestEntry {
 
     String name;
     String content;

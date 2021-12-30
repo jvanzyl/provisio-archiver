@@ -4,7 +4,6 @@ import ca.vanzyl.provisio.archive.ArchiverHelper;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.UnArchiver.UnArchiverBuilder;
-import com.google.common.io.Closer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,12 +16,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 public class TarGzArchiveSource implements Source {
 
   private final ArchiveInputStream archiveInputStream;
-  private final Closer closer;
 
   public TarGzArchiveSource(File archive) {
-    closer = Closer.create();
     try {
-      archiveInputStream = closer.register(ArchiverHelper.getArchiveHandler(archive, new UnArchiverBuilder()).getInputStream());
+      archiveInputStream = ArchiverHelper.getArchiveHandler(archive, new UnArchiverBuilder()).getInputStream();
     } catch (IOException e) {
       throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
     }
@@ -30,7 +27,7 @@ public class TarGzArchiveSource implements Source {
 
   @Override
   public Iterable<ExtendedArchiveEntry> entries() {
-    return () -> new ArchiveEntryIterator();
+    return ArchiveEntryIterator::new;
   }
 
   class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
@@ -133,7 +130,7 @@ public class TarGzArchiveSource implements Source {
 
   @Override
   public void close() throws IOException {
-    closer.close();
+    archiveInputStream.close();
   }
 
   @Override

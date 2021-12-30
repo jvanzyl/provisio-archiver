@@ -1,6 +1,5 @@
 package ca.vanzyl.provisio.archive;
 
-import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +65,7 @@ public class StringListSource implements Source {
 
     @Override
     public void writeEntry(OutputStream outputStream) throws IOException {
-      ByteStreams.copy(getInputStream(), outputStream);
+      getInputStream().transferTo(outputStream);
     }
 
     @Override

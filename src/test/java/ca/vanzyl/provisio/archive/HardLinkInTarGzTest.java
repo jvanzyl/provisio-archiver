@@ -2,7 +2,6 @@ package ca.vanzyl.provisio.archive;
 
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.Deflater;
@@ -142,7 +142,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
   public static class TarGzLayoutBuilder {
 
     File tarGzDirectory;
-    List<Entry> entries = Lists.newArrayList();
+    List<Entry> entries = new ArrayList<>();
 
     public TarGzLayoutBuilder(File tarGzDirectory) {
       this.tarGzDirectory = tarGzDirectory;

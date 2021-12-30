@@ -1,18 +1,15 @@
 package ca.vanzyl.provisio.archive;
 
-import static ca.vanzyl.provisio.archive.FileSystemAssert.assertPresenceAndContentOf;
-import static ca.vanzyl.provisio.archive.FileSystemAssert.assertPresenceAndSizeOf;
-import static ca.vanzyl.provisio.archive.FileSystemAssert.getOutputDirectory;
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.Hashing;
-import com.google.common.io.ByteStreams;
 import ca.vanzyl.provisio.archive.source.FileSource;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.util.List;
 import org.codehaus.plexus.util.Os;
 import org.codehaus.swizzle.stream.ReplaceStringInputStream;
 import org.junit.Assume;
@@ -322,7 +319,7 @@ public abstract class ArchiveTypeTest {
 
       @Override
       public void processStream(String entryName, InputStream inputStream, OutputStream outputStream) throws IOException {
-        ByteStreams.copy(new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT"), outputStream);
+        new ReplaceStringInputStream(inputStream, "REPLACE_ME", "PROCESSED_TEXT").transferTo(outputStream);
       }
 
       @Override
@@ -397,17 +394,17 @@ public abstract class ArchiveTypeTest {
     Archiver archiver = Archiver.builder().normalize(true).build();
     File archive = FileSystemAssert.getTargetArchive("deterministicOrdering-0." + getArchiveExtension());
     // StringListSource with reverse order
-    archiver.archive(archive, new StringListSource(ImmutableList.of("e", "d", "c", "b", "a")));
+    archiver.archive(archive, new StringListSource(List.of("e", "d", "c", "b", "a")));
     ArchiveValidator validator = validator(archive);
     validator.assertSortedEntries("a", "b", "c", "d", "e");
-    String hash0 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
+    String hash0 = sha1(archive);
 
     archive = FileSystemAssert.getTargetArchive("deterministicOrdering-1." + getArchiveExtension());
     // StringListSource with "random" order
-    archiver.archive(archive, new StringListSource(ImmutableList.of("c", "e", "d", "a", "b")));
+    archiver.archive(archive, new StringListSource(List.of("c", "e", "d", "a", "b")));
     validator = validator(archive);
     validator.assertSortedEntries("a", "b", "c", "d", "e");
-    String hash1 = com.google.common.io.Files.hash(archive, Hashing.sha1()).toString();
+    String hash1 = sha1(archive);
     assertEquals("We expect a normalized archives to have the same outer hash.", hash0, hash1);
   }
 
@@ -419,5 +416,20 @@ public abstract class ArchiveTypeTest {
     archiver.archive(archive, archiveDirectory);
     ArchiveValidator validator = validator(archive);
     validator.assertContentOfEntryInArchive("one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/thirteen/fourteen/fifteen/sixteen/seventeen/entry.txt", "entry.txt");
+  }
+
+  public static String sha1(File file) throws Exception {
+    MessageDigest md = MessageDigest.getInstance("SHA1");
+    FileInputStream fis = new FileInputStream(file);
+    byte[] dataBytes = new byte[1024];
+    int i;
+    while ((i = fis.read(dataBytes)) != -1) {
+      md.update(dataBytes, 0, i);
+    }
+    StringBuilder sb = new StringBuilder();
+    for (byte b : md.digest()) {
+      sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
+    }
+    return sb.toString();
   }
 }
