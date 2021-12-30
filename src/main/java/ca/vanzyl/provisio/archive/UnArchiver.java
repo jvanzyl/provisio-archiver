@@ -2,10 +2,6 @@ package ca.vanzyl.provisio.archive;
 
 import ca.vanzyl.provisio.archive.perms.FileMode;
 import ca.vanzyl.provisio.archive.perms.PosixModes;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -159,7 +155,7 @@ public class UnArchiver {
 
     @Override
     public void processStream(String entryName, InputStream inputStream, OutputStream outputStream) throws IOException {
-      ByteStreams.copy(inputStream, outputStream);
+      inputStream.transferTo(outputStream);
     }
   }
 
@@ -173,32 +169,32 @@ public class UnArchiver {
     boolean dereferenceHardlinks = false;
 
     public UnArchiverBuilder includes(String... includes) {
-      List<String> i = Lists.newArrayList();
+      List<String> i = new ArrayList<>();
       for (String include : includes) {
         if (include != null) {
           i.add(include);
         }
       }
-      return includes(ImmutableList.copyOf(i));
+      return includes(List.copyOf(i));
     }
 
     public UnArchiverBuilder includes(Iterable<String> includes) {
-      Iterables.addAll(this.includes, includes);
+      includes.forEach(this.includes::add);
       return this;
     }
 
     public UnArchiverBuilder excludes(String... excludes) {
-      List<String> i = Lists.newArrayList();
+      List<String> i = new ArrayList<>();
       for (String exclude : excludes) {
         if (exclude != null) {
           i.add(exclude);
         }
       }
-      return excludes(ImmutableList.copyOf(i));
+      return excludes(List.copyOf(i));
     }
 
     public UnArchiverBuilder excludes(Iterable<String> excludes) {
-      Iterables.addAll(this.excludes, excludes);
+      excludes.forEach(this.excludes::add);
       return this;
     }
 
