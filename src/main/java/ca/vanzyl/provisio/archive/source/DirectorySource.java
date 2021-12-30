@@ -30,7 +30,7 @@ public class DirectorySource implements Source {
     };
   }
 
-  class DirectoryEntryIterator implements Iterator<ExtendedArchiveEntry> {
+  static class DirectoryEntryIterator implements Iterator<ExtendedArchiveEntry> {
     final String[] files;
     final File sourceDirectory;
     int currentFileIndex;
@@ -48,7 +48,7 @@ public class DirectorySource implements Source {
         }
       }
       Collections.sort(entries);
-      this.files = entries.toArray(new String[entries.size()]);
+      this.files = entries.toArray(new String[0]);
       this.sourceDirectory = sourceDirectory;
     }
 
