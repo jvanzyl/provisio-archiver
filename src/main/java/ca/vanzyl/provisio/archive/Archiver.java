@@ -2,9 +2,6 @@ package ca.vanzyl.provisio.archive;
 
 import ca.vanzyl.provisio.archive.source.DirectoryEntry;
 import ca.vanzyl.provisio.archive.source.DirectorySource;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import java.io.File;
 import java.io.IOException;
@@ -196,32 +193,32 @@ public class Archiver {
 
   public static class ArchiverBuilder {
 
-    List<String> includes = Lists.newArrayList();
-    List<String> excludes = Lists.newArrayList();
-    List<String> executables = Lists.newArrayList();
+    List<String> includes = new ArrayList<>();
+    List<String> excludes = new ArrayList<>();
+    List<String> executables = new ArrayList<>();
     boolean useRoot = true;
     boolean flatten = false;
     boolean normalize = false;
     String prefix;
     boolean posixLongFileMode;
-    List<String> hardLinkIncludes = Lists.newArrayList();
-    List<String> hardLinkExcludes = Lists.newArrayList();
+    List<String> hardLinkIncludes = new ArrayList<>();
+    List<String> hardLinkExcludes = new ArrayList<>();
 
     public ArchiverBuilder includes(String... includes) {
-      return includes(ImmutableList.copyOf(includes));
+      return includes(List.of(includes));
     }
 
     public ArchiverBuilder includes(Iterable<String> includes) {
-      Iterables.addAll(this.includes, includes);
+      includes.forEach(this.includes::add);
       return this;
     }
 
     public ArchiverBuilder excludes(String... excludes) {
-      return excludes(ImmutableList.copyOf(excludes));
+      return excludes(List.of(excludes));
     }
 
     public ArchiverBuilder excludes(Iterable<String> excludes) {
-      Iterables.addAll(this.excludes, excludes);
+      excludes.forEach(this.excludes::add);
       return this;
     }
 
@@ -241,11 +238,11 @@ public class Archiver {
     }
 
     public ArchiverBuilder executable(String... executables) {
-      return executable(ImmutableList.copyOf(executables));
+      return executable(List.of(executables));
     }
 
     public ArchiverBuilder executable(Iterable<String> executables) {
-      Iterables.addAll(this.executables, executables);
+      executables.forEach(this.executables::add);
       return this;
     }
 
@@ -265,20 +262,20 @@ public class Archiver {
     }
 
     public ArchiverBuilder hardLinkIncludes(String... hardLinkIncludes) {
-      return hardLinkIncludes(ImmutableList.copyOf(hardLinkIncludes));
+      return hardLinkIncludes(List.of(hardLinkIncludes));
     }
 
     public ArchiverBuilder hardLinkIncludes(Iterable<String> hardLinkIncludes) {
-      Iterables.addAll(this.hardLinkIncludes, hardLinkIncludes);
+      hardLinkIncludes.forEach(this.hardLinkIncludes::add);
       return this;
     }
 
     public ArchiverBuilder hardLinkExcludes(String... hardLinkExcludes) {
-      return hardLinkExcludes(ImmutableList.copyOf(hardLinkExcludes));
+      return hardLinkExcludes(List.of(hardLinkExcludes));
     }
 
     public ArchiverBuilder hardLinkExcludes(Iterable<String> hardLinkExcludes) {
-      Iterables.addAll(this.hardLinkExcludes, hardLinkExcludes);
+      hardLinkExcludes.forEach(this.hardLinkExcludes::add);
       return this;
     }
 
