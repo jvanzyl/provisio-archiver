@@ -184,10 +184,8 @@ public class Archiver {
 
   private void writeEntry(ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
     aos.putArchiveEntry(entry);
-    if (!entry.isHardLink()) {
-      if (!entry.isDirectory()) {
-        entry.writeEntry(aos);
-      }
+    if (!entry.isHardLink() && !entry.isDirectory()) {
+      entry.writeEntry(aos);
     }
     aos.closeArchiveEntry();
   }
