@@ -1,12 +1,13 @@
 package ca.vanzyl.provisio.archive.source;
 
+import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
+import ca.vanzyl.provisio.archive.Source;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
-import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
-import ca.vanzyl.provisio.archive.Source;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.codehaus.plexus.util.DirectoryScanner;
@@ -46,6 +47,7 @@ public class DirectorySource implements Source {
           entries.add(includedFile.replace('\\', '/'));
         }
       }
+      Collections.sort(entries);
       this.files = entries.toArray(new String[entries.size()]);
       this.sourceDirectory = sourceDirectory;
     }
