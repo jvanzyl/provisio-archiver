@@ -65,24 +65,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
     //
     ArchiveValidator validator = new TarGzArchiveValidator(archive);
     validator.showEntries();
-
-    //
-    // 01 hardlink/
-    // 02 hardlink/1/
-    // 03 hardlink/1/foo-1.0.jar
-    // 04 hardlink/4/
-    // 05 hardlink/4/foo-1.0.jar link to hardlink/1/foo-1.0.jar
-    // 06 hardlink/3/
-    // 07 hardlink/3/foo-1.0.jar link to hardlink/4/foo-1.0.jar
-    // 08 hardlink/2/
-    // 09 hardlink/2/foo-1.0.jar link to hardlink/3/foo-1.0.jar
-    // 10 hardlink/5/
-    // 11 hardlink/5/foo-1.0.jar link to hardlink/2/foo-1.0.jar
-    // 12 hardlink/6/
-    // 13 hardlink/6/same.txt
-    // 14 hardlink/7/
-    // 15 hardlink/7/same.txt
-    //
+    
     validator.assertNumberOfEntriesInArchive(15);
 
     validator.assertEntries(
