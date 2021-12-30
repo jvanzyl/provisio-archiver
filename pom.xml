@@ -10,10 +10,6 @@
   <artifactId>takari-archiver</artifactId>
   <version>0.1.27-SNAPSHOT</version>
   <name>Provisio :: Archiver</name>
-  <properties>
-    <takari.testJar>true</takari.testJar>
-    <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.guava</groupId>
