@@ -88,11 +88,11 @@ public class FileSystemAssert {
     return new File(outputDirectory, fileName);
   }
 
-  public static final File getOutputDirectory() {
+  public static File getOutputDirectory() {
     return new File(getBasedir(), "target/archives");
   }
 
-  public static final File getOutputDirectory(String name) throws IOException {
+  public static File getOutputDirectory(String name) throws IOException {
     File outputDirectory = new File(getBasedir(), "target/archives/" + name);
     if (outputDirectory.exists()) {
       FileUtils.deleteDirectory(outputDirectory);
@@ -100,23 +100,23 @@ public class FileSystemAssert {
     return outputDirectory;
   }
 
-  public static final File getSourceArchiveDirectory() {
+  public static File getSourceArchiveDirectory() {
     return new File(getBasedir(), "src/test/archives");
   }
 
-  public static final File getSourceArchive(String name) {
+  public static File getSourceArchive(String name) {
     return new File(getSourceArchiveDirectory(), name);
   }
 
-  public static final File getSourceFileDirectory() {
+  public static File getSourceFileDirectory() {
     return new File(getBasedir(), "src/test/files");
   }
 
-  public static final File getSourceFile(String name) {
+  public static File getSourceFile(String name) {
     return new File(getSourceFileDirectory(), name);
   }
 
-  public static final File getTargetArchive(String name) {
+  public static File getTargetArchive(String name) {
     File archive = new File(getOutputDirectory(), name);
     if (!archive.getParentFile().exists()) {
       archive.getParentFile().mkdirs();

@@ -9,7 +9,7 @@ import java.util.Date;
 
 public class DirectoryEntry implements ExtendedArchiveEntry {
 
-  private String name;
+  private final String name;
 
   public DirectoryEntry(String name) {
     if (!name.endsWith("/")) {

@@ -8,7 +8,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
 
-  private ExtendedArchiveEntry entry;
+  private final ExtendedArchiveEntry entry;
 
   public ExtendedZipArchiveEntry(String entryName, ExtendedArchiveEntry entry) {
     super(entryName);

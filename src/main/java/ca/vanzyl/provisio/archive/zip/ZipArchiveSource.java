@@ -15,14 +15,15 @@ import org.apache.commons.compress.archivers.zip.ZipFile;
 
 public class ZipArchiveSource implements Source {
 
-  private ZipFile zipFile;
-  private Enumeration<ZipArchiveEntry> entries;
+  private final ZipFile zipFile;
+  private final Enumeration<ZipArchiveEntry> entries;
 
   public ZipArchiveSource(File archive) {
     try {
       zipFile = new ZipFile(archive, "UTF8", true) {
         @Override
         protected void finalize() throws Throwable {
+          super.finalize();
           super.close();
         }
       };
@@ -34,7 +35,7 @@ public class ZipArchiveSource implements Source {
 
   @Override
   public Iterable<ExtendedArchiveEntry> entries() {
-    return () -> new ArchiveEntryIterator();
+    return ArchiveEntryIterator::new;
   }
 
   class EntrySourceArchiveEntry implements ExtendedArchiveEntry {

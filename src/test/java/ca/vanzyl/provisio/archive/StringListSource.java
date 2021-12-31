@@ -10,7 +10,7 @@ import java.util.List;
 
 public class StringListSource implements Source {
 
-  private List<String> entries;
+  private final List<String> entries;
   
   public StringListSource(List<String> entries) {
     this.entries = entries;
@@ -27,10 +27,10 @@ public class StringListSource implements Source {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
   }
 
-  class StringEntry implements ExtendedArchiveEntry {
+  static class StringEntry implements ExtendedArchiveEntry {
 
     final String name;
     
@@ -44,7 +44,7 @@ public class StringListSource implements Source {
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
+    public InputStream getInputStream() {
       return new ByteArrayInputStream(name.getBytes());
     }
 
@@ -103,7 +103,7 @@ public class StringListSource implements Source {
     }
   }
   
-  class StringEntryIterator implements Iterator<ExtendedArchiveEntry> {
+  static class StringEntryIterator implements Iterator<ExtendedArchiveEntry> {
 
     final Iterator<String> delegate;
     

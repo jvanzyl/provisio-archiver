@@ -1,6 +1,5 @@
 package ca.vanzyl.provisio.archive;
 
-import java.util.Collections;
 import java.util.List;
 import org.codehaus.plexus.util.SelectorUtils;
 
@@ -10,8 +9,8 @@ public class Selector {
   private final List<String> excludes;
 
   public Selector(List<String> includes, List<String> excludes) {
-    this.includes = includes != null ? includes : Collections.<String>emptyList();
-    this.excludes = excludes != null ? excludes : Collections.<String>emptyList();
+    this.includes = includes != null ? includes : List.of();
+    this.excludes = excludes != null ? excludes : List.of();
   }
 
   public boolean include(String entryName) {

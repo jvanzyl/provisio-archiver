@@ -60,7 +60,7 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
   }
 
   @Override
-  public void assertSortedEntries(String... expectedEntries) throws IOException {
+  public void assertSortedEntries(String... expectedEntries) {
     String expected = toString(Arrays.asList(expectedEntries));
     List<String> actual = new ArrayList<>();
     for (Entry<String, List<TestEntry>> entry : entries.entries()) {
@@ -107,9 +107,7 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
   @Override
   public void showEntries() {
     System.out.println();
-    entries.values().forEach(entry -> {
-      System.out.println(entry.name + " -> " + entry.size);
-    });
+    entries.values().forEach(entry -> System.out.println(entry.name + " -> " + entry.size));
     System.out.println();
   }
 

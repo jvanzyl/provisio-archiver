@@ -39,7 +39,7 @@ public class UnArchiver {
     //
     // These are the contributions that unpacking this archive is providing
     //
-    if (outputDirectory.exists() == false) {
+    if (!outputDirectory.exists()) {
       outputDirectory.mkdirs();
     }
     Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
@@ -84,9 +84,9 @@ public class UnArchiver {
 
       int mode = archiveEntry.getFileMode();
       //
-      // Currently zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong or
+      // Currently, zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong, or
       // it's not being stored directly. So in the case of unpacking an zip archive we don't want to produce files
-      // that are unreadble or unusable so we'll give files 0644 and directories 0755
+      // that are unreadable or unusable, so we'll give files 0644 and directories 0755
       //
       if (mode > 0) {
         setFilePermissions(outputFile, FileMode.toPermissionsSet(mode));
@@ -102,7 +102,7 @@ public class UnArchiver {
   }
 
   private String adjustPath(String entryName, UnarchivingEntryProcessor entryProcessor) {
-    if (useRoot == false) {
+    if (!useRoot) {
       entryName = entryName.substring(entryName.indexOf('/') + 1);
     }
     // Process the entry name before any output is created on disk
@@ -124,7 +124,7 @@ public class UnArchiver {
   }
 
   private void createDir(File dir) {
-    if (dir.exists() == false) {
+    if (!dir.exists()) {
       dir.mkdirs();
     }
   }
@@ -146,7 +146,7 @@ public class UnArchiver {
   /**
    * {@EntryProcesor} that leaves the entry name and content as-is.
    */
-  class NoopEntryProcessor implements UnarchivingEntryProcessor {
+  static class NoopEntryProcessor implements UnarchivingEntryProcessor {
 
     @Override
     public String processName(String entryName) {
@@ -161,8 +161,8 @@ public class UnArchiver {
 
   public static class UnArchiverBuilder {
 
-    List<String> includes = new ArrayList<String>();
-    List<String> excludes = new ArrayList<String>();
+    List<String> includes = new ArrayList<>();
+    List<String> excludes = new ArrayList<>();
     boolean useRoot = true;
     boolean flatten = false;
     boolean posixLongFileMode;
