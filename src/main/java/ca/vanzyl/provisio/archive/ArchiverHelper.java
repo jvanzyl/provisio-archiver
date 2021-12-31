@@ -1,5 +1,6 @@
 package ca.vanzyl.provisio.archive;
 
+import ca.vanzyl.provisio.archive.UnArchiver.UnArchiverBuilder;
 import ca.vanzyl.provisio.archive.tar.TarGzArchiveHandler;
 import ca.vanzyl.provisio.archive.zip.ZipArchiveHandler;
 import ca.vanzyl.provisio.archive.Archiver.ArchiverBuilder;
@@ -21,7 +22,7 @@ public class ArchiverHelper {
     return archiveHandler;
   }
 
-  public static ArchiveHandler getArchiveHandler(File archive, UnArchiver.UnArchiverBuilder builder) {
+  public static ArchiveHandler getArchiveHandler(File archive, UnArchiverBuilder builder) {
     ArchiveHandler archiveHandler;
     if (isZip(archive)) {
       archiveHandler = new ZipArchiveHandler(archive);
