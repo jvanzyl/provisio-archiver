@@ -14,7 +14,7 @@ public class ArchiverHelper {
     ArchiveHandler archiveHandler;
     if (isZip(archive)) {
       archiveHandler = new ZipArchiveHandler(archive);
-    } else if (archive.getName().endsWith(".tgz") || archive.getName().endsWith("tar.gz")) {
+    } else if (isTarGz(archive)) {
       archiveHandler = new TarGzArchiveHandler(archive, builder.posixLongFileMode, builder.hardLinkIncludes, builder.hardLinkExcludes);
     } else {
       throw new RuntimeException("Cannot detect how to read " + archive.getName());
@@ -26,14 +26,13 @@ public class ArchiverHelper {
     ArchiveHandler archiveHandler;
     if (isZip(archive)) {
       archiveHandler = new ZipArchiveHandler(archive);
-    } else if (isGzip(archive)) {
+    } else if (isTarGz(archive)) {
       archiveHandler = new TarGzArchiveHandler(archive, builder.posixLongFileMode, Collections.emptyList(), Collections.emptyList());
     } else {
       throw new RuntimeException("Cannot detect how to read " + archive.getName());
     }
     return archiveHandler;
   }
-
 
   private static boolean isZip(File file) {
     return file.getName().endsWith(".zip") ||
@@ -43,7 +42,7 @@ public class ArchiverHelper {
         file.getName().endsWith(".jpi");
   }
 
-  private static boolean isGzip(File file) {
+  private static boolean isTarGz(File file) {
     return file.getName().endsWith(".tgz") ||
         file.getName().endsWith("tar.gz");
   }
