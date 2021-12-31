@@ -39,9 +39,8 @@ public class UnArchiver {
     //
     // These are the contributions that unpacking this archive is providing
     //
-    if (!outputDirectory.exists()) {
-      outputDirectory.mkdirs();
-    }
+    // mkdirs() would check if the directory exists
+    outputDirectory.mkdirs();
     Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
     for (ExtendedArchiveEntry archiveEntry : source.entries()) {
       String entryName = adjustPath(archiveEntry.getName(), entryProcessor);
