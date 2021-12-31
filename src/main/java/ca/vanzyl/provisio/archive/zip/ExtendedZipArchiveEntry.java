@@ -25,10 +25,6 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
     return getUnixMode();
   }
 
-  @Override
-  public void setTime(long time) {
-    super.setTime(time);
-  }
 
   @Override
   public void writeEntry(OutputStream outputStream) throws IOException {

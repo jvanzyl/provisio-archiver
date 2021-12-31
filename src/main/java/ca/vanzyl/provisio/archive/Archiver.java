@@ -68,14 +68,16 @@ public class Archiver {
           if (!selector.include(entryName)) {
             continue;
           }
-          if (!useRoot && source.isDirectory()) {
-            entryName = entryName.substring(entryName.indexOf('/') + 1);
-          }
-          if (flatten && source.isDirectory()) {
-            if (entry.isDirectory()) {
-              continue;
+          if (source.isDirectory()) {
+            if (!useRoot) {
+              entryName = entryName.substring(entryName.indexOf('/') + 1);
             }
-            entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
+            if (flatten) {
+              if (entry.isDirectory()) {
+                continue;
+              }
+              entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
+            }
           }
           if (prefix != null) {
             entryName = prefix + entryName;
