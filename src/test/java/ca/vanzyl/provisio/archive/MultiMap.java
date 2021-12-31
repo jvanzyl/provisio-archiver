@@ -34,10 +34,6 @@ class MultiMap<K, V> {
   }
 
   public int size() {
-    int size = 0;
-    for (Collection<V> value : map.values()) {
-      size += value.size();
-    }
-    return size;
+    return values().size();
   }
 }
