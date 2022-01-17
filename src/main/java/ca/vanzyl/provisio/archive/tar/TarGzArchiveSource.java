@@ -3,6 +3,7 @@ package ca.vanzyl.provisio.archive.tar;
 import ca.vanzyl.provisio.archive.ArchiverHelper;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
+import ca.vanzyl.provisio.archive.UnArchiver;
 import ca.vanzyl.provisio.archive.UnArchiver.UnArchiverBuilder;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,7 @@ public class TarGzArchiveSource implements Source {
 
   public TarGzArchiveSource(File archive) {
     try {
-      archiveInputStream = ArchiverHelper.getArchiveHandler(archive, new UnArchiverBuilder()).getInputStream();
+      archiveInputStream = ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder()).getInputStream();
     } catch (IOException e) {
       throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
     }
