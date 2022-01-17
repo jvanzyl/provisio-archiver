@@ -14,13 +14,30 @@ import org.junit.Test;
 public class SymbolicLinkInTarGzTest extends FileSystemAssert {
 
   @Test
-  public void symboliclinksAreUnarchived() throws Exception {
-    File tarGzDirectory = new File(getBasedir(), "target/symboliclink");
+  public void symboliclinksAreUnarchivedInTarGzFiles() throws Exception {
+    File tarGzDirectory = new File(getBasedir(), "target/symboliclink-tgz");
     if (tarGzDirectory.exists()) {
       FileUtils.deleteDirectory(tarGzDirectory);
     }
 
     File archive = getSourceArchive("jenv.tar.gz");
+    UnArchiver unArchiver = UnArchiver.builder().useRoot(false).build();
+    unArchiver.unarchive(archive, tarGzDirectory);
+
+    Path link = tarGzDirectory.toPath().resolve("bin/jenv");
+    Path target = Files.readSymbolicLink(link);
+    assertTrue(isSymbolicLink(link));
+    assertEquals("../libexec/jenv", target.toString());
+  }
+
+  @Test
+  public void symboliclinksAreUnarchivedInZipFiles() throws Exception {
+    File tarGzDirectory = new File(getBasedir(), "target/symboliclink-zip");
+    if (tarGzDirectory.exists()) {
+      FileUtils.deleteDirectory(tarGzDirectory);
+    }
+
+    File archive = getSourceArchive("jenv.zip");
     UnArchiver unArchiver = UnArchiver.builder().useRoot(false).build();
     unArchiver.unarchive(archive, tarGzDirectory);
 

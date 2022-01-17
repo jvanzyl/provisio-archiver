@@ -3,6 +3,7 @@ package ca.vanzyl.provisio.archive.zip;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.perms.FileMode;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,12 +59,17 @@ public class ZipArchiveSource implements Source {
 
     @Override
     public boolean isSymbolicLink() {
-      return false;
+      return archiveEntry.isUnixSymlink();
     }
 
     @Override
     public String getSymbolicLinkPath() {
-      return null;
+      try(InputStream is = getInputStream(); ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        is.transferTo(os);
+        return os.toString();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
