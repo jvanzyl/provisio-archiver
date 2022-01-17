@@ -37,6 +37,16 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
   }
 
   @Override
+  public boolean isSymbolicLink() {
+    return false;
+  }
+
+  @Override
+  public String getSymbolicLinkPath() {
+    return null;
+  }
+
+  @Override
   public boolean isHardLink() {
     return false;
   }

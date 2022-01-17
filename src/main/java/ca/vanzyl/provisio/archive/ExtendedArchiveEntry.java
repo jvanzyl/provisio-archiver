@@ -18,6 +18,10 @@ public interface ExtendedArchiveEntry extends ArchiveEntry {
 
   InputStream getInputStream() throws IOException;
 
+  boolean isSymbolicLink();
+
+  String getSymbolicLinkPath();
+
   boolean isHardLink();
 
   String getHardLinkPath();

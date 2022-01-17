@@ -31,6 +31,16 @@ public class FileEntry implements ExtendedArchiveEntry {
   }
 
   @Override
+  public boolean isSymbolicLink() {
+    return false;
+  }
+
+  @Override
+  public String getSymbolicLinkPath() {
+    return null;
+  }
+
+  @Override
   public boolean isHardLink() {
     return false;
   }

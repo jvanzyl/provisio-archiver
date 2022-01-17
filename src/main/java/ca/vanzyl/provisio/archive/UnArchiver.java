@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
@@ -75,26 +77,20 @@ public class UnArchiver {
           Files.deleteIfExists(outputFile.toPath());
           Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
         }
+        setFilePermission(archiveEntry, outputFile);
+      }
+      else if (archiveEntry.isSymbolicLink()) {
+        // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
+        Path outputPath = outputDirectory.toPath();
+        Path link = outputDirectory.toPath().resolve(entryName);
+        Path target = outputDirectory.toPath().relativize(outputPath.resolve(archiveEntry.getSymbolicLinkPath()));
+        Files.createDirectories(link.getParent());
+        Files.createSymbolicLink(link, target);
       } else {
         try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
           entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
         }
-      }
-
-      int mode = archiveEntry.getFileMode();
-      //
-      // Currently, zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong, or
-      // it's not being stored directly. So in the case of unpacking an zip archive we don't want to produce files
-      // that are unreadable or unusable, so we'll give files 0644 and directories 0755
-      //
-      if (mode > 0) {
-        setFilePermissions(outputFile, FileMode.toPermissionsSet(mode));
-      } else {
-        if (archiveEntry.isDirectory()) {
-          setFilePermissions(outputFile, PosixModes.intModeToPosix(0755));
-        } else {
-          setFilePermissions(outputFile, PosixModes.intModeToPosix(0644));
-        }
+        setFilePermission(archiveEntry, outputFile);
       }
     }
     source.close();
@@ -112,6 +108,24 @@ public class UnArchiver {
       entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
     }
     return entryName;
+  }
+
+  private void setFilePermission(ExtendedArchiveEntry archiveEntry, File outputFile) throws IOException {
+    int mode = archiveEntry.getFileMode();
+    //
+    // Currently, zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong, or
+    // it's not being stored directly. So in the case of unpacking an zip archive we don't want to produce files
+    // that are unreadable or unusable, so we'll give files 0644 and directories 0755
+    //
+    if (mode > 0) {
+      setFilePermissions(outputFile, FileMode.toPermissionsSet(mode));
+    } else {
+      if (archiveEntry.isDirectory()) {
+        setFilePermissions(outputFile, PosixModes.intModeToPosix(0755));
+      } else {
+        setFilePermissions(outputFile, PosixModes.intModeToPosix(0644));
+      }
+    }
   }
 
   private void setFilePermissions(File file, Set<PosixFilePermission> perms) throws IOException {

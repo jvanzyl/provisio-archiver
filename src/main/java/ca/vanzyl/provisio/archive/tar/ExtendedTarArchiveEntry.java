@@ -10,6 +10,7 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
 
   private ExtendedArchiveEntry entry;
   private boolean hardLink;
+  private boolean symbolicLink;
 
   public ExtendedTarArchiveEntry(String entryName, byte linkFlag) {
     super(entryName, linkFlag);
@@ -29,6 +30,16 @@ public class ExtendedTarArchiveEntry extends TarArchiveEntry implements Extended
   @Override
   public int getFileMode() {
     return getMode();
+  }
+
+  @Override
+  public boolean isSymbolicLink() {
+    return symbolicLink;
+  }
+
+  @Override
+  public String getSymbolicLinkPath() {
+    return entry.getSymbolicLinkPath();
   }
 
   @Override

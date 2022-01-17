@@ -49,6 +49,16 @@ public class TarGzArchiveSource implements Source {
     }
 
     @Override
+    public boolean isSymbolicLink() {
+      return archiveEntry.isSymbolicLink();
+    }
+
+    @Override
+    public String getSymbolicLinkPath() {
+      return archiveEntry.getLinkName();
+    }
+
+    @Override
     public boolean isHardLink() {
       return archiveEntry.isLink();
     }
