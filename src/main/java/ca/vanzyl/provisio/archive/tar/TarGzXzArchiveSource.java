@@ -14,11 +14,11 @@ import java.util.Iterator;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
-public class TarGzArchiveSource implements Source {
+public class TarGzXzArchiveSource implements Source {
 
   private final ArchiveInputStream archiveInputStream;
 
-  public TarGzArchiveSource(File archive) {
+  public TarGzXzArchiveSource(File archive) {
     try {
       archiveInputStream = ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder()).getInputStream();
     } catch (IOException e) {

@@ -16,6 +16,12 @@
       <artifactId>commons-compress</artifactId>
       <version>1.21</version>
     </dependency>
+    <!-- This is optional in the commons-compress POM -->
+    <dependency>
+      <groupId>org.tukaani</groupId>
+      <artifactId>xz</artifactId>
+      <version>1.9</version>
+    </dependency>
     <!-- Directory Scanner -->
     <dependency>
       <groupId>org.codehaus.plexus</groupId>

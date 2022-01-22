@@ -21,7 +21,7 @@ public class ZipArchiveSource implements Source {
 
   public ZipArchiveSource(File archive) {
     try {
-      zipFile = new ZipFile(archive, "UTF8", true) {
+      zipFile = new ZipFile(archive, "UTF8", false) {
         @Override
         protected void finalize() throws Throwable {
           super.finalize();

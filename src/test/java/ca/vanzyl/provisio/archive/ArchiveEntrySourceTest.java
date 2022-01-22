@@ -1,6 +1,6 @@
 package ca.vanzyl.provisio.archive;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
+import ca.vanzyl.provisio.archive.tar.TarGzXzArchiveSource;
 import java.io.File;
 import org.junit.Test;
 
@@ -12,7 +12,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
         .build();
 
     File archive = getTargetArchive("archive-from-archive.tar.gz");
-    Source source = new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
+    Source source = new TarGzXzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
     archiver.archive(archive, source);
     ArchiveValidator validator = new TarGzArchiveValidator(archive);
     // note that original archive is missing 3 directory entries
