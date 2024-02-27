@@ -16,14 +16,14 @@
     <version>53</version>
   </parent>
   <artifactId>takari-archiver</artifactId>
-  <version>0.1.30-SNAPSHOT</version>
+  <version>0.1.30</version>
   <packaging>takari-jar</packaging>
   <name>Provisio :: Archiver</name>
 
   <scm>
     <connection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</connection>
     <developerConnection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>takari-archiver-0.1.30</tag>
     <url>https://github.com/jvanzyl/provisio-archiver</url>
   </scm>
 
