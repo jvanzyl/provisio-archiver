@@ -5,7 +5,7 @@ import java.io.File;
 
 public class TarGzArchiveValidator extends AbstractArchiveValidator {
 
-  public TarGzArchiveValidator(File archive) throws Exception {
-    super(new TarGzXzArchiveSource(archive));
-  }
+    public TarGzArchiveValidator(File archive) throws Exception {
+        super(new TarGzXzArchiveSource(archive));
+    }
 }

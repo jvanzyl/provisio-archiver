@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package ca.vanzyl.provisio.archive.source;
 
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
@@ -9,84 +16,84 @@ import java.util.Date;
 
 public class DirectoryEntry implements ExtendedArchiveEntry {
 
-  private final String name;
+    private final String name;
 
-  public DirectoryEntry(String name) {
-    if (!name.endsWith("/")) {
-      throw new IllegalArgumentException();
+    public DirectoryEntry(String name) {
+        if (!name.endsWith("/")) {
+            throw new IllegalArgumentException();
+        }
+        this.name = name;
     }
-    this.name = name;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
+    @Override
+    public String getName() {
+        return name;
+    }
 
-  @Override
-  public InputStream getInputStream() throws IOException {
-    return new ByteArrayInputStream(new byte[0]);
-  }
+    @Override
+    public InputStream getInputStream() throws IOException {
+        return new ByteArrayInputStream(new byte[0]);
+    }
 
-  @Override
-  public boolean isSymbolicLink() {
-    return false;
-  }
+    @Override
+    public boolean isSymbolicLink() {
+        return false;
+    }
 
-  @Override
-  public String getSymbolicLinkPath() {
-    return null;
-  }
+    @Override
+    public String getSymbolicLinkPath() {
+        return null;
+    }
 
-  @Override
-  public boolean isHardLink() {
-    return false;
-  }
+    @Override
+    public boolean isHardLink() {
+        return false;
+    }
 
-  @Override
-  public String getHardLinkPath() {
-    return null;
-  }
+    @Override
+    public String getHardLinkPath() {
+        return null;
+    }
 
-  @Override
-  public long getSize() {
-    return 0;
-  }
+    @Override
+    public long getSize() {
+        return 0;
+    }
 
-  @Override
-  public void writeEntry(OutputStream outputStream) throws IOException {}
+    @Override
+    public void writeEntry(OutputStream outputStream) throws IOException {}
 
-  @Override
-  public void setFileMode(int mode) {}
+    @Override
+    public void setFileMode(int mode) {}
 
-  @Override
-  public int getFileMode() {
-    return -1;
-  }
+    @Override
+    public int getFileMode() {
+        return -1;
+    }
 
-  @Override
-  public void setSize(long size) {}
+    @Override
+    public void setSize(long size) {}
 
-  @Override
-  public void setTime(long time) {}
+    @Override
+    public void setTime(long time) {}
 
-  @Override
-  public boolean isDirectory() {
-    return true;
-  }
+    @Override
+    public boolean isDirectory() {
+        return true;
+    }
 
-  @Override
-  public Date getLastModifiedDate() {
-    return null;
-  }
+    @Override
+    public Date getLastModifiedDate() {
+        return null;
+    }
 
-  @Override
-  public boolean isExecutable() {
-    return false;
-  }
+    @Override
+    public boolean isExecutable() {
+        return false;
+    }
 
-  @Override
-  public long getTime() {
-    return 0;
-  }
+    @Override
+    public long getTime() {
+        return 0;
+    }
 }
