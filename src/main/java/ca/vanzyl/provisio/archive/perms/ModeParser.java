@@ -44,7 +44,7 @@ public final class ModeParser {
      * @param instructions the instructions
      * @return a permission change object
      * @throws InvalidModeInstructionException instruction string is invalid
-     * @throws UnsupportedOperationException an unsupported instruction was encountered while parsin
+     * @throws UnsupportedOperationException an unsupported instruction was encountered while parsing
      */
     public static PermissionsSet buildPermissionsSet(final String instructions) {
         Objects.requireNonNull(instructions);
