@@ -19,6 +19,14 @@
   <version>0.1.30-SNAPSHOT</version>
   <packaging>takari-jar</packaging>
   <name>Provisio :: Archiver</name>
+
+  <scm>
+    <connection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</connection>
+    <developerConnection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/jvanzyl/provisio-archiver</url>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -63,31 +71,4 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>takari-release</id>
-      <properties>
-        <takari.release.gpg.skip>true</takari.release.gpg.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>ca.vanzyl.maven.plugins</groupId>
-            <artifactId>sigstore-maven-plugin</artifactId>
-            <version>0.0.11</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-                <configuration>
-                  <mavenPgpSignatures>true</mavenPgpSignatures>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
