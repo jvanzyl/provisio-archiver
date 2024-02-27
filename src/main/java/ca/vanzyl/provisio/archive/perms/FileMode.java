@@ -104,7 +104,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is a tree (aka directory). */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode TREE = new FileMode(TYPE_TREE) {
+    public static FileMode TREE = new FileMode(TYPE_TREE) {
         public boolean equals(final int modeBits) {
             return (modeBits & TYPE_MASK) == TYPE_TREE;
         }
@@ -112,7 +112,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is a symbolic link. */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode SYMLINK = new FileMode(TYPE_SYMLINK) {
+    public static FileMode SYMLINK = new FileMode(TYPE_SYMLINK) {
         public boolean equals(final int modeBits) {
             return (modeBits & TYPE_MASK) == TYPE_SYMLINK;
         }
@@ -120,7 +120,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is a non-executable file. */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode REGULAR_FILE = new FileMode(0100644) {
+    public static FileMode REGULAR_FILE = new FileMode(0100644) {
         public boolean equals(final int modeBits) {
             return (modeBits & TYPE_MASK) == TYPE_FILE && (modeBits & 0111) == 0;
         }
@@ -128,7 +128,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is an executable file. */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode EXECUTABLE_FILE = new FileMode(0100755) {
+    public static FileMode EXECUTABLE_FILE = new FileMode(0100755) {
         public boolean equals(final int modeBits) {
             return (modeBits & TYPE_MASK) == TYPE_FILE && (modeBits & 0111) != 0;
         }
@@ -136,7 +136,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is a submodule commit in another repository. */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode GITLINK = new FileMode(TYPE_GITLINK) {
+    public static FileMode GITLINK = new FileMode(TYPE_GITLINK) {
         public boolean equals(final int modeBits) {
             return (modeBits & TYPE_MASK) == TYPE_GITLINK;
         }
@@ -144,7 +144,7 @@ public abstract class FileMode {
 
     /** Mode indicating an entry is missing during parallel walks. */
     @SuppressWarnings("synthetic-access")
-    public static final FileMode MISSING = new FileMode(TYPE_MISSING) {
+    public static FileMode MISSING = new FileMode(TYPE_MISSING) {
         public boolean equals(final int modeBits) {
             return modeBits == 0;
         }
@@ -156,7 +156,7 @@ public abstract class FileMode {
      * @param bits the mode bits the caller has somehow obtained.
      * @return the FileMode instance that represents the given bits.
      */
-    public static final FileMode fromBits(final int bits) {
+    public static FileMode fromBits(final int bits) {
         switch (bits & TYPE_MASK) {
             case TYPE_MISSING:
                 if (bits == 0) return MISSING;
@@ -345,7 +345,6 @@ public abstract class FileMode {
         for (int i = 0; i < 10; i++) {
             unix[i] = '-';
         }
-        Set<PosixFilePermission> result = EnumSet.noneOf(PosixFilePermission.class);
         if (isSet(mode, 0400)) {
             unix[1] = 'r';
         }

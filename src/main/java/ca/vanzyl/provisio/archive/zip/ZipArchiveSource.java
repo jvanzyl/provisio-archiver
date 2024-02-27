@@ -28,13 +28,11 @@ public class ZipArchiveSource implements Source {
 
     public ZipArchiveSource(File archive) {
         try {
-            zipFile = new ZipFile(archive, "UTF8", false) {
-                @Override
-                protected void finalize() throws Throwable {
-                    super.finalize();
-                    super.close();
-                }
-            };
+            zipFile = ZipFile.builder()
+                    .setFile(archive)
+                    .setUseUnicodeExtraFields(false)
+                    .get();
+            // UTF-8 is the default charset
             entries = zipFile.getEntries();
         } catch (IOException e) {
             throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
