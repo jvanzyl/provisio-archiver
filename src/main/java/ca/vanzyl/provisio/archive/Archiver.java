@@ -35,6 +35,7 @@ public class Archiver {
     private final String prefix;
     private final Selector selector;
     private final ArchiverBuilder builder;
+    private final long entryTimeMillis;
 
     private Archiver(ArchiverBuilder builder) {
         this.builder = builder;
@@ -42,6 +43,7 @@ public class Archiver {
         this.useRoot = builder.useRoot;
         this.flatten = builder.flatten;
         this.normalize = builder.normalize;
+        this.entryTimeMillis = builder.entryTimeMillis;
         this.prefix = builder.prefix;
         this.selector = new Selector(builder.includes, builder.excludes);
     }
@@ -161,13 +163,13 @@ public class Archiver {
     }
 
     /**
-     * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link #DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link System#currentTimeMillis()} otherwise.
+     * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link #DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link #entryTimeMillis} otherwise.
      *
      * @param filename The name of the file for which we are entering the time
      * @return the time for a new Jar file entry in milliseconds since the epoch.
      */
     private long newEntryTimeMillis(String filename) {
-        return normalize ? normalizedTimestamp(filename) : System.currentTimeMillis();
+        return normalize ? normalizedTimestamp(filename) : entryTimeMillis;
     }
 
     /**
@@ -213,6 +215,7 @@ public class Archiver {
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
+        long entryTimeMillis = System.currentTimeMillis();
 
         public ArchiverBuilder includes(String... includes) {
             return includes(List.of(includes));
@@ -234,6 +237,11 @@ public class Archiver {
 
         public ArchiverBuilder useRoot(boolean useRoot) {
             this.useRoot = useRoot;
+            return this;
+        }
+
+        public ArchiverBuilder entryTimeMillis(long entryTimeMillis) {
+            this.entryTimeMillis = entryTimeMillis;
             return this;
         }
 
