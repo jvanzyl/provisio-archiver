@@ -59,7 +59,12 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
             processedFilesNames.put(fileNameOf(entry), entry);
         }
         ExtendedTarArchiveEntry tarArchiveEntry = new ExtendedTarArchiveEntry(entryName, entry);
-        tarArchiveEntry.setSize(entry.getSize());
+
+        // We don't want directories to have sizes reported by the operating system
+        // which differ between Linux (4096) and MacOS (96). This makes builds non-reproducible.
+        if (tarArchiveEntry.isFile()) {
+            tarArchiveEntry.setSize(entry.getSize());
+        }
         return tarArchiveEntry;
     }
 
