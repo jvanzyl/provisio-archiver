@@ -9,9 +9,7 @@ package ca.vanzyl.provisio.archive;
 
 import ca.vanzyl.provisio.archive.perms.FileMode;
 import ca.vanzyl.provisio.archive.perms.PosixModes;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,6 +20,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.codehaus.plexus.util.io.CachingOutputStream;
 
 public class UnArchiver {
 
@@ -45,6 +44,9 @@ public class UnArchiver {
 
     public void unarchive(File archive, File outputDirectory, UnarchivingEntryProcessor entryProcessor)
             throws IOException {
+        archive = archive.getAbsoluteFile();
+        outputDirectory = outputDirectory.getAbsoluteFile();
+        final Path outputDirectoryPath = outputDirectory.toPath();
         //
         // These are the contributions that unpacking this archive is providing
         //
@@ -57,18 +59,21 @@ public class UnArchiver {
             if (!selector.include(entryName)) {
                 continue;
             }
+            File outputFile = new File(outputDirectory, entryName).getAbsoluteFile();
+            if (!outputFile.toPath().startsWith(outputDirectoryPath)) {
+                throw new IOException("Archive escape attempt detected in " + archive);
+            }
 
             if (archiveEntry.isDirectory()) {
-                createDir(new File(outputDirectory, entryName));
+                createDir(outputFile);
                 continue;
             }
 
-            File outputFile = new File(outputDirectory, entryName);
             //
             // If we take an archive and flatten it into the output directory the first entry will
             // match the output directory which exists so it will cause an error trying to make it
             //
-            if (outputFile.getAbsolutePath().equals(outputDirectory.getAbsolutePath())) {
+            if (outputFile.equals(outputDirectory)) {
                 continue;
             }
             if (!outputFile.getParentFile().exists()) {
@@ -95,10 +100,13 @@ public class UnArchiver {
                 Files.createDirectories(link.getParent());
                 Files.createSymbolicLink(link, target);
             } else {
-                try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+                try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
                     entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
+                    outputStream.close();
+                    if (outputStream.isModified()) {
+                        setFilePermission(archiveEntry, outputFile);
+                    }
                 }
-                setFilePermission(archiveEntry, outputFile);
             }
         }
         source.close();
