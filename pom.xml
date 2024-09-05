@@ -16,7 +16,7 @@
     <version>56</version>
   </parent>
   <artifactId>takari-archiver</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3-SNAPSHOT</version>
   <packaging>takari-jar</packaging>
   <name>Provisio :: Archiver</name>
 
