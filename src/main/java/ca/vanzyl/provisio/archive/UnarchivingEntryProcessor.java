@@ -11,6 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * @deprecated Use {@link UnarchivingEnhancedEntryProcessor} instead.
+ */
+@Deprecated
 public interface UnarchivingEntryProcessor {
     String processName(String name);
 

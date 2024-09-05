@@ -7,6 +7,8 @@
  */
 package ca.vanzyl.provisio.archive;
 
+import static java.util.Objects.requireNonNull;
+
 import ca.vanzyl.provisio.archive.perms.FileMode;
 import ca.vanzyl.provisio.archive.perms.PosixModes;
 import java.io.File;
@@ -39,33 +41,65 @@ public class UnArchiver {
     }
 
     public void unarchive(File archive, File outputDirectory) throws IOException {
-        unarchive(archive, outputDirectory, new NoopEntryProcessor());
+        requireNonNull(archive);
+        requireNonNull(outputDirectory);
+        unarchive(archive.toPath(), outputDirectory.toPath(), new NoopEntryProcessor());
     }
 
+    @Deprecated
     public void unarchive(File archive, File outputDirectory, UnarchivingEntryProcessor entryProcessor)
             throws IOException {
-        archive = archive.getAbsoluteFile();
-        outputDirectory = outputDirectory.getAbsoluteFile();
-        final Path outputDirectoryPath = outputDirectory.toPath();
+        requireNonNull(archive);
+        requireNonNull(outputDirectory);
+        requireNonNull(entryProcessor);
+        // adapt legacy to new one
+        unarchive(archive.toPath(), outputDirectory.toPath(), new UnarchivingEnhancedEntryProcessor() {
+            @Override
+            public String targetName(String name) {
+                return entryProcessor.processName(name);
+            }
+
+            @Override
+            public String sourceName(String name) {
+                return entryProcessor.processName(name);
+            }
+
+            @Override
+            public void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
+                    throws IOException {
+                entryProcessor.processStream(entryName, inputStream, outputStream);
+            }
+        });
+    }
+
+    public void unarchive(Path archive, Path outputDirectory, UnarchivingEnhancedEntryProcessor entryProcessor)
+            throws IOException {
+        requireNonNull(archive);
+        requireNonNull(outputDirectory);
+        requireNonNull(entryProcessor);
+
+        archive = archive.toAbsolutePath();
+        outputDirectory = outputDirectory.toAbsolutePath();
         //
         // These are the contributions that unpacking this archive is providing
         //
-        // mkdirs() would check if the directory exists
-        outputDirectory.mkdirs();
-        Source source = ArchiverHelper.getArchiveHandler(archive, builder).getArchiveSource();
+        Files.createDirectories(outputDirectory);
+        Source source =
+                ArchiverHelper.getArchiveHandler(archive.toFile(), builder).getArchiveSource();
         for (ExtendedArchiveEntry archiveEntry : source.entries()) {
-            String entryName = adjustPath(archiveEntry.getName(), entryProcessor);
+            String entryName = adjustPath(true, archiveEntry.getName(), entryProcessor);
 
             if (!selector.include(entryName)) {
                 continue;
             }
-            File outputFile = new File(outputDirectory, entryName).getAbsoluteFile();
-            if (!outputFile.toPath().startsWith(outputDirectoryPath)) {
+            Path outputFile = outputDirectory.resolve(entryName).toAbsolutePath();
+            if (!outputFile.startsWith(outputDirectory)) {
                 throw new IOException("Archive escape attempt detected in " + archive);
             }
 
             if (archiveEntry.isDirectory()) {
-                createDir(outputFile);
+                Files.createDirectories(outputFile);
+                entryProcessor.processed(entryName, outputFile);
                 continue;
             }
 
@@ -74,31 +108,33 @@ public class UnArchiver {
             // match the output directory which exists so it will cause an error trying to make it
             //
             if (outputFile.equals(outputDirectory)) {
+                entryProcessor.processed(entryName, outputFile);
                 continue;
             }
-            if (!outputFile.getParentFile().exists()) {
-                createDir(outputFile.getParentFile());
+            if (!Files.isDirectory(outputFile.getParent())) {
+                Files.createDirectories(outputFile.getParent());
             }
 
             if (archiveEntry.isHardLink()) {
-                File hardLinkSource =
-                        new File(outputDirectory, adjustPath(archiveEntry.getHardLinkPath(), entryProcessor));
+                Path hardLinkSource = outputDirectory
+                        .resolve(adjustPath(false, archiveEntry.getHardLinkPath(), entryProcessor))
+                        .toAbsolutePath();
                 if (dereferenceHardlinks) {
-                    Files.copy(hardLinkSource.toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(hardLinkSource, outputFile, StandardCopyOption.REPLACE_EXISTING);
                 } else {
                     // Remove any existing file or link as Files.createLink has no option to overwrite
-                    Files.deleteIfExists(outputFile.toPath());
-                    Files.createLink(outputFile.toPath(), hardLinkSource.toPath());
+                    Files.deleteIfExists(outputFile);
+                    Files.createLink(outputFile, hardLinkSource);
                 }
                 setFilePermission(archiveEntry, outputFile);
+                entryProcessor.processed(entryName, outputFile);
             } else if (archiveEntry.isSymbolicLink()) {
                 // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
-                Path outputPath = outputDirectory.toPath();
-                Path link = outputDirectory.toPath().resolve(entryName);
-                Path target =
-                        outputDirectory.toPath().relativize(outputPath.resolve(archiveEntry.getSymbolicLinkPath()));
+                Path link = outputDirectory.resolve(entryName);
+                Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getSymbolicLinkPath()));
                 Files.createDirectories(link.getParent());
                 Files.createSymbolicLink(link, target);
+                entryProcessor.processed(entryName, link.toAbsolutePath());
             } else {
                 try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
                     entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
@@ -106,18 +142,24 @@ public class UnArchiver {
                     if (outputStream.isModified()) {
                         setFilePermission(archiveEntry, outputFile);
                     }
+                } finally {
+                    entryProcessor.processed(entryName, outputFile);
                 }
             }
         }
         source.close();
     }
 
-    private String adjustPath(String entryName, UnarchivingEntryProcessor entryProcessor) {
+    private String adjustPath(boolean target, String entryName, UnarchivingEnhancedEntryProcessor entryProcessor) {
         if (!useRoot) {
             entryName = entryName.substring(entryName.indexOf('/') + 1);
         }
         // Process the entry name before any output is created on disk
-        entryName = entryProcessor.processName(entryName);
+        if (target) {
+            entryName = entryProcessor.targetName(entryName);
+        } else {
+            entryName = entryProcessor.sourceName(entryName);
+        }
         // So with an entry we may want to take a set of entry in a set of directories and flatten them
         // into one directory, or we may want to preserve the directory structure.
         if (flatten) {
@@ -126,7 +168,7 @@ public class UnArchiver {
         return entryName;
     }
 
-    private void setFilePermission(ExtendedArchiveEntry archiveEntry, File outputFile) throws IOException {
+    private void setFilePermission(ExtendedArchiveEntry archiveEntry, Path outputFile) throws IOException {
         int mode = archiveEntry.getFileMode();
         //
         // Currently, zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong,
@@ -145,17 +187,11 @@ public class UnArchiver {
         }
     }
 
-    private void setFilePermissions(File file, Set<PosixFilePermission> perms) throws IOException {
+    private void setFilePermissions(Path file, Set<PosixFilePermission> perms) throws IOException {
         try {
-            Files.setPosixFilePermissions(file.toPath(), perms);
+            Files.setPosixFilePermissions(file, perms);
         } catch (UnsupportedOperationException e) {
             // ignore, must be windows
-        }
-    }
-
-    private void createDir(File dir) {
-        if (!dir.exists()) {
-            dir.mkdirs();
         }
     }
 
@@ -174,21 +210,9 @@ public class UnArchiver {
     }
 
     /**
-     * {@EntryProcesor} that leaves the entry name and content as-is.
+     * {@link UnarchivingEnhancedEntryProcessor} that leaves the entry name and content as-is.
      */
-    static class NoopEntryProcessor implements UnarchivingEntryProcessor {
-
-        @Override
-        public String processName(String entryName) {
-            return entryName;
-        }
-
-        @Override
-        public void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
-                throws IOException {
-            inputStream.transferTo(outputStream);
-        }
-    }
+    static class NoopEntryProcessor implements UnarchivingEnhancedEntryProcessor {}
 
     public static class UnArchiverBuilder {
 
