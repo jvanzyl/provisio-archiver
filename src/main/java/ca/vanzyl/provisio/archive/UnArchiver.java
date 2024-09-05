@@ -195,12 +195,6 @@ public class UnArchiver {
         }
     }
 
-    private void _createDir(File dir) {
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-    }
-
     //
     // Archiver archiver = Archiver.builder()
     // .includes("**/*.java")
