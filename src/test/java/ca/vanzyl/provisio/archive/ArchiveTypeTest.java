@@ -319,7 +319,7 @@ public abstract class ArchiveTypeTest {
         archiver.archive(archive, archiveDirectory);
         UnArchiver unArchiver = UnArchiver.builder().build();
         File outputDirectory = FileSystemAssert.getOutputDirectory(name + "-extracted/" + getArchiveExtension());
-        unArchiver.unarchive(archive, outputDirectory, new UnarchivingEntryProcessor() {
+        unArchiver.unarchive(archive.toPath(), outputDirectory.toPath(), new UnarchivingEnhancedEntryProcessor() {
 
             @Override
             public void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
@@ -328,7 +328,7 @@ public abstract class ArchiveTypeTest {
             }
 
             @Override
-            public String processName(String name) {
+            public String targetName(String name) {
                 name = name.replace("${packagePath}", "io/takari/app");
                 return name;
             }
