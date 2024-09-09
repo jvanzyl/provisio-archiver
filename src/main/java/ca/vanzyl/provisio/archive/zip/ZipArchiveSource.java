@@ -144,7 +144,7 @@ public class ZipArchiveSource implements Source {
     class ArchiveEntryIterator implements Iterator<ExtendedArchiveEntry> {
 
         @Override
-        public EntrySourceArchiveEntry next() {
+        public ExtendedArchiveEntry next() {
             return new EntrySourceArchiveEntry(entries.nextElement());
         }
 
