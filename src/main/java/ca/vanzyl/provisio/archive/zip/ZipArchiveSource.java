@@ -7,6 +7,8 @@
  */
 package ca.vanzyl.provisio.archive.zip;
 
+import static ca.vanzyl.provisio.archive.zip.ExtendedZipArchiveEntry.dosToJavaTime;
+
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.perms.FileMode;
@@ -131,7 +133,11 @@ public class ZipArchiveSource implements Source {
 
         @Override
         public long getTime() {
-            return archiveEntry.getTime();
+            long time = archiveEntry.getTime();
+            if (time != -1) {
+                return dosToJavaTime(time, false);
+            }
+            return time;
         }
     }
 

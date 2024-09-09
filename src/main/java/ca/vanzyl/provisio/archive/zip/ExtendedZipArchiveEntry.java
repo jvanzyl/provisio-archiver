@@ -11,6 +11,9 @@ import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
@@ -65,5 +68,23 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
     @Override
     public boolean isExecutable() {
         return false;
+    }
+
+    @Override
+    public void setTime(long timeEpochMillis) {
+        if (timeEpochMillis != -1) {
+            timeEpochMillis = dosToJavaTime(timeEpochMillis, true);
+        }
+        super.setTime(timeEpochMillis);
+    }
+
+    /**
+     * Converts DOS epoch to UNIX epoch timestamp and other way around. DOS epoch is "local time" so it is about
+     * removing or adding TZ and DST offset.
+     */
+    static long dosToJavaTime(long time, boolean writeToArchive) {
+        Calendar cal = Calendar.getInstance(TimeZone.getDefault(), Locale.ROOT);
+        cal.setTimeInMillis(time);
+        return time - ((cal.get(Calendar.ZONE_OFFSET) + (cal.get(Calendar.DST_OFFSET))) * (writeToArchive ? 1 : -1));
     }
 }
