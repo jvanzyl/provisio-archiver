@@ -78,9 +78,13 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
         super.setTime(timeEpochMillis);
     }
 
-    static long dosToJavaTime(long time, boolean adjust) {
+    /**
+     * Converts DOS epoch to UNIX epoch timestamp and other way around. DOS epoch is "local time" so it is about
+     * removing or adding TZ and DST offset.
+     */
+    static long dosToJavaTime(long time, boolean writeToArchive) {
         Calendar cal = Calendar.getInstance(TimeZone.getDefault(), Locale.ROOT);
         cal.setTimeInMillis(time);
-        return time - ((cal.get(Calendar.ZONE_OFFSET) + (cal.get(Calendar.DST_OFFSET))) * (adjust ? 1 : -1));
+        return time - ((cal.get(Calendar.ZONE_OFFSET) + (cal.get(Calendar.DST_OFFSET))) * (writeToArchive ? 1 : -1));
     }
 }
