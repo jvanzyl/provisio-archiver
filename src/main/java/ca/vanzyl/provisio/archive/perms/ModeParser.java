@@ -102,10 +102,10 @@ public final class ModeParser {
             switch (who.charAt(i)) {
                 case 'o':
                     whoOrdinal++;
-                    /* fall through */
+                /* fall through */
                 case 'g':
                     whoOrdinal++;
-                    /* fall through */
+                /* fall through */
                 case 'u':
                     break;
                 case 'a':
@@ -118,10 +118,10 @@ public final class ModeParser {
                 switch (what.charAt(j)) {
                     case 'x':
                         whatOrdinal++;
-                        /* fall through */
+                    /* fall through */
                     case 'w':
                         whatOrdinal++;
-                        /* fall through */
+                    /* fall through */
                     case 'r':
                         break;
                     case 'X':

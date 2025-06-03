@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>takari</artifactId>
-    <version>56</version>
+    <version>70</version>
   </parent>
   <artifactId>takari-archiver</artifactId>
   <version>1.0.4-SNAPSHOT</version>
@@ -23,7 +23,7 @@
   <scm>
     <connection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</connection>
     <developerConnection>scm:git:git@github.com:jvanzyl/provisio-archiver.git</developerConnection>
-    <tag>takari-archiver-1.0.2</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/jvanzyl/provisio-archiver</url>
   </scm>
 
@@ -37,13 +37,13 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.16.1</version>
+      <version>2.19.0</version>
     </dependency>
     <!-- This is optional in the commons-compress POM -->
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.17.1</version>
+      <version>1.18.0</version>
     </dependency>
     <dependency>
       <groupId>org.tukaani</groupId>
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
-      <version>4.0.1</version>
+      <version>3.6.0</version>
     </dependency>
     <!-- Testing -->
     <dependency>
@@ -70,5 +70,18 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.gaul</groupId>
+        <artifactId>modernizer-maven-plugin</artifactId>
+        <configuration>
+          <!-- TODO: fix MANY violations we have -->
+          <failOnViolations>false</failOnViolations>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
