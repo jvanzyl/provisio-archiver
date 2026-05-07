@@ -22,6 +22,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.io.IOUtils;
 
 public class ZipArchiveSource implements Source {
 
@@ -73,7 +74,7 @@ public class ZipArchiveSource implements Source {
         public String getSymbolicLinkPath() {
             try (InputStream is = getInputStream();
                     ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                is.transferTo(os);
+                IOUtils.copyLarge(is, os);
                 return os.toString();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -99,7 +100,7 @@ public class ZipArchiveSource implements Source {
         public void writeEntry(OutputStream outputStream) throws IOException {
             // We specifically do not close the entry because if you do then you can't read anymore archive entries from
             // the stream
-            getInputStream().transferTo(outputStream);
+            IOUtils.copyLarge(getInputStream(), outputStream);
         }
 
         @Override

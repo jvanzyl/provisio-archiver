@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.Iterator;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.io.IOUtils;
 
 public class TarGzXzArchiveSource implements Source {
 
@@ -85,7 +86,7 @@ public class TarGzXzArchiveSource implements Source {
         public void writeEntry(OutputStream outputStream) throws IOException {
             // We specifically do not close the entry because if you do then you can't read anymore archive entries from
             // the stream
-            getInputStream().transferTo(outputStream);
+            IOUtils.copyLarge(getInputStream(), outputStream);
         }
 
         @Override

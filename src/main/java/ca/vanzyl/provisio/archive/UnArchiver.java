@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.codehaus.plexus.util.io.CachingOutputStream;
@@ -230,7 +231,7 @@ public class UnArchiver {
                     i.add(include);
                 }
             }
-            return includes(List.copyOf(i));
+            return includes(Collections.unmodifiableList(i));
         }
 
         public UnArchiverBuilder includes(Iterable<String> includes) {
@@ -245,7 +246,7 @@ public class UnArchiver {
                     i.add(exclude);
                 }
             }
-            return excludes(List.copyOf(i));
+            return excludes(Collections.unmodifiableList(i));
         }
 
         public UnArchiverBuilder excludes(Iterable<String> excludes) {

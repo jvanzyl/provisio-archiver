@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -43,7 +44,7 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
         if (!hardLinkIncludes.isEmpty() || !hardLinkExcludes.isEmpty()) {
             this.hardLinkSelector = new Selector(hardLinkIncludes, hardLinkExcludes);
         } else {
-            this.hardLinkSelector = new Selector(null, List.of("**/**"));
+            this.hardLinkSelector = new Selector(null, Collections.singletonList("**/**"));
         }
     }
 

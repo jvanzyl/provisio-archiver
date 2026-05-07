@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Enhanced entry processor.
@@ -49,7 +50,7 @@ public interface UnarchivingEnhancedEntryProcessor {
      */
     default void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
             throws IOException {
-        inputStream.transferTo(outputStream);
+        IOUtils.copyLarge(inputStream, outputStream);
     }
 
     /**

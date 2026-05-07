@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
+import org.apache.commons.io.IOUtils;
 
 public class FileEntry implements ExtendedArchiveEntry {
 
@@ -67,7 +68,7 @@ public class FileEntry implements ExtendedArchiveEntry {
             return;
         }
         try (InputStream entryInputStream = getInputStream()) {
-            entryInputStream.transferTo(outputStream);
+            IOUtils.copyLarge(entryInputStream, outputStream);
         }
     }
 

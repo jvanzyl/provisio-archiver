@@ -12,6 +12,8 @@ import ca.vanzyl.provisio.archive.source.DirectorySource;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,7 +217,7 @@ public class Archiver {
         List<String> hardLinkExcludes = new ArrayList<>();
 
         public ArchiverBuilder includes(String... includes) {
-            return includes(List.of(includes));
+            return includes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(includes))));
         }
 
         public ArchiverBuilder includes(Iterable<String> includes) {
@@ -224,7 +226,7 @@ public class Archiver {
         }
 
         public ArchiverBuilder excludes(String... excludes) {
-            return excludes(List.of(excludes));
+            return excludes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(excludes))));
         }
 
         public ArchiverBuilder excludes(Iterable<String> excludes) {
@@ -248,7 +250,7 @@ public class Archiver {
         }
 
         public ArchiverBuilder executable(String... executables) {
-            return executable(List.of(executables));
+            return executable(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(executables))));
         }
 
         public ArchiverBuilder executable(Iterable<String> executables) {
@@ -272,7 +274,7 @@ public class Archiver {
         }
 
         public ArchiverBuilder hardLinkIncludes(String... hardLinkIncludes) {
-            return hardLinkIncludes(List.of(hardLinkIncludes));
+            return hardLinkIncludes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(hardLinkIncludes))));
         }
 
         public ArchiverBuilder hardLinkIncludes(Iterable<String> hardLinkIncludes) {
@@ -281,7 +283,7 @@ public class Archiver {
         }
 
         public ArchiverBuilder hardLinkExcludes(String... hardLinkExcludes) {
-            return hardLinkExcludes(List.of(hardLinkExcludes));
+            return hardLinkExcludes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(hardLinkExcludes))));
         }
 
         public ArchiverBuilder hardLinkExcludes(Iterable<String> hardLinkExcludes) {
