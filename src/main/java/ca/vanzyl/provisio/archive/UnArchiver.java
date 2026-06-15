@@ -80,7 +80,7 @@ public class UnArchiver {
         requireNonNull(entryProcessor);
 
         archive = archive.toAbsolutePath();
-        outputDirectory = outputDirectory.toAbsolutePath();
+        outputDirectory = outputDirectory.normalize().toAbsolutePath();
         //
         // These are the contributions that unpacking this archive is providing
         //
@@ -93,7 +93,7 @@ public class UnArchiver {
             if (!selector.include(entryName)) {
                 continue;
             }
-            Path outputFile = outputDirectory.resolve(entryName).toAbsolutePath();
+            Path outputFile = outputDirectory.resolve(entryName).normalize().toAbsolutePath();
             if (!outputFile.startsWith(outputDirectory)) {
                 throw new IOException("Archive escape attempt detected in " + archive);
             }
@@ -119,7 +119,11 @@ public class UnArchiver {
             if (archiveEntry.isHardLink()) {
                 Path hardLinkSource = outputDirectory
                         .resolve(adjustPath(false, archiveEntry.getHardLinkPath(), entryProcessor))
+                        .normalize()
                         .toAbsolutePath();
+                if (!hardLinkSource.startsWith(outputDirectory)) {
+                    throw new IOException("Archive hardlink escape attempt detected in " + archive);
+                }
                 if (dereferenceHardlinks) {
                     Files.copy(hardLinkSource, outputFile, StandardCopyOption.REPLACE_EXISTING);
                 } else {
@@ -131,11 +135,22 @@ public class UnArchiver {
                 entryProcessor.processed(entryName, outputFile);
             } else if (archiveEntry.isSymbolicLink()) {
                 // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
-                Path link = outputDirectory.resolve(entryName);
+                Path linkTarget = outputDirectory
+                        .resolve(entryName)
+                        .normalize()
+                        .toAbsolutePath()
+                        .resolve(archiveEntry.getSymbolicLinkPath())
+                        .normalize()
+                        .toAbsolutePath();
+                if (!linkTarget.startsWith(outputDirectory)) {
+                    throw new IOException("Archive symlink escape attempt detected in " + archive);
+                }
+                // we intentionally want these relative; we checked them above fully resolved
                 Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getSymbolicLinkPath()));
-                Files.createDirectories(link.getParent());
-                Files.createSymbolicLink(link, target);
-                entryProcessor.processed(entryName, link.toAbsolutePath());
+
+                Files.createDirectories(outputFile.getParent());
+                Files.createSymbolicLink(outputFile, target);
+                entryProcessor.processed(entryName, outputFile);
             } else {
                 try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
                     entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
