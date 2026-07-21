@@ -11,6 +11,10 @@ import ca.vanzyl.provisio.archive.source.DirectoryEntry;
 import ca.vanzyl.provisio.archive.source.DirectorySource;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,7 +63,24 @@ public class Archiver {
     }
 
     public void archive(File archive, Source... sources) throws IOException {
-        ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, builder);
+        Path output = archive.toPath().toAbsolutePath();
+        Files.createDirectories(output.getParent());
+        Path temporary = Files.createTempFile(
+                output.getParent(), ".provisio-" + output.getFileName().toString() + "-", ".tmp");
+        boolean completed = false;
+        try {
+            writeArchive(archive, temporary.toFile(), sources);
+            moveIntoPlace(temporary, output);
+            completed = true;
+        } finally {
+            if (!completed) {
+                Files.deleteIfExists(temporary);
+            }
+        }
+    }
+
+    private void writeArchive(File formatSource, File output, Source... sources) throws IOException {
+        ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(formatSource, output, builder);
         Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
         try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
@@ -82,6 +103,14 @@ public class Archiver {
                     writeEntry(archiveEntry, aos);
                 }
             }
+        }
+    }
+
+    private void moveIntoPlace(Path temporary, Path output) throws IOException {
+        try {
+            Files.move(temporary, output, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

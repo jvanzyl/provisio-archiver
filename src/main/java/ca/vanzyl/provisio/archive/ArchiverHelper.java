@@ -17,14 +17,18 @@ import java.util.Collections;
 public class ArchiverHelper {
 
     public static ArchiveHandler getArchiveHandler(File archive, ArchiverBuilder builder) {
+        return getArchiveHandler(archive, archive, builder);
+    }
+
+    public static ArchiveHandler getArchiveHandler(File formatSource, File output, ArchiverBuilder builder) {
         ArchiveHandler archiveHandler;
-        if (isZip(archive)) {
-            archiveHandler = new ZipArchiveHandler(archive);
-        } else if (isTarGz(archive)) {
+        if (isZip(formatSource)) {
+            archiveHandler = new ZipArchiveHandler(output);
+        } else if (isTarGz(formatSource)) {
             archiveHandler = new TarGzArchiveHandler(
-                    archive, builder.posixLongFileMode, builder.hardLinkIncludes, builder.hardLinkExcludes);
+                    output, builder.posixLongFileMode, builder.hardLinkIncludes, builder.hardLinkExcludes);
         } else {
-            throw new RuntimeException("Cannot detect how to read " + archive.getName());
+            throw new RuntimeException("Cannot detect how to write " + formatSource.getName());
         }
         return archiveHandler;
     }
