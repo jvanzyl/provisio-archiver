@@ -74,8 +74,14 @@ final class ArchivePath {
         if (prefix == null || prefix.isEmpty()) {
             return this;
         }
-        ArchivePath prefixPath = parse(prefix, description);
-        List<String> joined = new ArrayList<>(prefixPath.segments);
+        return prepend(parse(prefix, description));
+    }
+
+    ArchivePath prepend(ArchivePath prefix) {
+        if (prefix == null) {
+            return this;
+        }
+        List<String> joined = new ArrayList<>(prefix.segments);
         joined.addAll(segments);
         return new ArchivePath(joined);
     }

@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.zip.CRC32;
 import org.apache.commons.io.IOUtils;
@@ -61,8 +60,9 @@ final class ArchiveSession implements Closeable {
 
     void add(SourceSpec sourceSpec) throws IOException {
         requireActive();
+        ArchivePath destinationPrefix = destinationPrefix(sourceSpec);
         try (Source source = sourceSpec.source()) {
-            source.forEachEntry(entry -> addSourceEntry(sourceSpec, entry));
+            source.forEachEntry(entry -> addSourceEntry(sourceSpec, source, destinationPrefix, entry));
         }
     }
 
@@ -74,34 +74,24 @@ final class ArchiveSession implements Closeable {
         finished = true;
     }
 
-    private void addSourceEntry(SourceSpec sourceSpec, SourceEntry entry) throws IOException {
+    private void addSourceEntry(SourceSpec sourceSpec, Source source, ArchivePath destinationPrefix, SourceEntry entry)
+            throws IOException {
         ArchivePath sourcePath = ArchivePath.parse(entry.getName(), "source entry path");
         if (!sourceSpec.includes(sourcePath.entryName(entry.getType()))) {
             return;
         }
-        if (sourceSpec.source().isDirectory()
-                && !sourceSpec.useRoot()
-                && entry.isDirectory()
-                && sourcePath.hasSingleSegment()) {
+        if (source.isDirectory() && !sourceSpec.useRoot() && entry.isDirectory() && sourcePath.hasSingleSegment()) {
             return;
         }
-        if (sourceSpec.source().isDirectory() && sourceSpec.flatten() && entry.isDirectory()) {
+        if (source.isDirectory() && sourceSpec.flatten() && entry.isDirectory()) {
             return;
         }
-        ArchivePath outputPath = mapPath(sourceSpec, sourcePath);
+        ArchivePath outputPath = mapPath(sourceSpec, source, destinationPrefix, sourcePath);
         String entryName = outputPath.entryName(entry.getType());
-        String linkTarget = mapLinkTarget(sourceSpec, outputPath, entry);
+        String linkTarget = mapLinkTarget(sourceSpec, source, destinationPrefix, outputPath, entry);
         boolean executable = isExecutable(entry.getName()) || isExecutable(entryName);
 
-        for (String directoryName : getParentDirectoryNames(entryName)) {
-            String directoryPath = directoryName.substring(0, directoryName.length() - 1);
-            if (!paths.containsKey(directoryPath)) {
-                paths.put(directoryPath, Boolean.FALSE);
-                OutputEntry directoryEntry =
-                        createOutputEntry(directoryName, SourceEntry.directory(directoryName, -1, 0), false, null);
-                addEntry(directoryName, directoryEntry, false);
-            }
-        }
+        addMissingParentDirectories(outputPath.value());
 
         String path = outputPath.value();
         if (!paths.containsKey(path)) {
@@ -124,9 +114,10 @@ final class ArchiveSession implements Closeable {
         return false;
     }
 
-    private ArchivePath mapPath(SourceSpec sourceSpec, ArchivePath sourcePath) throws IOException {
+    private ArchivePath mapPath(
+            SourceSpec sourceSpec, Source source, ArchivePath destinationPrefix, ArchivePath sourcePath) {
         ArchivePath mapped = sourcePath;
-        if (sourceSpec.source().isDirectory()) {
+        if (source.isDirectory()) {
             if (!sourceSpec.useRoot()) {
                 mapped = mapped.withoutFirstSegment();
             }
@@ -134,32 +125,51 @@ final class ArchiveSession implements Closeable {
                 mapped = mapped.fileName();
             }
         }
-        return mapped.prepend(sourceSpec.destinationPrefix(), "source destination prefix");
+        return mapped.prepend(destinationPrefix);
     }
 
-    private String mapLinkTarget(SourceSpec sourceSpec, ArchivePath outputPath, SourceEntry entry) throws IOException {
+    private String mapLinkTarget(
+            SourceSpec sourceSpec,
+            Source source,
+            ArchivePath destinationPrefix,
+            ArchivePath outputPath,
+            SourceEntry entry)
+            throws IOException {
         if (entry.isSymbolicLink()) {
             return ArchivePath.validateSymbolicLinkTarget(outputPath, entry.getLinkTarget());
         }
         if (entry.isHardLink()) {
             ArchivePath sourceTarget = ArchivePath.parse(entry.getLinkTarget(), "hard link target");
-            return mapPath(sourceSpec, sourceTarget).value();
+            return mapPath(sourceSpec, source, destinationPrefix, sourceTarget).value();
         }
         return null;
     }
 
-    private Iterable<String> getParentDirectoryNames(String entryName) {
-        List<String> directoryNames = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(entryName, "/");
-        if (tokenizer.hasMoreTokens()) {
-            StringBuilder directoryName = new StringBuilder(tokenizer.nextToken());
-            while (tokenizer.hasMoreTokens()) {
-                directoryName.append('/');
-                directoryNames.add(directoryName.toString());
-                directoryName.append(tokenizer.nextToken());
-            }
+    private ArchivePath destinationPrefix(SourceSpec sourceSpec) throws IOException {
+        String destinationPrefix = sourceSpec.destinationPrefix();
+        if (destinationPrefix == null || destinationPrefix.isEmpty()) {
+            return null;
         }
-        return directoryNames;
+        return ArchivePath.parse(destinationPrefix, "source destination prefix");
+    }
+
+    private void addMissingParentDirectories(String entryPath) throws IOException {
+        List<String> missingParents = new ArrayList<>();
+        int separator = entryPath.lastIndexOf('/');
+        while (separator >= 0) {
+            String parent = entryPath.substring(0, separator);
+            if (paths.putIfAbsent(parent, Boolean.FALSE) != null) {
+                break;
+            }
+            missingParents.add(parent);
+            separator = parent.lastIndexOf('/');
+        }
+        for (int index = missingParents.size() - 1; index >= 0; index--) {
+            String directoryName = missingParents.get(index) + "/";
+            OutputEntry directoryEntry =
+                    createOutputEntry(directoryName, SourceEntry.directory(directoryName, -1, 0), false, null);
+            addEntry(directoryName, directoryEntry, false);
+        }
     }
 
     private OutputEntry createOutputEntry(String name, SourceEntry source, boolean executable, String linkTarget) {
