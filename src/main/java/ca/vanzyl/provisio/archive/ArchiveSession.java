@@ -47,7 +47,7 @@ final class ArchiveSession implements Closeable {
         this.format = format;
         this.options = options;
         contentSpool = new ContentSpool(output.getParent());
-        writer = format.openWriter(output, options.posixLongFileMode());
+        writer = format.openWriter(output, options.posixLongFileMode(), options.reproducibilityPolicy());
         if (!options.hardLinkIncludes().isEmpty() || !options.hardLinkExcludes().isEmpty()) {
             hardLinkSelector = new Selector(options.hardLinkIncludes(), options.hardLinkExcludes());
         } else {
@@ -153,22 +153,17 @@ final class ArchiveSession implements Closeable {
     }
 
     private OutputEntry createOutputEntry(String name, SourceEntry source, boolean executable, String linkTarget) {
-        int mode = source.getFileMode();
-        if (mode != -1 && executable) {
-            mode = ca.vanzyl.provisio.archive.perms.FileMode.makeExecutable(mode);
-        } else if (mode == -1 && executable) {
-            mode = ca.vanzyl.provisio.archive.perms.FileMode.EXECUTABLE_FILE.getBits();
-        }
-
-        long time = options.normalize() ? normalizedTimestamp(name) : -1;
-        return OutputEntry.from(name, source, mode, time, linkTarget);
-    }
-
-    private long normalizedTimestamp(String name) {
-        if (name.endsWith(".class")) {
-            return Archiver.DOS_EPOCH_IN_JAVA_TIME + Archiver.MINIMUM_TIMESTAMP_INCREMENT;
-        }
-        return Archiver.DOS_EPOCH_IN_JAVA_TIME;
+        ReproducibilityPolicy policy = options.reproducibilityPolicy();
+        return OutputEntry.from(
+                name,
+                source,
+                policy.fileMode(source, executable),
+                policy.timestamp(name, source),
+                linkTarget,
+                policy.userId(),
+                policy.groupId(),
+                policy.userName(),
+                policy.groupName());
     }
 
     private void addEntry(String entryName, OutputEntry entry, boolean hardLinkEligible) throws IOException {
@@ -223,8 +218,7 @@ final class ArchiveSession implements Closeable {
             writer.write(entry.withContent(group.content));
             group.targetEntryName = entry.getName();
         } else {
-            writer.write(
-                    OutputEntry.hardLink(entry.getName(), group.targetEntryName, entry.getFileMode(), entry.getTime()));
+            writer.write(OutputEntry.hardLink(entry.getName(), group.targetEntryName, entry));
         }
     }
 
@@ -234,7 +228,7 @@ final class ArchiveSession implements Closeable {
             writer.write(entry);
             metadataHardLinkTargets.put(identity, entry.getName());
         } else {
-            writer.write(OutputEntry.hardLink(entry.getName(), target, entry.getFileMode(), entry.getTime()));
+            writer.write(OutputEntry.hardLink(entry.getName(), target, entry));
         }
     }
 
@@ -251,8 +245,7 @@ final class ArchiveSession implements Closeable {
         FingerprintedContent fingerprintedContent = fingerprintContent(entry.getName(), entry.getContent());
         for (ContentTarget candidate : candidates) {
             if (candidate.fingerprint.equals(fingerprintedContent.fingerprint)) {
-                writer.write(OutputEntry.hardLink(
-                        entry.getName(), candidate.entryName, entry.getFileMode(), entry.getTime()));
+                writer.write(OutputEntry.hardLink(entry.getName(), candidate.entryName, entry));
                 return;
             }
         }

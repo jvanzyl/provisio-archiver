@@ -15,7 +15,7 @@ import java.util.List;
 final class ArchiveOptions {
 
     private final List<String> executables;
-    private final boolean normalize;
+    private final ReproducibilityPolicy reproducibilityPolicy;
     private final EntryOrder entryOrder;
     private final ContentIdentityMode contentIdentityMode;
     private final boolean posixLongFileMode;
@@ -24,7 +24,7 @@ final class ArchiveOptions {
 
     ArchiveOptions(Archiver.ArchiverBuilder builder) {
         executables = immutableCopy(builder.executables);
-        normalize = builder.normalize;
+        reproducibilityPolicy = builder.reproducibilityPolicy;
         entryOrder = builder.entryOrder;
         contentIdentityMode = builder.contentIdentityMode;
         posixLongFileMode = builder.posixLongFileMode;
@@ -36,8 +36,8 @@ final class ArchiveOptions {
         return executables;
     }
 
-    boolean normalize() {
-        return normalize;
+    ReproducibilityPolicy reproducibilityPolicy() {
+        return reproducibilityPolicy;
     }
 
     EntryOrder entryOrder() {

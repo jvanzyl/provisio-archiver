@@ -18,30 +18,76 @@ final class OutputEntry {
     private final int fileMode;
     private final long time;
     private final String linkTarget;
+    private final int userId;
+    private final int groupId;
+    private final String userName;
+    private final String groupName;
 
-    private OutputEntry(String name, EntryType type, EntryContent content, int fileMode, long time, String linkTarget) {
+    private OutputEntry(
+            String name,
+            EntryType type,
+            EntryContent content,
+            int fileMode,
+            long time,
+            String linkTarget,
+            int userId,
+            int groupId,
+            String userName,
+            String groupName) {
         this.name = requireNonNull(name);
         this.type = requireNonNull(type);
         this.content = requireNonNull(content);
         this.fileMode = fileMode;
         this.time = time;
         this.linkTarget = linkTarget;
+        this.userId = userId;
+        this.groupId = groupId;
+        this.userName = userName;
+        this.groupName = groupName;
     }
 
-    static OutputEntry from(String name, SourceEntry source, int fileMode, long time, String linkTarget) {
-        return new OutputEntry(name, source.getType(), source.getContent(), fileMode, time, linkTarget);
-    }
-
-    static OutputEntry hardLink(String name, String target, int fileMode, long time) {
+    static OutputEntry from(
+            String name,
+            SourceEntry source,
+            int fileMode,
+            long time,
+            String linkTarget,
+            int userId,
+            int groupId,
+            String userName,
+            String groupName) {
         return new OutputEntry(
-                name, EntryType.HARD_LINK, EntryContents.empty(), fileMode, time, requireNonNull(target));
+                name,
+                source.getType(),
+                source.getContent(),
+                fileMode,
+                time,
+                linkTarget,
+                userId,
+                groupId,
+                userName,
+                groupName);
+    }
+
+    static OutputEntry hardLink(String name, String target, OutputEntry original) {
+        return new OutputEntry(
+                name,
+                EntryType.HARD_LINK,
+                EntryContents.empty(),
+                original.fileMode,
+                original.time,
+                requireNonNull(target),
+                original.userId,
+                original.groupId,
+                original.userName,
+                original.groupName);
     }
 
     OutputEntry withContent(EntryContent content) {
         if (type != EntryType.FILE) {
             throw new IllegalStateException("Only file entries have replaceable content");
         }
-        return new OutputEntry(name, type, content, fileMode, time, linkTarget);
+        return new OutputEntry(name, type, content, fileMode, time, linkTarget, userId, groupId, userName, groupName);
     }
 
     String getName() {
@@ -66,5 +112,21 @@ final class OutputEntry {
 
     String getLinkTarget() {
         return linkTarget;
+    }
+
+    int getUserId() {
+        return userId;
+    }
+
+    int getGroupId() {
+        return groupId;
+    }
+
+    String getUserName() {
+        return userName;
+    }
+
+    String getGroupName() {
+        return groupName;
     }
 }

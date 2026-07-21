@@ -15,14 +15,22 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.apache.commons.io.IOUtils;
 
 final class TarGzArchiveWriter implements ArchiveWriter {
 
     private final TarArchiveOutputStream outputStream;
 
-    TarGzArchiveWriter(Path archive, boolean posixLongFileMode) throws IOException {
-        outputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(archive)));
+    TarGzArchiveWriter(Path archive, boolean posixLongFileMode, ReproducibilityPolicy reproducibilityPolicy)
+            throws IOException {
+        GzipParameters parameters = new GzipParameters();
+        if (reproducibilityPolicy.normalized()) {
+            parameters.setModificationTime(0);
+            parameters.setOperatingSystem(255);
+        }
+        outputStream =
+                new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(archive), parameters));
         if (posixLongFileMode) {
             outputStream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
         }
@@ -39,6 +47,18 @@ final class TarGzArchiveWriter implements ArchiveWriter {
         }
         if (entry.getTime() != -1) {
             archiveEntry.setModTime(entry.getTime());
+        }
+        if (entry.getUserId() != -1) {
+            archiveEntry.setUserId(entry.getUserId());
+        }
+        if (entry.getGroupId() != -1) {
+            archiveEntry.setGroupId(entry.getGroupId());
+        }
+        if (entry.getUserName() != null) {
+            archiveEntry.setUserName(entry.getUserName());
+        }
+        if (entry.getGroupName() != null) {
+            archiveEntry.setGroupName(entry.getGroupName());
         }
         if (entry.getType() == EntryType.FILE) {
             archiveEntry.setSize(entry.getContent().size());

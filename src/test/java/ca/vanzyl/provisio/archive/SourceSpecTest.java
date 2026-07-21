@@ -102,7 +102,10 @@ public class SourceSpecTest extends FileSystemAssert {
         SourceSpec spec = SourceSpec.builder(source).excludes("skip").build();
         File archive = getTargetArchive("source-spec-excluded-content.tar.gz");
 
-        Archiver.builder().normalize(true).build().archive(archive, spec);
+        Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .build()
+                .archive(archive, spec);
 
         new TarGzArchiveValidator(archive).assertNumberOfEntriesInArchive(0);
     }

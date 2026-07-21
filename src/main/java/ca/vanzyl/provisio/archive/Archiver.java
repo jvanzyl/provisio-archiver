@@ -95,20 +95,16 @@ public class Archiver {
     public static class ArchiverBuilder {
 
         List<String> executables = new ArrayList<>();
-        boolean normalize = false;
+        ReproducibilityPolicy reproducibilityPolicy = ReproducibilityPolicy.PRESERVE;
         EntryOrder entryOrder = EntryOrder.SOURCE;
         ContentIdentityMode contentIdentityMode = ContentIdentityMode.VERIFIED;
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
 
-        /**
-         * Enables or disables the Jar entry normalization.
-         *
-         * @param normalize If true the timestamps of Jar entries will be set to the DOS epoch.
-         */
-        public ArchiverBuilder normalize(boolean normalize) {
-            this.normalize = normalize;
+        /** Selects preserved or normalized archive metadata independently of entry ordering. */
+        public ArchiverBuilder reproducibility(ReproducibilityPolicy reproducibilityPolicy) {
+            this.reproducibilityPolicy = requireNonNull(reproducibilityPolicy);
             return this;
         }
 

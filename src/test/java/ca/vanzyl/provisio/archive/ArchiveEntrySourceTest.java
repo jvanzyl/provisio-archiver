@@ -19,7 +19,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
 
         File outputArchive = getTargetArchive("normalized-from-tar.tar.gz");
         Archiver.builder()
-                .normalize(true)
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
                 .archive(outputArchive, new TarGzArchiveSource(sourceArchive));
@@ -37,7 +37,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
 
         File outputArchive = getTargetArchive("normalized-from-zip.zip");
         Archiver.builder()
-                .normalize(true)
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
                 .archive(outputArchive, new ZipArchiveSource(sourceArchive));

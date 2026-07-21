@@ -21,7 +21,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     @Test
     public void archiverCanBeReusedWithoutLeakingNormalizedEntries() throws Exception {
-        Archiver archiver = Archiver.builder().normalize(true).build();
+        Archiver archiver = Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .build();
 
         File firstArchive = getTargetArchive("reuse-first.tar.gz");
         archiver.archive(firstArchive, new StringListSource(Collections.singletonList("first")));
@@ -36,7 +38,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
     public void builtArchiverDoesNotObserveLaterBuilderMutation() throws Exception {
         Archiver.ArchiverBuilder builder = Archiver.builder().entryOrder(EntryOrder.SOURCE);
         Archiver archiver = builder.build();
-        builder.entryOrder(EntryOrder.NAME).normalize(true).executable("**");
+        builder.entryOrder(EntryOrder.NAME)
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .executable("**");
 
         File archive = getTargetArchive("builder-snapshot.tar.gz");
         archiver.archive(archive, new StringListSource(Arrays.asList("second", "first")));
@@ -62,8 +66,10 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     @Test
     public void configuredArchiverCanRunConcurrentIndependentOperations() throws Exception {
-        Archiver archiver =
-                Archiver.builder().normalize(true).entryOrder(EntryOrder.NAME).build();
+        Archiver archiver = Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .entryOrder(EntryOrder.NAME)
+                .build();
         File firstArchive = getTargetArchive("concurrent-first.tar.gz");
         File secondArchive = getTargetArchive("concurrent-second.tar.gz");
         CountDownLatch start = new CountDownLatch(1);

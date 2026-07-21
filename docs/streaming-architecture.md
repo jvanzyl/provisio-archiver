@@ -160,8 +160,11 @@ Output is written to a temporary sibling and moved into place only after all
 entries and compression trailers have been written successfully. A failure must
 not leave a partial archive at the requested destination.
 
-Reproducibility policy covers timestamps, the historical `.class` timestamp
-adjustment, modes, user and group metadata, entry ordering, and gzip headers.
+`ReproducibilityPolicy` now separates preserved source metadata from normalized
+output. `NORMALIZED` fixes timestamps (including the historical `.class`
+adjustment), canonicalizes modes while retaining executable semantics, clears
+tar user and group ownership, and fixes gzip header fields. `PRESERVE` carries
+source timestamps and modes. Entry ordering remains an independent policy.
 Parallel gzip must preserve deterministic chunk order and use bounded memory.
 
 ## Compatibility decision

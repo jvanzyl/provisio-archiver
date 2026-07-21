@@ -26,7 +26,11 @@ public class EntryOrderTest extends FileSystemAssert {
         Source source =
                 new SpoolObservingSource(archive.toPath().toAbsolutePath().getParent(), "second", "first");
 
-        Archiver.builder().normalize(true).entryOrder(EntryOrder.SOURCE).build().archive(archive, source);
+        Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .entryOrder(EntryOrder.SOURCE)
+                .build()
+                .archive(archive, source);
 
         assertEquals(Arrays.asList("second", "first"), entryNames(archive));
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
