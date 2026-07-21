@@ -13,6 +13,5 @@ module ca.vanzyl.provisio.archive {
     requires org.codehaus.plexus.util;
 
     exports ca.vanzyl.provisio.archive;
-    exports ca.vanzyl.provisio.archive.generator;
     exports ca.vanzyl.provisio.archive.perms;
 }

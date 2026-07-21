@@ -9,25 +9,21 @@ package ca.vanzyl.provisio.archive.generator;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ArtifactLayout {
+/** Filesystem-layout support for archive tests. */
+public final class ArtifactLayout {
 
-    private final Path tarGzDirectory;
-    private final List<ArtifactEntry> entries;
+    private final Path directory;
+    private final List<ArtifactEntry> entries = new ArrayList<>();
 
-    public ArtifactLayout(Path tarGzDirectory) {
-        this.tarGzDirectory = tarGzDirectory;
-        this.entries = new ArrayList<>();
-    }
-
-    public ArtifactLayout(Path tarGzDirectory, List<ArtifactEntry> entries) {
-        this.tarGzDirectory = tarGzDirectory;
-        this.entries = entries;
+    public ArtifactLayout(Path directory) {
+        this.directory = directory;
     }
 
     public ArtifactLayout entry(String name, Path file) {
@@ -42,21 +38,16 @@ public class ArtifactLayout {
 
     public void build() throws IOException {
         for (ArtifactEntry entry : entries) {
-            Path file = tarGzDirectory.resolve(entry.name());
+            Path file = directory.resolve(entry.name());
+            Files.createDirectories(file.getParent());
             if (entry.file() != null) {
-                Files.createDirectories(file.getParent());
                 Files.copy(entry.file(), file, StandardCopyOption.REPLACE_EXISTING);
-            } else if (entry.content() != null) {
-                Files.createDirectories(file.getParent());
+            } else {
                 Files.copy(
-                        new ByteArrayInputStream(entry.content().getBytes()),
+                        new ByteArrayInputStream(entry.content().getBytes(StandardCharsets.UTF_8)),
                         file,
                         StandardCopyOption.REPLACE_EXISTING);
             }
         }
-    }
-
-    public Path directory() {
-        return tarGzDirectory;
     }
 }

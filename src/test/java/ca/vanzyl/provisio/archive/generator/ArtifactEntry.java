@@ -9,37 +9,33 @@ package ca.vanzyl.provisio.archive.generator;
 
 import java.nio.file.Path;
 
-public class ArtifactEntry {
+final class ArtifactEntry {
 
-    String name;
-    Path file;
-    String content;
-    boolean executable;
+    private final String name;
+    private final Path file;
+    private final String content;
 
-    public ArtifactEntry(String name, Path file) {
+    ArtifactEntry(String name, Path file) {
         this.name = name;
         this.file = file;
+        this.content = null;
     }
 
-    public ArtifactEntry(String name, String content) {
-        this(name, content, false);
-    }
-
-    public ArtifactEntry(String name, String content, boolean executable) {
+    ArtifactEntry(String name, String content) {
         this.name = name;
+        this.file = null;
         this.content = content;
-        this.executable = executable;
     }
 
-    public String name() {
+    String name() {
         return name;
     }
 
-    public Path file() {
+    Path file() {
         return file;
     }
 
-    public String content() {
+    String content() {
         return content;
     }
 }
