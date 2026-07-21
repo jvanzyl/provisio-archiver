@@ -19,12 +19,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class Archiver {
+public final class Archiver {
 
-    public static final long DOS_EPOCH_IN_JAVA_TIME = 315561600000L;
+    static final long DOS_EPOCH_IN_JAVA_TIME = 315561600000L;
     // ZIP timestamps have a resolution of 2 seconds.
     // see http://www.info-zip.org/FAQ.html#limits
-    public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
+    static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
     private final ArchiveOptions options;
 
     private Archiver(ArchiverBuilder builder) {
@@ -82,7 +82,7 @@ public class Archiver {
         return new ArchiverBuilder();
     }
 
-    public static class ArchiverBuilder {
+    public static final class ArchiverBuilder {
 
         List<String> executables = new ArrayList<>();
         ReproducibilityPolicy reproducibilityPolicy = ReproducibilityPolicy.PRESERVE;

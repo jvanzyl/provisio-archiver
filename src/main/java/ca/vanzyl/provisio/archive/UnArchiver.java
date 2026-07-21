@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import org.codehaus.plexus.util.io.CachingOutputStream;
 
-public class UnArchiver {
+public final class UnArchiver {
 
     private final Selector selector;
     private final boolean useRoot;
@@ -46,7 +46,7 @@ public class UnArchiver {
         unarchive(archive, outputDirectory, new NoopEntryProcessor());
     }
 
-    public void unarchive(Path archive, Path outputDirectory, UnarchivingEnhancedEntryProcessor entryProcessor)
+    public void unarchive(Path archive, Path outputDirectory, UnarchivingEntryProcessor entryProcessor)
             throws IOException {
         requireNonNull(archive);
         requireNonNull(outputDirectory);
@@ -68,7 +68,7 @@ public class UnArchiver {
     private void unarchiveEntry(
             Path archive,
             Path outputDirectory,
-            UnarchivingEnhancedEntryProcessor entryProcessor,
+            UnarchivingEntryProcessor entryProcessor,
             SourceEntry archiveEntry,
             Set<String> outputPaths)
             throws IOException {
@@ -142,7 +142,7 @@ public class UnArchiver {
     }
 
     private ArchivePath adjustPath(
-            boolean target, String entryName, EntryType entryType, UnarchivingEnhancedEntryProcessor entryProcessor)
+            boolean target, String entryName, EntryType entryType, UnarchivingEntryProcessor entryProcessor)
             throws IOException {
         ArchivePath path = ArchivePath.parse(entryName, target ? "archive entry path" : "hard link target");
         if (!useRoot) {
@@ -206,11 +206,11 @@ public class UnArchiver {
     }
 
     /**
-     * {@link UnarchivingEnhancedEntryProcessor} that leaves the entry name and content as-is.
+     * {@link UnarchivingEntryProcessor} that leaves the entry name and content as-is.
      */
-    static class NoopEntryProcessor implements UnarchivingEnhancedEntryProcessor {}
+    static class NoopEntryProcessor implements UnarchivingEntryProcessor {}
 
-    public static class UnArchiverBuilder {
+    public static final class UnArchiverBuilder {
 
         List<String> includes = new ArrayList<>();
         List<String> excludes = new ArrayList<>();

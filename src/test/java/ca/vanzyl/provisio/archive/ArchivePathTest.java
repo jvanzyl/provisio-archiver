@@ -204,14 +204,12 @@ public class ArchivePathTest extends FileSystemAssert {
         File ordinary = getTargetArchive("malicious-processor-source.zip");
         Archiver.builder().build().archive(ordinary.toPath(), new StringListSource(Collections.singletonList("entry")));
         try {
-            UnArchiver.builder()
-                    .build()
-                    .unarchive(ordinary.toPath(), output.toPath(), new UnarchivingEnhancedEntryProcessor() {
-                        @Override
-                        public String targetName(String name) {
-                            return "../processor-outside.txt";
-                        }
-                    });
+            UnArchiver.builder().build().unarchive(ordinary.toPath(), output.toPath(), new UnarchivingEntryProcessor() {
+                @Override
+                public String targetName(String name) {
+                    return "../processor-outside.txt";
+                }
+            });
             fail("Expected malicious processed path to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Invalid processed archive entry path:"));

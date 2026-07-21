@@ -325,7 +325,7 @@ public abstract class ArchiveTypeTest {
         archiver.archive(archive.toPath(), archiveDirectory.toPath());
         UnArchiver unArchiver = UnArchiver.builder().build();
         File outputDirectory = FileSystemAssert.getOutputDirectory(name + "-extracted/" + getArchiveExtension());
-        unArchiver.unarchive(archive.toPath(), outputDirectory.toPath(), new UnarchivingEnhancedEntryProcessor() {
+        unArchiver.unarchive(archive.toPath(), outputDirectory.toPath(), new UnarchivingEntryProcessor() {
 
             @Override
             public void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
