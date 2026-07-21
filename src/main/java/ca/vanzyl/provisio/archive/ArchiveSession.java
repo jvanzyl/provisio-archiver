@@ -20,10 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import java.util.zip.CRC32;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.SelectorUtils;
 
@@ -37,6 +40,7 @@ final class ArchiveSession implements Closeable {
     private final Selector hardLinkSelector;
     private final Map<Long, List<ContentTarget>> hardLinkTargets = new HashMap<>();
     private final Map<MetadataIdentity, String> metadataHardLinkTargets = new HashMap<>();
+    private final Set<Long> metadataHardLinkSizes = new HashSet<>();
     private final Map<MetadataIdentity, MetadataGroup> metadataGroups = new HashMap<>();
     private final Map<String, Boolean> paths = new HashMap<>();
     private final Map<String, PendingEntry> entries = new TreeMap<>();
@@ -73,6 +77,12 @@ final class ArchiveSession implements Closeable {
     private void addSourceEntry(SourceSpec sourceSpec, SourceEntry entry) throws IOException {
         ArchivePath sourcePath = ArchivePath.parse(entry.getName(), "source entry path");
         if (!sourceSpec.includes(sourcePath.entryName(entry.getType()))) {
+            return;
+        }
+        if (sourceSpec.source().isDirectory()
+                && !sourceSpec.useRoot()
+                && entry.isDirectory()
+                && sourcePath.hasSingleSegment()) {
             return;
         }
         if (sourceSpec.source().isDirectory() && sourceSpec.flatten() && entry.isDirectory()) {
@@ -175,7 +185,7 @@ final class ArchiveSession implements Closeable {
                 if (identity != null) {
                     metadataGroup = metadataGroups.get(identity);
                     if (metadataGroup == null) {
-                        metadataGroup = new MetadataGroup(contentSpool.stabilize(entry.getContent()));
+                        metadataGroup = new MetadataGroup(contentSpool.stabilize(entry.getContent()), identity);
                         metadataGroups.put(identity, metadataGroup);
                     }
                 }
@@ -215,8 +225,8 @@ final class ArchiveSession implements Closeable {
 
     private void writeNameOrderedMetadataEntry(OutputEntry entry, MetadataGroup group) throws IOException {
         if (group.targetEntryName == null) {
-            writer.write(entry.withContent(group.content));
-            group.targetEntryName = entry.getName();
+            writeSourceOrderedMetadataEntry(entry.withContent(group.content), group.identity);
+            group.targetEntryName = metadataHardLinkTargets.get(group.identity);
         } else {
             writer.write(OutputEntry.hardLink(entry.getName(), group.targetEntryName, entry));
         }
@@ -226,32 +236,40 @@ final class ArchiveSession implements Closeable {
         String target = metadataHardLinkTargets.get(identity);
         if (target == null) {
             writer.write(entry);
-            metadataHardLinkTargets.put(identity, entry.getName());
+            addMetadataHardLinkTarget(identity, entry.getName());
         } else {
             writer.write(OutputEntry.hardLink(entry.getName(), target, entry));
         }
     }
 
     private void writeVerifiedEntry(OutputEntry entry) throws IOException {
-
         long declaredSize = entry.getContent().size();
         List<ContentTarget> candidates = hardLinkTargets.get(declaredSize);
-        if (candidates == null) {
+        if (candidates == null && !metadataHardLinkSizes.contains(declaredSize)) {
             ContentFingerprint fingerprint = writeAndFingerprint(entry);
             addHardLinkTarget(declaredSize, fingerprint, entry.getName());
+            addMetadataHardLinkTarget(fingerprint.metadataIdentity(), entry.getName());
             return;
         }
 
         FingerprintedContent fingerprintedContent = fingerprintContent(entry.getName(), entry.getContent());
-        for (ContentTarget candidate : candidates) {
-            if (candidate.fingerprint.equals(fingerprintedContent.fingerprint)) {
-                writer.write(OutputEntry.hardLink(entry.getName(), candidate.entryName, entry));
-                return;
+        String metadataTarget = metadataHardLinkTargets.get(fingerprintedContent.fingerprint.metadataIdentity());
+        if (metadataTarget != null) {
+            writer.write(OutputEntry.hardLink(entry.getName(), metadataTarget, entry));
+            return;
+        }
+        if (candidates != null) {
+            for (ContentTarget candidate : candidates) {
+                if (candidate.fingerprint.equals(fingerprintedContent.fingerprint)) {
+                    writer.write(OutputEntry.hardLink(entry.getName(), candidate.entryName, entry));
+                    return;
+                }
             }
         }
 
         writer.write(entry.withContent(fingerprintedContent.content));
-        candidates.add(new ContentTarget(fingerprintedContent.fingerprint, entry.getName()));
+        addHardLinkTarget(declaredSize, fingerprintedContent.fingerprint, entry.getName());
+        addMetadataHardLinkTarget(fingerprintedContent.fingerprint.metadataIdentity(), entry.getName());
     }
 
     private ContentFingerprint writeAndFingerprint(OutputEntry entry) throws IOException {
@@ -267,23 +285,30 @@ final class ArchiveSession implements Closeable {
 
     private ContentFingerprint fingerprint(String entryName, EntryContent content) throws IOException {
         MessageDigest digest = sha256();
+        CRC32 crc32 = new CRC32();
         long size = 0;
         byte[] buffer = new byte[8192];
         try (InputStream inputStream = content.open()) {
             int count;
             while ((count = inputStream.read(buffer)) != -1) {
                 digest.update(buffer, 0, count);
+                crc32.update(buffer, 0, count);
                 size += count;
             }
         }
         validateSize(entryName, content.size(), size);
-        return new ContentFingerprint(size, digest.digest());
+        return new ContentFingerprint(size, crc32.getValue(), digest.digest());
     }
 
     private void addHardLinkTarget(long declaredSize, ContentFingerprint fingerprint, String entryName) {
         hardLinkTargets
                 .computeIfAbsent(declaredSize, ignored -> new ArrayList<>())
                 .add(new ContentTarget(fingerprint, entryName));
+    }
+
+    private void addMetadataHardLinkTarget(MetadataIdentity identity, String entryName) {
+        metadataHardLinkTargets.putIfAbsent(identity, entryName);
+        metadataHardLinkSizes.add(identity.size);
     }
 
     private static MessageDigest sha256() {
@@ -400,10 +425,12 @@ final class ArchiveSession implements Closeable {
     private static final class MetadataGroup {
 
         private final EntryContent content;
+        private final MetadataIdentity identity;
         private String targetEntryName;
 
-        private MetadataGroup(EntryContent content) {
+        private MetadataGroup(EntryContent content, MetadataIdentity identity) {
             this.content = content;
+            this.identity = identity;
         }
     }
 
@@ -471,11 +498,17 @@ final class ArchiveSession implements Closeable {
     private static final class ContentFingerprint {
 
         private final long size;
+        private final long crc32;
         private final byte[] sha256;
 
-        private ContentFingerprint(long size, byte[] sha256) {
+        private ContentFingerprint(long size, long crc32, byte[] sha256) {
             this.size = size;
+            this.crc32 = crc32;
             this.sha256 = sha256;
+        }
+
+        private MetadataIdentity metadataIdentity() {
+            return new MetadataIdentity(size, crc32);
         }
 
         @Override
@@ -501,6 +534,7 @@ final class ArchiveSession implements Closeable {
         private final String entryName;
         private final EntryContent delegate;
         private final MessageDigest digest = sha256();
+        private final CRC32 crc32 = new CRC32();
         private long size;
         private boolean opened;
 
@@ -521,6 +555,7 @@ final class ArchiveSession implements Closeable {
                     int value = super.read();
                     if (value != -1) {
                         digest.update((byte) value);
+                        crc32.update(value);
                         size++;
                     }
                     return value;
@@ -531,6 +566,7 @@ final class ArchiveSession implements Closeable {
                     int count = super.read(bytes, offset, length);
                     if (count != -1) {
                         digest.update(bytes, offset, count);
+                        crc32.update(bytes, offset, count);
                         size += count;
                     }
                     return count;
@@ -548,7 +584,7 @@ final class ArchiveSession implements Closeable {
                 throw new IOException("Archive writer did not consume content for " + entryName);
             }
             validateSize(entryName, delegate.size(), size);
-            return new ContentFingerprint(size, digest.digest());
+            return new ContentFingerprint(size, crc32.getValue(), digest.digest());
         }
     }
 }

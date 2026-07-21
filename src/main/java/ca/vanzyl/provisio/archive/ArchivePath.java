@@ -62,6 +62,10 @@ final class ArchivePath {
         return new ArchivePath(segments.subList(1, segments.size()));
     }
 
+    boolean hasSingleSegment() {
+        return segments.size() == 1;
+    }
+
     ArchivePath fileName() {
         return new ArchivePath(Collections.singletonList(segments.get(segments.size() - 1)));
     }

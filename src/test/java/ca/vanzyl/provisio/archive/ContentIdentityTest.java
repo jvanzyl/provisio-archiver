@@ -65,6 +65,42 @@ public class ContentIdentityTest extends FileSystemAssert {
     }
 
     @Test
+    public void metadataIdentityLinksAfterContentWithoutMetadata() throws Exception {
+        File archive = getTargetArchive("identity-metadata-after-verified.tar.gz");
+        TrackingMetadataContent withoutMetadata = new TrackingMetadataContent("same", -1, false);
+        TrackingMetadataContent withMetadata = new TrackingMetadataContent("xxxx", crc32("same"), true);
+
+        metadataHardLinkingArchiver(EntryOrder.SOURCE)
+                .archive(
+                        archive.toPath(),
+                        source(
+                                SourceEntry.file("one/a.jar", withoutMetadata, 0644, 0),
+                                SourceEntry.file("two/b.jar", withMetadata, 0644, 0)));
+
+        assertEquals(1, withoutMetadata.openCount);
+        assertEquals(0, withMetadata.openCount);
+        assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
+    }
+
+    @Test
+    public void contentWithoutMetadataLinksAfterMetadataIdentity() throws Exception {
+        File archive = getTargetArchive("identity-verified-after-metadata.tar.gz");
+        TrackingMetadataContent withMetadata = new TrackingMetadataContent("same", crc32("same"), false);
+        TrackingMetadataContent withoutMetadata = new TrackingMetadataContent("same", -1, false);
+
+        metadataHardLinkingArchiver(EntryOrder.SOURCE)
+                .archive(
+                        archive.toPath(),
+                        source(
+                                SourceEntry.file("one/a.jar", withMetadata, 0644, 0),
+                                SourceEntry.file("two/b.jar", withoutMetadata, 0644, 0)));
+
+        assertEquals(1, withMetadata.openCount);
+        assertEquals(1, withoutMetadata.openCount);
+        assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
+    }
+
+    @Test
     public void metadataIdentitySpoolsOneRepresentativeForNameOrder() throws Exception {
         File archive = getTargetArchive("identity-metadata-name-order.tar.gz");
         TrackingMetadataContent representative = new TrackingMetadataContent("same", 77, false);
@@ -261,6 +297,12 @@ public class ContentIdentityTest extends FileSystemAssert {
             @Override
             public void close() throws IOException {}
         };
+    }
+
+    private static long crc32(String content) {
+        java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
+        crc32.update(content.getBytes(StandardCharsets.UTF_8));
+        return crc32.getValue();
     }
 
     private static Map<String, SourceEntry> entries(File archive) throws IOException {

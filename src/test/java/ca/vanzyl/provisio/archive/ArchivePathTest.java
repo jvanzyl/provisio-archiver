@@ -29,9 +29,40 @@ public class ArchivePathTest extends FileSystemAssert {
         assertEquals("one/two/three", path.value());
         assertEquals("one/two/three/", path.entryName(EntryType.DIRECTORY));
         assertEquals("two/three", path.withoutFirstSegment().value());
+        assertFalse(path.hasSingleSegment());
+        assertTrue(ArchivePath.parse("one", "test path").hasSingleSegment());
         assertEquals("three", path.fileName().value());
         assertEquals(
                 "prefix/one/two/three", path.prepend("prefix/", "test prefix").value());
+    }
+
+    @Test
+    public void rootDirectoryEntryIsRemovedWithItsSourceRoot() throws Exception {
+        File archive = getTargetArchive("root-directory-entry-removed.tar.gz");
+        Source source = new Source() {
+            @Override
+            public void forEachEntry(EntryConsumer consumer) throws IOException {
+                consumer.accept(SourceEntry.directory("root/", 0755, 0));
+                consumer.accept(SourceEntry.file(
+                        "root/file", EntryContents.of("content".getBytes(StandardCharsets.UTF_8)), 0644, 0));
+            }
+
+            @Override
+            public boolean isDirectory() {
+                return true;
+            }
+
+            @Override
+            public void close() throws IOException {}
+        };
+
+        Archiver.builder()
+                .build()
+                .archive(
+                        archive.toPath(),
+                        SourceSpec.builder(source).useRoot(false).build());
+
+        new TarGzArchiveValidator(archive).assertEntries("file");
     }
 
     @Test
