@@ -11,17 +11,17 @@ import java.util.Collections;
 import java.util.List;
 import org.codehaus.plexus.util.SelectorUtils;
 
-public class Selector {
+final class Selector {
 
     private final List<String> includes;
     private final List<String> excludes;
 
-    public Selector(List<String> includes, List<String> excludes) {
+    Selector(List<String> includes, List<String> excludes) {
         this.includes = includes != null ? includes : Collections.emptyList();
         this.excludes = excludes != null ? excludes : Collections.emptyList();
     }
 
-    public boolean include(String entryName) {
+    boolean include(String entryName) {
         //
         // If we get an exclusion that matches then just carry on.
         //

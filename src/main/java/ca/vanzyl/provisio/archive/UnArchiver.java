@@ -33,7 +33,7 @@ public class UnArchiver {
     private final boolean dereferenceHardlinks;
     private final UnArchiverBuilder builder;
 
-    public UnArchiver(UnArchiverBuilder builder) {
+    private UnArchiver(UnArchiverBuilder builder) {
         this.builder = builder;
         this.useRoot = builder.useRoot;
         this.flatten = builder.flatten;
@@ -217,7 +217,6 @@ public class UnArchiver {
         List<String> excludes = new ArrayList<>();
         boolean useRoot = true;
         boolean flatten = false;
-        boolean posixLongFileMode;
         boolean dereferenceHardlinks = false;
 
         public UnArchiverBuilder includes(String... includes) {
@@ -257,11 +256,6 @@ public class UnArchiver {
 
         public UnArchiverBuilder flatten(boolean flatten) {
             this.flatten = flatten;
-            return this;
-        }
-
-        public UnArchiverBuilder posixLongFileMode(boolean posixLongFileMode) {
-            this.posixLongFileMode = posixLongFileMode;
             return this;
         }
 
