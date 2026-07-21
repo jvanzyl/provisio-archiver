@@ -7,7 +7,7 @@
  */
 package ca.vanzyl.provisio.archive;
 
-import ca.vanzyl.provisio.archive.perms.FileMode;
+import ca.vanzyl.provisio.archive.perms.FileModes;
 
 /** Controls archive metadata independently of entry ordering. */
 public enum ReproducibilityPolicy {
@@ -30,10 +30,10 @@ public enum ReproducibilityPolicy {
         int sourceMode = source.getFileMode();
         if (this == PRESERVE) {
             if (sourceMode != -1 && selectedExecutable) {
-                return FileMode.makeExecutable(sourceMode);
+                return FileModes.makeExecutable(sourceMode);
             }
             if (sourceMode == -1 && selectedExecutable) {
-                return FileMode.EXECUTABLE_FILE.getBits();
+                return FileModes.EXECUTABLE_FILE;
             }
             return sourceMode;
         }

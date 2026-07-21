@@ -10,7 +10,7 @@ package ca.vanzyl.provisio.archive.source;
 import ca.vanzyl.provisio.archive.EntryContents;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.SourceEntry;
-import ca.vanzyl.provisio.archive.perms.FileMode;
+import ca.vanzyl.provisio.archive.perms.FileModes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,12 +53,12 @@ public class DirectorySource implements Source {
                             Files.isDirectory(file)
                                     ? SourceEntry.directory(
                                             archiveEntryName,
-                                            FileMode.getFileMode(file),
+                                            FileModes.read(file),
                                             Files.getLastModifiedTime(file).toMillis())
                                     : SourceEntry.file(
                                             archiveEntryName,
                                             EntryContents.of(file),
-                                            FileMode.getFileMode(file),
+                                            FileModes.read(file),
                                             Files.getLastModifiedTime(file).toMillis()));
                 }
             }

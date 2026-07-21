@@ -9,8 +9,7 @@ package ca.vanzyl.provisio.archive;
 
 import static java.util.Objects.requireNonNull;
 
-import ca.vanzyl.provisio.archive.perms.FileMode;
-import ca.vanzyl.provisio.archive.perms.PosixModes;
+import ca.vanzyl.provisio.archive.perms.FileModes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -174,12 +173,12 @@ public class UnArchiver {
         // that are unreadable or unusable, so we'll give files 0644 and directories 0755
         //
         if (mode > 0) {
-            setFilePermissions(outputFile, FileMode.toPermissionsSet(mode));
+            setFilePermissions(outputFile, FileModes.toPermissions(mode));
         } else {
             if (archiveEntry.isDirectory()) {
-                setFilePermissions(outputFile, PosixModes.intModeToPosix(0755));
+                setFilePermissions(outputFile, FileModes.toPermissions(0755));
             } else {
-                setFilePermissions(outputFile, PosixModes.intModeToPosix(0644));
+                setFilePermissions(outputFile, FileModes.toPermissions(0644));
             }
         }
     }
