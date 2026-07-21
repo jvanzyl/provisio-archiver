@@ -19,10 +19,14 @@ public class ArchiverHelper {
     public static ArchiveHandler getArchiveHandler(File archive, ArchiverBuilder builder) {
         ArchiveHandler archiveHandler;
         if (isZip(archive)) {
-            archiveHandler = new ZipArchiveHandler(archive);
+            archiveHandler = new ZipArchiveHandler(archive, builder.compressionLevel);
         } else if (isTarGz(archive)) {
             archiveHandler = new TarGzXzArchiveHandler(
-                    archive, builder.posixLongFileMode, builder.hardLinkIncludes, builder.hardLinkExcludes);
+                    archive,
+                    builder.posixLongFileMode,
+                    builder.hardLinkIncludes,
+                    builder.hardLinkExcludes,
+                    builder.compressionLevel);
         } else {
             throw new RuntimeException("Cannot detect how to read " + archive.getName());
         }

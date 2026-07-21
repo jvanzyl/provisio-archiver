@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.zip.Deflater;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -26,6 +27,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
@@ -35,11 +37,22 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
     private final boolean posixLongFileMode;
     private final Map<String, ExtendedArchiveEntry> processedFilesNames;
     private final Selector hardLinkSelector;
+    private final int compressionLevel;
 
     public TarGzXzArchiveHandler(
             File archive, boolean posixLongFileMode, List<String> hardLinkIncludes, List<String> hardLinkExcludes) {
+        this(archive, posixLongFileMode, hardLinkIncludes, hardLinkExcludes, Deflater.DEFAULT_COMPRESSION);
+    }
+
+    public TarGzXzArchiveHandler(
+            File archive,
+            boolean posixLongFileMode,
+            List<String> hardLinkIncludes,
+            List<String> hardLinkExcludes,
+            int compressionLevel) {
         this.archive = archive;
         this.posixLongFileMode = posixLongFileMode;
+        this.compressionLevel = compressionLevel;
         this.processedFilesNames = new TreeMap<>();
         if (!hardLinkIncludes.isEmpty() || !hardLinkExcludes.isEmpty()) {
             this.hardLinkSelector = new Selector(hardLinkIncludes, hardLinkExcludes);
@@ -82,9 +95,16 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
     public ArchiveOutputStream getOutputStream() throws IOException {
         TarArchiveOutputStream stream;
         if (archive.getName().endsWith(".xz")) {
-            stream = new TarArchiveOutputStream(new XZCompressorOutputStream(new FileOutputStream(archive)));
+            // XZ presets only accept 0-9, so fall back to the library default rather than passing -1 through.
+            stream = new TarArchiveOutputStream(
+                    compressionLevel == Deflater.DEFAULT_COMPRESSION
+                            ? new XZCompressorOutputStream(new FileOutputStream(archive))
+                            : new XZCompressorOutputStream(new FileOutputStream(archive), compressionLevel));
         } else {
-            stream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
+            GzipParameters parameters = new GzipParameters();
+            parameters.setCompressionLevel(compressionLevel);
+            stream = new TarArchiveOutputStream(
+                    new GzipCompressorOutputStream(new FileOutputStream(archive), parameters));
         }
         if (posixLongFileMode) {
             stream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);

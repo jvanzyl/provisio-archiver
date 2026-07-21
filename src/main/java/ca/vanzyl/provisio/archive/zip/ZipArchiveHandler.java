@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.zip.Deflater;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
@@ -22,9 +23,15 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 public class ZipArchiveHandler extends ArchiveHandlerSupport {
 
     private final File archive;
+    private final int compressionLevel;
 
     public ZipArchiveHandler(File archive) {
+        this(archive, Deflater.DEFAULT_COMPRESSION);
+    }
+
+    public ZipArchiveHandler(File archive, int compressionLevel) {
         this.archive = archive;
+        this.compressionLevel = compressionLevel;
     }
 
     @Override
@@ -44,6 +51,8 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
 
     @Override
     public ArchiveOutputStream getOutputStream() throws IOException {
-        return new ZipArchiveOutputStream(new FileOutputStream(archive));
+        ZipArchiveOutputStream stream = new ZipArchiveOutputStream(new FileOutputStream(archive));
+        stream.setLevel(compressionLevel);
+        return stream;
     }
 }

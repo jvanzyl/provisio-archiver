@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import java.util.zip.Deflater;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.codehaus.plexus.util.SelectorUtils;
 
@@ -215,6 +216,7 @@ public class Archiver {
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
+        int compressionLevel = Deflater.DEFAULT_COMPRESSION;
 
         public ArchiverBuilder includes(String... includes) {
             return includes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(includes))));
@@ -288,6 +290,22 @@ public class Archiver {
 
         public ArchiverBuilder hardLinkExcludes(Iterable<String> hardLinkExcludes) {
             hardLinkExcludes.forEach(this.hardLinkExcludes::add);
+            return this;
+        }
+
+        /**
+         * Sets the compression level applied to the resulting archive.
+         *
+         * @param compressionLevel {@link Deflater#DEFAULT_COMPRESSION} to use the format's default, otherwise a value
+         *                         from 0 (no compression) to 9 (best compression). For zip and tar.gz this is the
+         *                         deflate/gzip level; for tar.xz it is the LZMA2 preset.
+         */
+        public ArchiverBuilder compressionLevel(int compressionLevel) {
+            if (compressionLevel != Deflater.DEFAULT_COMPRESSION && (compressionLevel < 0 || compressionLevel > 9)) {
+                throw new IllegalArgumentException("Invalid compression level " + compressionLevel + ": expected "
+                        + Deflater.DEFAULT_COMPRESSION + " for the default, or a value from 0 to 9.");
+            }
+            this.compressionLevel = compressionLevel;
             return this;
         }
 
