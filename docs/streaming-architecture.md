@@ -9,25 +9,25 @@ source archives to disk, identify duplicate ZIP content from central-directory
 metadata, and compress the output efficiently without sacrificing
 reproducibility.
 
-The existing implementation already writes entries immediately when
-normalization is disabled. Normalized output is different: `Archiver` retains
-entries in a name-sorted map, closes each source, and writes the retained entries
-afterward. Entries backed by a sequential tar stream or an open `ZipFile` cannot
-be used safely after their source has advanced or closed.
+The original implementation wrote entries immediately when normalization was
+disabled. Normalized output retained entries in a name-sorted map, closed each
+source, and wrote the retained entries afterward. Entries backed by a sequential
+tar stream or an open `ZipFile` could not be used safely after their source had
+advanced or closed.
 
-Several existing abstractions also combine responsibilities:
+Several original abstractions combined responsibilities:
 
-* `ExtendedArchiveEntry` represents source metadata, source content, and a
+* `ExtendedArchiveEntry` represented source metadata, source content, and a
   mutable output entry.
-* `ArchiveHandler` combines format detection, reading, output creation, entry
+* `ArchiveHandler` combined format detection, reading, output creation, entry
   conversion, and archive policy.
-* `TarGzArchiveHandler` currently decides hard-link identity using only the
+* `TarGzArchiveHandler` decided hard-link identity using only the
   source filename.
-* Normalization controls both metadata normalization and entry ordering.
-* Mutable entries retained by `Archiver` belong to the `Archiver` instance
+* Normalization controlled both metadata normalization and entry ordering.
+* Mutable entries retained by `Archiver` belonged to the `Archiver` instance
   rather than to one archive operation.
 
-These boundaries make direct streaming harder to reason about and make resource
+Those boundaries made direct streaming harder to reason about and made resource
 lifetime and error propagation fragile.
 
 ## Design direction
@@ -117,10 +117,16 @@ Archive paths use `/` independently of the host platform.
 
 ### Format writers and hard links
 
-Format-specific writers encode entries; they do not decide assembly policy.
-Hard-link eligibility and content identity belong to the archive session. A tar
-writer receives either a regular output entry or an already selected hard-link
-entry.
+Format-specific writers now encode immutable `OutputEntry` decisions and do not
+read archives or decide assembly policy. The combined `ArchiveHandler`,
+`ArchiveHandlerSupport`, and `ExtendedArchiveEntry` hierarchy was removed.
+Hard-link eligibility and content identity belong to assembly. A tar writer
+receives either a regular output entry or an already selected hard-link entry;
+the ZIP writer rejects hard links because ZIP has no representation for them.
+
+The legacy filename-based hard-link selection has been moved out of the tar
+writer into assembly as an explicit transitional policy. It remains deliberately
+isolated there until content identity replaces it.
 
 Filename equality is not content identity. Eligible content will be compared by
 available metadata such as size and CRC. Missing or invalid identity metadata

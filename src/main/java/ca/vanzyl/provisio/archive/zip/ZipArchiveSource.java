@@ -7,8 +7,6 @@
  */
 package ca.vanzyl.provisio.archive.zip;
 
-import static ca.vanzyl.provisio.archive.zip.ExtendedZipArchiveEntry.dosToJavaTime;
-
 import ca.vanzyl.provisio.archive.EntryContent;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.SourceEntry;
@@ -17,7 +15,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
 import java.util.Enumeration;
+import java.util.Locale;
+import java.util.TimeZone;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
@@ -70,6 +71,14 @@ public class ZipArchiveSource implements Source {
         } finally {
             content.invalidate();
         }
+    }
+
+    private static long dosToJavaTime(long time, boolean writeToArchive) {
+        Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.ROOT);
+        calendar.setTimeInMillis(time);
+        return time
+                - ((calendar.get(Calendar.ZONE_OFFSET) + calendar.get(Calendar.DST_OFFSET))
+                        * (writeToArchive ? 1 : -1));
     }
 
     @Override

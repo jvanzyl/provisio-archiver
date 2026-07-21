@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.SelectorUtils;
 
@@ -83,11 +82,12 @@ public class Archiver {
     }
 
     private void writeArchive(File formatSource, File output, Source... sources) throws IOException {
-        ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(formatSource, output, builder);
-        Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
+        ArchiveFormat format = ArchiveFormat.detect(formatSource.toPath());
+        OutputEntryFactory outputEntryFactory = new OutputEntryFactory(format, builder);
+        Map<String, OutputEntry> entries = new TreeMap<>();
 
         try (ContentSpool contentSpool = new ContentSpool(output.toPath().getParent());
-                ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
+                ArchiveWriter writer = format.openWriter(output.toPath(), builder)) {
             //
             // collected archive entry paths mapped to true for explicitly provided entries
             // and to false for implicitly created directory entries duplicate explicitly
@@ -96,15 +96,14 @@ public class Archiver {
             Map<String, Boolean> paths = new HashMap<>();
             for (Source source : sources) {
                 try (Source closeableSource = source) {
-                    closeableSource.forEachEntry(entry ->
-                            addSourceEntry(closeableSource, entry, archiveHandler, paths, entries, aos, contentSpool));
+                    closeableSource.forEachEntry(entry -> addSourceEntry(
+                            closeableSource, entry, outputEntryFactory, paths, entries, writer, contentSpool));
                 }
             }
 
             if (!entries.isEmpty()) {
-                for (Map.Entry<String, ExtendedArchiveEntry> entry : entries.entrySet()) {
-                    ExtendedArchiveEntry archiveEntry = entry.getValue();
-                    writeEntry(archiveEntry, aos);
+                for (Map.Entry<String, OutputEntry> entry : entries.entrySet()) {
+                    writer.write(entry.getValue());
                 }
             }
         }
@@ -121,10 +120,10 @@ public class Archiver {
     private void addSourceEntry(
             Source source,
             SourceEntry entry,
-            ArchiveHandler archiveHandler,
+            OutputEntryFactory outputEntryFactory,
             Map<String, Boolean> paths,
-            Map<String, ExtendedArchiveEntry> entries,
-            ArchiveOutputStream aos,
+            Map<String, OutputEntry> entries,
+            ArchiveWriter writer,
             ContentSpool contentSpool)
             throws IOException {
         String entryName = entry.getName();
@@ -160,16 +159,16 @@ public class Archiver {
         for (String directoryName : getParentDirectoryNames(entryName)) {
             if (!paths.containsKey(directoryName)) {
                 paths.put(directoryName, Boolean.FALSE);
-                ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(
-                        directoryName, SourceEntry.directory(directoryName, -1, 0), false);
-                addEntry(directoryName, directoryEntry, entries, aos);
+                OutputEntry directoryEntry =
+                        outputEntryFactory.create(directoryName, SourceEntry.directory(directoryName, -1, 0), false);
+                addEntry(directoryName, directoryEntry, entries, writer);
             }
         }
         if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
             SourceEntry stableEntry = normalize ? contentSpool.stabilize(entry) : entry;
-            ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, stableEntry, isExecutable);
-            addEntry(entryName, archiveEntry, entries, aos);
+            OutputEntry archiveEntry = outputEntryFactory.create(entryName, stableEntry, isExecutable);
+            addEntry(entryName, archiveEntry, entries, writer);
         } else if (Boolean.TRUE.equals(paths.get(entryName))) {
             throw new IllegalArgumentException("Duplicate archive entry " + entryName);
         }
@@ -205,25 +204,11 @@ public class Archiver {
     }
 
     /**
-     * Returns the time for a new Jar file entry in milliseconds since the epoch. Uses {@link #DOS_EPOCH_IN_JAVA_TIME} for normalized entries, {@link System#currentTimeMillis()} otherwise.
-     *
-     * @param filename The name of the file for which we are entering the time
-     * @return the time for a new Jar file entry in milliseconds since the epoch.
-     */
-    private long newEntryTimeMillis(String filename) {
-        return normalize ? normalizedTimestamp(filename) : System.currentTimeMillis();
-    }
-
-    /**
      * Adds an entry to the Jar file, normalizing the name.
      *
      * @param entryName the name of the entry in the Jar file
      */
-    private void addEntry(
-            String entryName,
-            ExtendedArchiveEntry entry,
-            Map<String, ExtendedArchiveEntry> entries,
-            ArchiveOutputStream aos)
+    private void addEntry(String entryName, OutputEntry entry, Map<String, OutputEntry> entries, ArchiveWriter writer)
             throws IOException {
         if (entryName.startsWith("/")) {
             entryName = entryName.substring(1);
@@ -231,19 +216,51 @@ public class Archiver {
             entryName = entryName.substring(2);
         }
         if (normalize) {
-            entry.setTime(newEntryTimeMillis(entryName));
             entries.put(entryName, entry);
         } else {
-            writeEntry(entry, aos);
+            writer.write(entry);
         }
     }
 
-    private void writeEntry(ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
-        aos.putArchiveEntry(entry);
-        if (!entry.isHardLink() && !entry.isDirectory()) {
-            entry.writeEntry(aos);
+    private final class OutputEntryFactory {
+
+        private final ArchiveFormat format;
+        private final Selector hardLinkSelector;
+        private final Map<String, OutputEntry> hardLinkTargets = new HashMap<>();
+
+        private OutputEntryFactory(ArchiveFormat format, ArchiverBuilder builder) {
+            this.format = format;
+            if (!builder.hardLinkIncludes.isEmpty() || !builder.hardLinkExcludes.isEmpty()) {
+                hardLinkSelector = new Selector(builder.hardLinkIncludes, builder.hardLinkExcludes);
+            } else {
+                hardLinkSelector = new Selector(null, Collections.singletonList("**/**"));
+            }
         }
-        aos.closeArchiveEntry();
+
+        private OutputEntry create(String name, SourceEntry source, boolean executable) {
+            int mode = source.getFileMode();
+            if (mode != -1 && executable) {
+                mode = ca.vanzyl.provisio.archive.perms.FileMode.makeExecutable(mode);
+            } else if (mode == -1 && executable) {
+                mode = ca.vanzyl.provisio.archive.perms.FileMode.EXECUTABLE_FILE.getBits();
+            }
+
+            long time = normalize ? normalizedTimestamp(name) : -1;
+            if (format == ArchiveFormat.TAR_GZ
+                    && source.getType() == EntryType.FILE
+                    && hardLinkSelector.include(name)) {
+                String sourceFileName =
+                        source.getName().substring(source.getName().lastIndexOf('/') + 1);
+                OutputEntry target = hardLinkTargets.get(sourceFileName);
+                if (target != null) {
+                    return OutputEntry.hardLink(name, target.getName(), mode, time);
+                }
+                OutputEntry entry = OutputEntry.from(name, source, mode, time);
+                hardLinkTargets.put(sourceFileName, entry);
+                return entry;
+            }
+            return OutputEntry.from(name, source, mode, time);
+        }
     }
 
     private static final class ContentSpool implements Closeable {

@@ -85,8 +85,7 @@ public class UnArchiver {
         // These are the contributions that unpacking this archive is providing
         //
         Files.createDirectories(destinationDirectory);
-        try (Source source =
-                ArchiverHelper.getArchiveHandler(inputArchive.toFile(), builder).getArchiveSource()) {
+        try (Source source = ArchiveFormat.detect(inputArchive).openSource(inputArchive)) {
             source.forEachEntry(
                     archiveEntry -> unarchiveEntry(inputArchive, destinationDirectory, entryProcessor, archiveEntry));
         }
