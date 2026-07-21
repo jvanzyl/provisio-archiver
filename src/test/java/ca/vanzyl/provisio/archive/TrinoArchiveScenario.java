@@ -25,9 +25,9 @@ final class TrinoArchiveScenario {
         Archiver.builder()
                 .entryOrder(EntryOrder.SOURCE)
                 .build()
-                .archive(sourceArchive.toFile(), new JarLikeSource(entryCount, payloads));
+                .archive(sourceArchive, new JarLikeSource(entryCount, payloads));
 
-        TrackingSource source = new TrackingSource(new ZipArchiveSource(sourceArchive.toFile()));
+        TrackingSource source = new TrackingSource(new ZipArchiveSource(sourceArchive));
         long started = System.nanoTime();
         Archiver.builder()
                 .entryOrder(EntryOrder.SOURCE)
@@ -36,12 +36,12 @@ final class TrinoArchiveScenario {
                 .gzipCompressionThreads(4)
                 .gzipCompressionLevel(1)
                 .build()
-                .archive(outputArchive.toFile(), source);
+                .archive(outputArchive, source);
         long elapsedNanos = System.nanoTime() - started;
 
         int[] regularFiles = {0};
         int[] hardLinks = {0};
-        try (Source output = new TarGzArchiveSource(outputArchive.toFile())) {
+        try (Source output = new TarGzArchiveSource(outputArchive)) {
             output.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     regularFiles[0]++;

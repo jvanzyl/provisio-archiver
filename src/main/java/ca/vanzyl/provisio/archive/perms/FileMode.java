@@ -61,10 +61,10 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 import java.util.Set;
@@ -266,10 +266,10 @@ public abstract class FileMode {
         return fileMode | 0111;
     }
 
-    public static int getFileMode(File file) {
+    public static int getFileMode(Path file) {
         Set<PosixFilePermission> posixPermissions;
         try {
-            posixPermissions = Files.getPosixFilePermissions(file.toPath());
+            posixPermissions = Files.getPosixFilePermissions(file);
         } catch (IOException | UnsupportedOperationException e) {
             return -1;
         }

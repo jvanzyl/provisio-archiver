@@ -29,14 +29,14 @@ public class ArchiveScaleTest extends FileSystemAssert {
                 .gzipCompressionThreads(2)
                 .gzipCompressionLevel(1)
                 .build()
-                .archive(output.toFile(), source);
+                .archive(output, source);
 
         assertEquals(1, source.openCount);
         assertEquals(1, source.closeCount);
         assertEquals(0, spoolFiles(output.getParent()));
         long[] size = {0};
         long[] crc32 = {0};
-        try (Source archive = new TarGzArchiveSource(output.toFile())) {
+        try (Source archive = new TarGzArchiveSource(output)) {
             archive.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     try (InputStream input = entry.getContent().open()) {
@@ -61,7 +61,7 @@ public class ArchiveScaleTest extends FileSystemAssert {
         Path output = getTargetArchive("scale-many-name-order.zip").toPath();
         ManyEntrySource source = new ManyEntrySource(output.getParent(), MANY_ENTRY_COUNT);
 
-        Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output.toFile(), source);
+        Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output, source);
 
         assertEquals(MANY_ENTRY_COUNT, source.openCount);
         assertEquals(MANY_ENTRY_COUNT, source.closeCount);
@@ -70,7 +70,7 @@ public class ArchiveScaleTest extends FileSystemAssert {
         assertEquals(0, spoolFiles(output.getParent()));
 
         int[] files = {0};
-        try (Source archive = new ZipArchiveSource(output.toFile())) {
+        try (Source archive = new ZipArchiveSource(output)) {
             archive.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     files[0]++;

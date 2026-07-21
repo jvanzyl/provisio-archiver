@@ -26,7 +26,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         File archive = getTargetArchive("identity-same-name-different-content.tar.gz");
         Source source = source(file("one/library.jar", "alpha"), file("two/library.jar", "bravo"));
 
-        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(EntryType.FILE, entries(archive).get("one/library.jar").getType());
         assertEquals(EntryType.FILE, entries(archive).get("two/library.jar").getType());
@@ -43,7 +43,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         Source source =
                 source(SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", second, 0644, 0));
 
-        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(EntryType.FILE, entries(archive).get("one/a.jar").getType());
         assertEquals(EntryType.FILE, entries(archive).get("two/b.jar").getType());
@@ -59,7 +59,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         Source source = source(
                 SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", duplicate, 0644, 0));
 
-        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(1, first.openCount);
         assertEquals(0, duplicate.openCount);
@@ -74,7 +74,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         Source source = source(
                 SourceEntry.file("z/z.jar", representative, 0644, 0), SourceEntry.file("a/a.jar", duplicate, 0644, 0));
 
-        metadataHardLinkingArchiver(EntryOrder.NAME).archive(archive, source);
+        metadataHardLinkingArchiver(EntryOrder.NAME).archive(archive.toPath(), source);
 
         assertEquals(1, representative.openCount);
         assertEquals(0, duplicate.openCount);
@@ -88,10 +88,13 @@ public class ContentIdentityTest extends FileSystemAssert {
     @Test
     public void zipCentralDirectoryMetadataCanDriveTarHardLinks() throws Exception {
         File sourceArchive = getTargetArchive("identity-metadata-source.zip");
-        Archiver.builder().build().archive(sourceArchive, source(file("z/z.jar", "same"), file("a/a.jar", "same")));
+        Archiver.builder()
+                .build()
+                .archive(sourceArchive.toPath(), source(file("z/z.jar", "same"), file("a/a.jar", "same")));
         File outputArchive = getTargetArchive("identity-metadata-from-zip.tar.gz");
 
-        metadataHardLinkingArchiver(EntryOrder.NAME).archive(outputArchive, new ZipArchiveSource(sourceArchive));
+        metadataHardLinkingArchiver(EntryOrder.NAME)
+                .archive(outputArchive.toPath(), new ZipArchiveSource(sourceArchive.toPath()));
 
         Map<String, SourceEntry> entries = entries(outputArchive);
         assertEquals(EntryType.FILE, entries.get("a/a.jar").getType());
@@ -107,7 +110,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         Source source =
                 source(SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", second, 0644, 0));
 
-        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(1, first.openCount);
         assertEquals(1, second.openCount);
@@ -123,7 +126,7 @@ public class ContentIdentityTest extends FileSystemAssert {
 
         metadataHardLinkingArchiver(EntryOrder.SOURCE)
                 .archive(
-                        archive,
+                        archive.toPath(),
                         source(
                                 SourceEntry.file("one/a.jar", first, 0644, 0),
                                 SourceEntry.file("two/b.jar", second, 0644, 0)));
@@ -147,7 +150,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         File archive = getTargetArchive("identity-different-name-same-content.tar.gz");
         Source source = source(file("one/a.jar", "same"), file("two/b.jar", "same"));
 
-        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         Map<String, SourceEntry> entries = entries(archive);
         assertEquals(EntryType.FILE, entries.get("one/a.jar").getType());
@@ -160,7 +163,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         File archive = getTargetArchive("identity-name-order-target.tar.gz");
         Source source = source(file("z/z.jar", "same"), file("a/a.jar", "same"));
 
-        hardLinkingArchiver(EntryOrder.NAME).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.NAME).archive(archive.toPath(), source);
 
         List<SourceEntry> entries = entryList(archive);
         assertEquals(
@@ -183,7 +186,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         Source source =
                 source(SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", second, 0644, 0));
 
-        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(1, first.openCount);
         assertEquals(1, second.openCount);
@@ -195,7 +198,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         File archive = getTargetArchive("identity-empty-files.tar.gz");
         Source source = source(file("one/a.jar", ""), file("two/b.jar", ""));
 
-        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive.toPath(), source);
 
         assertEquals(EntryType.FILE, entries(archive).get("one/a.jar").getType());
         assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
@@ -219,7 +222,7 @@ public class ContentIdentityTest extends FileSystemAssert {
 
         try {
             hardLinkingArchiver(EntryOrder.SOURCE)
-                    .archive(archive, source(SourceEntry.file("bad.jar", badSize, 0644, 0)));
+                    .archive(archive.toPath(), source(SourceEntry.file("bad.jar", badSize, 0644, 0)));
             fail("Expected mismatched content size to fail");
         } catch (IOException expected) {
             // The writer or identity validation must reject the mismatch.
@@ -272,7 +275,7 @@ public class ContentIdentityTest extends FileSystemAssert {
 
     private static List<SourceEntry> entryList(File archive) throws IOException {
         List<SourceEntry> entries = new ArrayList<>();
-        try (Source source = new TarGzArchiveSource(archive)) {
+        try (Source source = new TarGzArchiveSource(archive.toPath())) {
             source.forEachEntry(entries::add);
         }
         return entries;

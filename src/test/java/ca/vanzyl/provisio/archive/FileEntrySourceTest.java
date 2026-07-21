@@ -12,12 +12,12 @@ public class FileEntrySourceTest extends FileSystemAssert {
                 .build();
 
         File archive = getTargetArchive("archive-from-files.tar.gz");
-        Source s0 = new FileSource(getSourceFile("0.txt"));
-        Source s1 = new FileSource(getSourceFile("1.txt"));
-        Source s2 = new FileSource(getSourceFile("2.txt"));
-        Source s3 = new FileSource(getSourceFile("3.txt"));
-        Source s4 = new FileSource(getSourceFile("4.txt"));
-        archiver.archive(archive, s0, s1, s2, s3, s4);
+        Source s0 = new FileSource(getSourceFile("0.txt").toPath());
+        Source s1 = new FileSource(getSourceFile("1.txt").toPath());
+        Source s2 = new FileSource(getSourceFile("2.txt").toPath());
+        Source s3 = new FileSource(getSourceFile("3.txt").toPath());
+        Source s4 = new FileSource(getSourceFile("4.txt").toPath());
+        archiver.archive(archive.toPath(), s0, s1, s2, s3, s4);
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
         validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
         validator.assertContentOfEntryInArchive("0.txt", "0");

@@ -37,7 +37,7 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
         File truncated = getTargetArchive("negative-truncated.zip");
         Files.write(truncated.toPath(), Arrays.copyOf(valid, valid.length - 12));
 
-        assertRejectedTransactionally(new ZipArchiveSource(truncated), "negative-from-truncated-zip.tar.gz");
+        assertRejectedTransactionally(new ZipArchiveSource(truncated.toPath()), "negative-from-truncated-zip.tar.gz");
     }
 
     @Test
@@ -49,21 +49,22 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
         corrupt[dataOffset + 3] ^= 0x40;
         Files.write(source.toPath(), corrupt);
 
-        IOException failure =
-                assertRejectedTransactionally(new ZipArchiveSource(source), "negative-from-corrupt-zip.tar.gz");
+        IOException failure = assertRejectedTransactionally(
+                new ZipArchiveSource(source.toPath()), "negative-from-corrupt-zip.tar.gz");
         assertTrue(failure.getMessage().contains("CRC"));
     }
 
     @Test
     public void corruptedGzipTrailerIsRejectedTransactionally() throws Exception {
         File source = getTargetArchive("negative-valid.tar.gz");
-        Archiver.builder().build().archive(source, new StringListSource(Arrays.asList("one", "two")));
+        Archiver.builder().build().archive(source.toPath(), new StringListSource(Arrays.asList("one", "two")));
         byte[] corrupt = Files.readAllBytes(source.toPath());
         corrupt[corrupt.length - 8] ^= 0x01;
         File corrupted = getTargetArchive("negative-corrupt-gzip-trailer.tar.gz");
         Files.write(corrupted.toPath(), corrupt);
 
-        assertRejectedTransactionally(new TarGzArchiveSource(corrupted), "negative-from-corrupt-gzip-trailer.tar.gz");
+        assertRejectedTransactionally(
+                new TarGzArchiveSource(corrupted.toPath()), "negative-from-corrupt-gzip-trailer.tar.gz");
     }
 
     @Test
@@ -73,7 +74,8 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
         File source = getTargetArchive("negative-corrupt-tar-header.tar.gz");
         Files.write(source.toPath(), gzip(tar));
 
-        assertRejectedTransactionally(new TarGzArchiveSource(source), "negative-from-corrupt-tar-header.tar.gz");
+        assertRejectedTransactionally(
+                new TarGzArchiveSource(source.toPath()), "negative-from-corrupt-tar-header.tar.gz");
     }
 
     @Test
@@ -82,7 +84,7 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
         Files.write(source.toPath(), gzip(rawTar(TarConstants.LF_FIFO, new byte[0])));
 
         IOException failure = assertRejectedTransactionally(
-                new TarGzArchiveSource(source), "negative-from-unsupported-tar-entry.tar.gz");
+                new TarGzArchiveSource(source.toPath()), "negative-from-unsupported-tar-entry.tar.gz");
         assertEquals("Unsupported tar entry type for entry", failure.getMessage());
     }
 
@@ -100,7 +102,7 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
             Files.write(output.toPath(), original);
 
             try {
-                Archiver.builder().entryOrder(order).build().archive(output, source);
+                Archiver.builder().entryOrder(order).build().archive(output.toPath(), source);
                 fail("Expected content read failure for " + order);
             } catch (IOException expected) {
                 assertSame(readFailure, expected);
@@ -119,7 +121,7 @@ public class ArchiveInputFailureTest extends FileSystemAssert {
         byte[] original = bytes("existing destination " + outputName);
         Files.write(output.toPath(), original);
         try {
-            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output, source);
+            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output.toPath(), source);
             fail("Expected corrupt input to be rejected: " + outputName);
             throw new AssertionError();
         } catch (IOException expected) {

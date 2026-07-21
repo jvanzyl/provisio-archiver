@@ -7,16 +7,16 @@
  */
 package ca.vanzyl.provisio.archive.generator;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class ArtifactEntry {
 
     String name;
-    File file;
+    Path file;
     String content;
     boolean executable;
 
-    public ArtifactEntry(String name, File file) {
+    public ArtifactEntry(String name, Path file) {
         this.name = name;
         this.file = file;
     }
@@ -35,7 +35,7 @@ public class ArtifactEntry {
         return name;
     }
 
-    public File file() {
+    public Path file() {
         return file;
     }
 

@@ -10,7 +10,6 @@ package ca.vanzyl.provisio.archive;
 import static java.util.Objects.requireNonNull;
 
 import ca.vanzyl.provisio.archive.source.DirectorySource;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -33,19 +32,11 @@ public class Archiver {
         options = new ArchiveOptions(builder);
     }
 
-    public void archive(File archive, List<String> sourceDirectories) throws IOException {
-        File[] fileSourceDirectories = new File[sourceDirectories.size()];
-        for (int i = 0; i < sourceDirectories.size(); i++) {
-            fileSourceDirectories[i] = new File(sourceDirectories.get(i));
-        }
-        archive(archive, fileSourceDirectories);
-    }
-
-    public void archive(File archive, File... sourceDirectories) throws IOException {
+    public void archive(Path archive, Path... sourceDirectories) throws IOException {
         archive(archive, new DirectorySource(sourceDirectories));
     }
 
-    public void archive(File archive, Source... sources) throws IOException {
+    public void archive(Path archive, Source... sources) throws IOException {
         SourceSpec[] sourceSpecs = new SourceSpec[sources.length];
         for (int i = 0; i < sources.length; i++) {
             sourceSpecs[i] = SourceSpec.of(sources[i]);
@@ -53,14 +44,14 @@ public class Archiver {
         archive(archive, sourceSpecs);
     }
 
-    public void archive(File archive, SourceSpec... sources) throws IOException {
-        Path output = archive.toPath().toAbsolutePath();
+    public void archive(Path archive, SourceSpec... sources) throws IOException {
+        Path output = requireNonNull(archive).toAbsolutePath();
         Files.createDirectories(output.getParent());
         Path temporary = Files.createTempFile(
                 output.getParent(), ".provisio-" + output.getFileName().toString() + "-", ".tmp");
         boolean completed = false;
         try {
-            writeArchive(archive, temporary.toFile(), sources);
+            writeArchive(archive, temporary, sources);
             moveIntoPlace(temporary, output);
             completed = true;
         } finally {
@@ -70,9 +61,9 @@ public class Archiver {
         }
     }
 
-    private void writeArchive(File formatSource, File output, SourceSpec... sources) throws IOException {
-        ArchiveFormat format = ArchiveFormat.detect(formatSource.toPath());
-        try (ArchiveSession session = new ArchiveSession(output.toPath(), format, options)) {
+    private void writeArchive(Path formatSource, Path output, SourceSpec... sources) throws IOException {
+        ArchiveFormat format = ArchiveFormat.detect(formatSource);
+        try (ArchiveSession session = new ArchiveSession(output, format, options)) {
             for (SourceSpec sourceSpec : sources) {
                 session.add(sourceSpec);
             }

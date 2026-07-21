@@ -15,14 +15,14 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
     @Test
     public void normalizedTarArchiveConsumesSourceContentBeforeTheCallbackExpires() throws Exception {
         File sourceArchive = getTargetArchive("normalized-tar-source.tar.gz");
-        Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
+        Archiver.builder().build().archive(sourceArchive.toPath(), new StringListSource(Arrays.asList("b", "a")));
 
         File outputArchive = getTargetArchive("normalized-from-tar.tar.gz");
         Archiver.builder()
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
-                .archive(outputArchive, new TarGzArchiveSource(sourceArchive));
+                .archive(outputArchive.toPath(), new TarGzArchiveSource(sourceArchive.toPath()));
 
         ArchiveValidator validator = new TarGzArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");
@@ -33,14 +33,14 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
     @Test
     public void normalizedZipArchiveConsumesSourceContentBeforeTheCallbackExpires() throws Exception {
         File sourceArchive = getTargetArchive("normalized-zip-source.zip");
-        Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
+        Archiver.builder().build().archive(sourceArchive.toPath(), new StringListSource(Arrays.asList("b", "a")));
 
         File outputArchive = getTargetArchive("normalized-from-zip.zip");
         Archiver.builder()
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
-                .archive(outputArchive, new ZipArchiveSource(sourceArchive));
+                .archive(outputArchive.toPath(), new ZipArchiveSource(sourceArchive.toPath()));
 
         ArchiveValidator validator = new ZipArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");
@@ -54,8 +54,9 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
                 .build();
 
         File archive = getTargetArchive("archive-from-archive.tar.gz");
-        Source source = new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz"));
-        archiver.archive(archive, source);
+        Source source = new TarGzArchiveSource(
+                getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath());
+        archiver.archive(archive.toPath(), source);
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
         // note that original archive is missing 3 directory entries
         // apache-maven-3.0.4/,apache-maven-3.0.4/boot/ and apache-maven-3.0.4/bin/
@@ -115,7 +116,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
         // directly reading the entries of another
         File outputDirectory = new File(getOutputDirectory(), "archive-source");
         UnArchiver unArchiver = UnArchiver.builder().build();
-        unArchiver.unarchive(archive, outputDirectory);
+        unArchiver.unarchive(archive.toPath(), outputDirectory.toPath());
         assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
         assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
     }
@@ -131,8 +132,9 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
             Archiver.builder()
                     .build()
                     .archive(
-                            getTargetArchive("archive-from-truncated-source.tar.gz"),
-                            new TarGzArchiveSource(truncated));
+                            getTargetArchive("archive-from-truncated-source.tar.gz")
+                                    .toPath(),
+                            new TarGzArchiveSource(truncated.toPath()));
             fail("Expected the truncated source archive to fail");
         } catch (IOException expected) {
             // The checked failure must not be mistaken for the end of the tar stream.

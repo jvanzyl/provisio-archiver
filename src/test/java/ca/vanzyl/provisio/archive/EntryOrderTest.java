@@ -30,7 +30,7 @@ public class EntryOrderTest extends FileSystemAssert {
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.SOURCE)
                 .build()
-                .archive(archive, source);
+                .archive(archive.toPath(), source);
 
         assertEquals(Arrays.asList("second", "first"), entryNames(archive));
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
@@ -43,7 +43,7 @@ public class EntryOrderTest extends FileSystemAssert {
         File archive = getTargetArchive("name-order-spooling.tar.gz");
         Source source = new CallbackScopedSource("second", "first");
 
-        Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive, source);
+        Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive.toPath(), source);
 
         assertEquals(Arrays.asList("first", "second"), entryNames(archive));
         new TarGzArchiveValidator(archive).assertContentOfEntryInArchive("first", "first");
@@ -54,7 +54,7 @@ public class EntryOrderTest extends FileSystemAssert {
     public void sourceOrderIsTheDefault() throws Exception {
         File archive = getTargetArchive("default-source-order.tar.gz");
 
-        Archiver.builder().build().archive(archive, new StringListSource(Arrays.asList("z", "a")));
+        Archiver.builder().build().archive(archive.toPath(), new StringListSource(Arrays.asList("z", "a")));
 
         assertEquals(Arrays.asList("z", "a"), entryNames(archive));
     }
@@ -71,7 +71,7 @@ public class EntryOrderTest extends FileSystemAssert {
 
     private List<String> entryNames(File archive) throws IOException {
         List<String> names = new ArrayList<>();
-        new TarGzArchiveSource(archive).forEachEntry(entry -> names.add(entry.getName()));
+        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> names.add(entry.getName()));
         return names;
     }
 

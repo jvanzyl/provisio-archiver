@@ -29,7 +29,7 @@ public class SourceSpecTest extends FileSystemAssert {
                 .build();
 
         File archive = getTargetArchive("source-spec-independent-mapping.tar.gz");
-        Archiver.builder().build().archive(archive, first, second);
+        Archiver.builder().build().archive(archive.toPath(), first, second);
 
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
         validator.assertEntries("one/", "one/a", "two/", "two/b");
@@ -45,7 +45,7 @@ public class SourceSpecTest extends FileSystemAssert {
         builder.includes("b").destinationPrefix("changed/");
 
         File archive = getTargetArchive("source-spec-immutable.zip");
-        Archiver.builder().build().archive(archive, spec);
+        Archiver.builder().build().archive(archive.toPath(), spec);
 
         new ZipArchiveValidator(archive).assertEntries("a");
     }
@@ -64,7 +64,7 @@ public class SourceSpecTest extends FileSystemAssert {
         Files.deleteIfExists(archive.toPath());
 
         try {
-            Archiver.builder().build().archive(archive, first, second);
+            Archiver.builder().build().archive(archive.toPath(), first, second);
             fail("Expected mappings from different sources to collide");
         } catch (IllegalArgumentException expected) {
             assertEquals("Duplicate archive entry same/file", expected.getMessage());
@@ -105,7 +105,7 @@ public class SourceSpecTest extends FileSystemAssert {
         Archiver.builder()
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .build()
-                .archive(archive, spec);
+                .archive(archive.toPath(), spec);
 
         new TarGzArchiveValidator(archive).assertNumberOfEntriesInArchive(0);
     }

@@ -88,7 +88,7 @@ public class FileSystemAssert {
 
     public static void assertFileMode(File outputDirectory, String string, String expectedUnix) {
         File f = new File(outputDirectory, string);
-        String unix = FileMode.toUnix(FileMode.getFileMode(f));
+        String unix = FileMode.toUnix(FileMode.getFileMode(f.toPath()));
         assertEquals(expectedUnix, unix);
     }
 

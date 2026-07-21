@@ -89,7 +89,7 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
         Archiver.builder()
                 .reproducibility(ReproducibilityPolicy.PRESERVE)
                 .build()
-                .archive(archive, source);
+                .archive(archive.toPath(), source);
 
         TarArchiveEntry entry = tarEntries(archive).get("entry");
         assertEquals(0600, entry.getMode());
@@ -114,7 +114,7 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
                     .reproducibility(ReproducibilityPolicy.NORMALIZED)
                     .entryOrder(EntryOrder.NAME)
                     .build()
-                    .archive(archive, source);
+                    .archive(archive.toPath(), source);
         } finally {
             TimeZone.setDefault(original);
         }
@@ -126,7 +126,9 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
                 .entryOrder(EntryOrder.NAME)
                 .gzipCompressionThreads(compressionThreads)
                 .build()
-                .archive(archive, singleEntrySource(SourceEntry.file("large.bin", EntryContents.of(content), 0644, 0)));
+                .archive(
+                        archive.toPath(),
+                        singleEntrySource(SourceEntry.file("large.bin", EntryContents.of(content), 0644, 0)));
     }
 
     private Source source(long timestamp, int regularMode, int executableMode) {

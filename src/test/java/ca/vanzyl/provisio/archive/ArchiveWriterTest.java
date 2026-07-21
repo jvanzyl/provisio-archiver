@@ -30,10 +30,10 @@ public class ArchiveWriterTest extends FileSystemAssert {
     @Test
     public void tarWriterPreservesAnAlreadySelectedHardLink() throws Exception {
         File archive = getTargetArchive("writer-hard-link.tar.gz");
-        Archiver.builder().build().archive(archive, new LinkSource());
+        Archiver.builder().build().archive(archive.toPath(), new LinkSource());
 
         int[] hardLinks = {0};
-        new TarGzArchiveSource(archive).forEachEntry(entry -> {
+        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> {
             if (entry.isHardLink()) {
                 hardLinks[0]++;
                 assertEquals("target.txt", entry.getLinkTarget());
@@ -42,7 +42,7 @@ public class ArchiveWriterTest extends FileSystemAssert {
         assertEquals(1, hardLinks[0]);
 
         File output = getOutputDirectory("writer-hard-link");
-        UnArchiver.builder().build().unarchive(archive, output);
+        UnArchiver.builder().build().unarchive(archive.toPath(), output.toPath());
         assertTrue(Files.isSameFile(
                 output.toPath().resolve("target.txt"), output.toPath().resolve("link.txt")));
     }
@@ -53,7 +53,7 @@ public class ArchiveWriterTest extends FileSystemAssert {
         Files.deleteIfExists(archive.toPath());
 
         try {
-            Archiver.builder().build().archive(archive, new LinkSource());
+            Archiver.builder().build().archive(archive.toPath(), new LinkSource());
             fail("Expected ZIP hard-link output to fail");
         } catch (IOException expected) {
             assertEquals("ZIP does not support hard link entry link.txt", expected.getMessage());
@@ -65,17 +65,25 @@ public class ArchiveWriterTest extends FileSystemAssert {
     @Test
     public void tarWriterPreservesSymbolicLinkMetadataFromAnArchiveSource() throws Exception {
         File archive = getTargetArchive("writer-symbolic-link.tar.gz");
-        Archiver.builder().build().archive(archive, new TarGzArchiveSource(getSourceArchive("jenv.tar.gz")));
+        Archiver.builder()
+                .build()
+                .archive(
+                        archive.toPath(),
+                        new TarGzArchiveSource(getSourceArchive("jenv.tar.gz").toPath()));
 
-        assertSymbolicLink(new TarGzArchiveSource(archive));
+        assertSymbolicLink(new TarGzArchiveSource(archive.toPath()));
     }
 
     @Test
     public void zipWriterPreservesSymbolicLinkMetadataFromAnArchiveSource() throws Exception {
         File archive = getTargetArchive("writer-symbolic-link.zip");
-        Archiver.builder().build().archive(archive, new TarGzArchiveSource(getSourceArchive("jenv.tar.gz")));
+        Archiver.builder()
+                .build()
+                .archive(
+                        archive.toPath(),
+                        new TarGzArchiveSource(getSourceArchive("jenv.tar.gz").toPath()));
 
-        assertSymbolicLink(new ZipArchiveSource(archive));
+        assertSymbolicLink(new ZipArchiveSource(archive.toPath()));
     }
 
     @Test
@@ -86,7 +94,7 @@ public class ArchiveWriterTest extends FileSystemAssert {
         try {
             Archiver.builder()
                     .build()
-                    .archive(archive, new StringListSource(java.util.Collections.singletonList("entry")));
+                    .archive(archive.toPath(), new StringListSource(java.util.Collections.singletonList("entry")));
             fail("Expected unsupported output format to fail");
         } catch (IllegalArgumentException expected) {
             assertEquals("Cannot detect archive format for writer-unsupported.unknown", expected.getMessage());

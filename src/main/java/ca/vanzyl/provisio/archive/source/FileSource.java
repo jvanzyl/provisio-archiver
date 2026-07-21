@@ -11,34 +11,38 @@ import ca.vanzyl.provisio.archive.EntryContents;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.SourceEntry;
 import ca.vanzyl.provisio.archive.perms.FileMode;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class FileSource implements Source {
 
     private final String archiveEntryName;
-    private final File file;
+    private final Path file;
 
-    public FileSource(File file) {
-        this.archiveEntryName = file.getName();
+    public FileSource(Path file) {
+        this.archiveEntryName = file.getFileName().toString();
         this.file = file;
     }
 
-    public FileSource(String archiveEntryName, File file) {
+    public FileSource(String archiveEntryName, Path file) {
         this.archiveEntryName = archiveEntryName;
         this.file = file;
     }
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
-        if (file.isDirectory()) {
-            consumer.accept(SourceEntry.directory(archiveEntryName, FileMode.getFileMode(file), file.lastModified()));
+        if (Files.isDirectory(file)) {
+            consumer.accept(SourceEntry.directory(
+                    archiveEntryName,
+                    FileMode.getFileMode(file),
+                    Files.getLastModifiedTime(file).toMillis()));
         } else {
             consumer.accept(SourceEntry.file(
                     archiveEntryName,
-                    EntryContents.of(file.toPath()),
+                    EntryContents.of(file),
                     FileMode.getFileMode(file),
-                    file.lastModified()));
+                    Files.getLastModifiedTime(file).toMillis()));
         }
     }
 

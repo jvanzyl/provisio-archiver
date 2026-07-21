@@ -23,7 +23,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.write(archive.toPath(), original);
 
         try {
-            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive, new FailingSource());
+            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive.toPath(), new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());
@@ -40,7 +40,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.deleteIfExists(archive.toPath());
 
         try {
-            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive, new FailingSource());
+            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive.toPath(), new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());
@@ -56,7 +56,9 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         File archive = getTargetArchive("transaction-replaces-existing.tar.gz");
         Files.write(archive.toPath(), "existing archive".getBytes(StandardCharsets.UTF_8));
 
-        Archiver.builder().build().archive(archive, new StringListSource(Collections.singletonList("replacement")));
+        Archiver.builder()
+                .build()
+                .archive(archive.toPath(), new StringListSource(Collections.singletonList("replacement")));
 
         new TarGzArchiveValidator(archive).assertEntries("replacement");
         assertEquals(0, temporaryFilesFor(archive.toPath()));
@@ -67,7 +69,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         File outputDirectory = getOutputDirectory("transaction-parent");
         File archive = new File(outputDirectory, "nested/archive.tar.gz");
 
-        Archiver.builder().build().archive(archive, new StringListSource(Collections.singletonList("entry")));
+        Archiver.builder().build().archive(archive.toPath(), new StringListSource(Collections.singletonList("entry")));
 
         new TarGzArchiveValidator(archive).assertEntries("entry");
     }

@@ -11,10 +11,8 @@ import static java.util.Objects.requireNonNull;
 
 import ca.vanzyl.provisio.archive.perms.FileMode;
 import ca.vanzyl.provisio.archive.perms.PosixModes;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,36 +41,10 @@ public class UnArchiver {
         this.selector = new Selector(builder.includes, builder.excludes);
     }
 
-    public void unarchive(File archive, File outputDirectory) throws IOException {
+    public void unarchive(Path archive, Path outputDirectory) throws IOException {
         requireNonNull(archive);
         requireNonNull(outputDirectory);
-        unarchive(archive.toPath(), outputDirectory.toPath(), new NoopEntryProcessor());
-    }
-
-    @Deprecated
-    public void unarchive(File archive, File outputDirectory, UnarchivingEntryProcessor entryProcessor)
-            throws IOException {
-        requireNonNull(archive);
-        requireNonNull(outputDirectory);
-        requireNonNull(entryProcessor);
-        // adapt legacy to new one
-        unarchive(archive.toPath(), outputDirectory.toPath(), new UnarchivingEnhancedEntryProcessor() {
-            @Override
-            public String targetName(String name) {
-                return entryProcessor.processName(name);
-            }
-
-            @Override
-            public String sourceName(String name) {
-                return entryProcessor.processName(name);
-            }
-
-            @Override
-            public void processStream(String entryName, InputStream inputStream, OutputStream outputStream)
-                    throws IOException {
-                entryProcessor.processStream(entryName, inputStream, outputStream);
-            }
-        });
+        unarchive(archive, outputDirectory, new NoopEntryProcessor());
     }
 
     public void unarchive(Path archive, Path outputDirectory, UnarchivingEnhancedEntryProcessor entryProcessor)

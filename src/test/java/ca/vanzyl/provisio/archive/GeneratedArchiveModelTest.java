@@ -38,7 +38,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
             for (String nestedExtension : Arrays.asList("zip", "tar.gz")) {
                 File nested = getTargetArchive("generated-nested-" + seed + "." + nestedExtension);
                 CallbackScopedModelSource nestedInput = new CallbackScopedModelSource(model, false);
-                Archiver.builder().build().archive(nested, nestedInput);
+                Archiver.builder().build().archive(nested.toPath(), nestedInput);
                 nestedInput.assertConsumedExactlyOnce();
 
                 for (String outputExtension : Arrays.asList("zip", "tar.gz")) {
@@ -58,7 +58,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
                                 .entryOrder(order)
                                 .hardLinkIncludes("**/*")
                                 .build()
-                                .archive(output, direct, archived);
+                                .archive(output.toPath(), direct, archived);
 
                         directInput.assertConsumedExactlyOnce();
                         Map<String, byte[]> expected = expectedContents(model);
@@ -93,7 +93,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
                     .build();
 
             try {
-                Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output, source);
+                Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(output.toPath(), source);
                 fail("Expected generated flattened paths to collide for seed " + seed);
             } catch (IllegalArgumentException expected) {
                 assertEquals("Duplicate archive entry flat/" + basename, expected.getMessage());
@@ -121,7 +121,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
                     .destinationPrefix("distribution")
                     .build();
 
-            Archiver.builder().build().archive(output, sourceSpec);
+            Archiver.builder().build().archive(output.toPath(), sourceSpec);
 
             Map<String, SourceEntry> entries = readEntries(output);
             String mappedRoot = "distribution/" + release;
@@ -178,7 +178,9 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
     }
 
     private Source openArchive(File archive) {
-        return archive.getName().endsWith(".zip") ? new ZipArchiveSource(archive) : new TarGzArchiveSource(archive);
+        return archive.getName().endsWith(".zip")
+                ? new ZipArchiveSource(archive.toPath())
+                : new TarGzArchiveSource(archive.toPath());
     }
 
     private ObservedArchive readArchive(File archive) throws IOException {
@@ -213,7 +215,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
 
     private Map<String, SourceEntry> readEntries(File archive) throws IOException {
         Map<String, SourceEntry> entries = new LinkedHashMap<>();
-        try (Source source = new TarGzArchiveSource(archive)) {
+        try (Source source = new TarGzArchiveSource(archive.toPath())) {
             source.forEachEntry(entry -> entries.put(entry.getName(), entry));
         }
         return entries;

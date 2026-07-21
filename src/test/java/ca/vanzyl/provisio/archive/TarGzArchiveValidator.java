@@ -6,6 +6,6 @@ import java.io.File;
 public class TarGzArchiveValidator extends AbstractArchiveValidator {
 
     public TarGzArchiveValidator(File archive) throws Exception {
-        super(new TarGzArchiveSource(archive));
+        super(new TarGzArchiveSource(archive.toPath()));
     }
 }

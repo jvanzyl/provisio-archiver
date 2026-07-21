@@ -25,15 +25,16 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
             fileDuplicatedInTarGzArchive.getParentFile().mkdirs();
         }
 
-        JarArtifactGenerator jarFileGenerator = new JarArtifactGenerator(fileDuplicatedInTarGzArchive, 5); // 5242880
+        JarArtifactGenerator jarFileGenerator =
+                new JarArtifactGenerator(fileDuplicatedInTarGzArchive.toPath(), 5); // 5242880
         jarFileGenerator.generate();
 
-        ArtifactLayout artifactLayout = new ArtifactLayout(tarGzDirectory)
-                .entry("1/foo-1.0.jar", fileDuplicatedInTarGzArchive)
-                .entry("2/foo-1.0.jar", fileDuplicatedInTarGzArchive)
-                .entry("3/foo-1.0.jar", fileDuplicatedInTarGzArchive)
-                .entry("4/foo-1.0.jar", fileDuplicatedInTarGzArchive)
-                .entry("5/foo-1.0.jar", fileDuplicatedInTarGzArchive)
+        ArtifactLayout artifactLayout = new ArtifactLayout(tarGzDirectory.toPath())
+                .entry("1/foo-1.0.jar", fileDuplicatedInTarGzArchive.toPath())
+                .entry("2/foo-1.0.jar", fileDuplicatedInTarGzArchive.toPath())
+                .entry("3/foo-1.0.jar", fileDuplicatedInTarGzArchive.toPath())
+                .entry("4/foo-1.0.jar", fileDuplicatedInTarGzArchive.toPath())
+                .entry("5/foo-1.0.jar", fileDuplicatedInTarGzArchive.toPath())
                 .entry("6/same.txt", "super") // same name, different content
                 .entry("7/same.txt", "monkey"); // same name, different content
         artifactLayout.build();
@@ -46,7 +47,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
                 .build();
 
         File archive = new File(getBasedir(), "target/hardlink.tar.gz");
-        archiver.archive(archive, tarGzDirectory);
+        archiver.archive(archive.toPath(), tarGzDirectory.toPath());
 
         //
         // Make sure there are the correct number of entries and that the sizes are correct
@@ -100,7 +101,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
             FileUtils.deleteDirectory(unpackedTarGzDirectory);
         }
 
-        unArchiver.unarchive(archive, unpackedTarGzDirectory);
+        unArchiver.unarchive(archive.toPath(), unpackedTarGzDirectory.toPath());
 
         assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/2/foo-1.0.jar");
         assertFileIsHardLink(unpackedTarGzDirectory, "hardlink/3/foo-1.0.jar");
@@ -110,7 +111,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
         assertFileIsNotHardLink(unpackedTarGzDirectory, "hardlink/7/same.txt");
 
         // And now unpack it again and make sure it overwrites the files
-        unArchiver.unarchive(archive, unpackedTarGzDirectory);
+        unArchiver.unarchive(archive.toPath(), unpackedTarGzDirectory.toPath());
 
         // Now unpack the archive with hardlink deref'ing enabled and make sure there are no hardlinks
         UnArchiver hardlinkDerefUnArchiver =
@@ -119,7 +120,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
         if (unpackedTarGzDirectoryForHardlinkDeref.exists()) {
             FileUtils.deleteDirectory(unpackedTarGzDirectoryForHardlinkDeref);
         }
-        hardlinkDerefUnArchiver.unarchive(archive, unpackedTarGzDirectoryForHardlinkDeref);
+        hardlinkDerefUnArchiver.unarchive(archive.toPath(), unpackedTarGzDirectoryForHardlinkDeref.toPath());
         assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/2/foo-1.0.jar");
         assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/3/foo-1.0.jar");
         assertFileIsNotHardLink(unpackedTarGzDirectoryForHardlinkDeref, "hardlink/4/foo-1.0.jar");

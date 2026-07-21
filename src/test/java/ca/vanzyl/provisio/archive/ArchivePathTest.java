@@ -84,7 +84,7 @@ public class ArchivePathTest extends FileSystemAssert {
             File archive = getTargetArchive("unsafe-source-" + index++ + ".tar.gz");
             Files.deleteIfExists(archive.toPath());
             try {
-                Archiver.builder().build().archive(archive, new NamedSource(path));
+                Archiver.builder().build().archive(archive.toPath(), new NamedSource(path));
                 fail("Expected unsafe source path to fail: " + path);
             } catch (IOException expected) {
                 assertTrue(expected.getMessage().startsWith("Invalid source entry path:"));
@@ -101,7 +101,7 @@ public class ArchivePathTest extends FileSystemAssert {
             SourceSpec source = SourceSpec.builder(new NamedSource("entry"))
                     .destinationPrefix("../escape")
                     .build();
-            Archiver.builder().build().archive(prefixedArchive, source);
+            Archiver.builder().build().archive(prefixedArchive.toPath(), source);
             fail("Expected unsafe prefix to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Invalid source destination prefix:"));
@@ -111,7 +111,7 @@ public class ArchivePathTest extends FileSystemAssert {
         File collisionArchive = getTargetArchive("canonical-collision.tar.gz");
         Files.deleteIfExists(collisionArchive.toPath());
         try {
-            Archiver.builder().build().archive(collisionArchive, new NamedSource("one//two", "one\\two"));
+            Archiver.builder().build().archive(collisionArchive.toPath(), new NamedSource("one//two", "one\\two"));
             fail("Expected canonical path collision to fail");
         } catch (IllegalArgumentException expected) {
             assertEquals("Duplicate archive entry one/two", expected.getMessage());
@@ -142,7 +142,7 @@ public class ArchivePathTest extends FileSystemAssert {
         };
 
         try {
-            Archiver.builder().build().archive(archive, source);
+            Archiver.builder().build().archive(archive.toPath(), source);
             fail("Expected file and directory paths to collide");
         } catch (IllegalArgumentException expected) {
             assertEquals("Duplicate archive entry same", expected.getMessage());
@@ -174,10 +174,10 @@ public class ArchivePathTest extends FileSystemAssert {
                 .useRoot(false)
                 .destinationPrefix("prefix/")
                 .build();
-        Archiver.builder().build().archive(archive, sourceSpec);
+        Archiver.builder().build().archive(archive.toPath(), sourceSpec);
 
         int[] links = {0};
-        new TarGzArchiveSource(archive).forEachEntry(entry -> {
+        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> {
             if (entry.isHardLink()) {
                 links[0]++;
                 assertEquals("prefix/target", entry.getLinkTarget());
@@ -195,7 +195,7 @@ public class ArchivePathTest extends FileSystemAssert {
         Files.deleteIfExists(outside);
 
         try {
-            UnArchiver.builder().build().unarchive(malicious, output);
+            UnArchiver.builder().build().unarchive(malicious.toPath(), output.toPath());
             fail("Expected malicious archive entry to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Invalid archive entry path:"));
@@ -203,7 +203,7 @@ public class ArchivePathTest extends FileSystemAssert {
         assertFalse(Files.exists(outside));
 
         File ordinary = getTargetArchive("malicious-processor-source.zip");
-        Archiver.builder().build().archive(ordinary, new StringListSource(Collections.singletonList("entry")));
+        Archiver.builder().build().archive(ordinary.toPath(), new StringListSource(Collections.singletonList("entry")));
         try {
             UnArchiver.builder()
                     .build()
@@ -226,7 +226,11 @@ public class ArchivePathTest extends FileSystemAssert {
         File canonical = getTargetArchive("unarchive-canonical-collision.zip");
         writeZipEntries(canonical.toPath(), "one//two", "one\\two");
         try {
-            UnArchiver.builder().build().unarchive(canonical, getOutputDirectory("unarchive-canonical-collision"));
+            UnArchiver.builder()
+                    .build()
+                    .unarchive(
+                            canonical.toPath(),
+                            getOutputDirectory("unarchive-canonical-collision").toPath());
             fail("Expected canonical output collision to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Duplicate archive output path one/two"));
@@ -238,7 +242,9 @@ public class ArchivePathTest extends FileSystemAssert {
             UnArchiver.builder()
                     .flatten(true)
                     .build()
-                    .unarchive(flattened, getOutputDirectory("unarchive-flatten-collision"));
+                    .unarchive(
+                            flattened.toPath(),
+                            getOutputDirectory("unarchive-flatten-collision").toPath());
             fail("Expected flattened output collision to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Duplicate archive output path file"));
@@ -250,7 +256,11 @@ public class ArchivePathTest extends FileSystemAssert {
         File symbolicArchive = getTargetArchive("malicious-symbolic-link.tar.gz");
         writeTarLink(symbolicArchive.toPath(), "link", "../outside", TarConstants.LF_SYMLINK);
         try {
-            UnArchiver.builder().build().unarchive(symbolicArchive, getOutputDirectory("malicious-symbolic-output"));
+            UnArchiver.builder()
+                    .build()
+                    .unarchive(
+                            symbolicArchive.toPath(),
+                            getOutputDirectory("malicious-symbolic-output").toPath());
             fail("Expected escaping symbolic link to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().contains("target escapes the archive root"));
@@ -259,7 +269,11 @@ public class ArchivePathTest extends FileSystemAssert {
         File hardLinkArchive = getTargetArchive("malicious-hard-link.tar.gz");
         writeTarLink(hardLinkArchive.toPath(), "link", "../outside", TarConstants.LF_LINK);
         try {
-            UnArchiver.builder().build().unarchive(hardLinkArchive, getOutputDirectory("malicious-hard-output"));
+            UnArchiver.builder()
+                    .build()
+                    .unarchive(
+                            hardLinkArchive.toPath(),
+                            getOutputDirectory("malicious-hard-output").toPath());
             fail("Expected escaping hard link to fail");
         } catch (IOException expected) {
             assertTrue(expected.getMessage().startsWith("Invalid hard link target:"));

@@ -10,11 +10,11 @@ package ca.vanzyl.provisio.archive.zip;
 import ca.vanzyl.provisio.archive.EntryContent;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.SourceEntry;
-import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.Locale;
@@ -26,16 +26,16 @@ import org.apache.commons.io.IOUtils;
 
 public class ZipArchiveSource implements Source {
 
-    private final File archive;
+    private final Path archive;
 
-    public ZipArchiveSource(File archive) {
+    public ZipArchiveSource(Path archive) {
         this.archive = archive;
     }
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
         try (ZipFile zipFile = ZipFile.builder()
-                .setFile(archive)
+                .setPath(archive)
                 .setUseUnicodeExtraFields(false)
                 .get()) {
             Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();

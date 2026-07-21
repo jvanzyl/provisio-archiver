@@ -7,6 +7,6 @@ import java.io.IOException;
 public class ZipArchiveValidator extends AbstractArchiveValidator {
 
     public ZipArchiveValidator(File archive) throws IOException {
-        super(new ZipArchiveSource(archive));
+        super(new ZipArchiveSource(archive.toPath()));
     }
 }

@@ -12,27 +12,27 @@ import ca.vanzyl.provisio.archive.EntryOrder;
 import ca.vanzyl.provisio.archive.ReproducibilityPolicy;
 import ca.vanzyl.provisio.archive.SourceSpec;
 import ca.vanzyl.provisio.archive.source.DirectorySource;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 // TODO: create a simple in-memory source for easily generating test artifacts
 public class TarGzArtifactGenerator implements ArtifactGenerator {
 
-    private final File artifact;
+    private final Path artifact;
     private final ArtifactLayout artifactLayout;
 
-    public TarGzArtifactGenerator(File artifact, File layoutDirectory) {
+    public TarGzArtifactGenerator(Path artifact, Path layoutDirectory) {
         this.artifact = artifact;
         this.artifactLayout = new ArtifactLayout(layoutDirectory);
     }
 
-    public TarGzArtifactGenerator(File artifact, File layoutDirectory, List<ArtifactEntry> artifactEntries) {
+    public TarGzArtifactGenerator(Path artifact, Path layoutDirectory, List<ArtifactEntry> artifactEntries) {
         this.artifact = artifact;
         this.artifactLayout = new ArtifactLayout(layoutDirectory, artifactEntries);
     }
 
-    public TarGzArtifactGenerator(File artifact, ArtifactLayout layout) {
+    public TarGzArtifactGenerator(Path artifact, ArtifactLayout layout) {
         this.artifact = artifact;
         this.artifactLayout = layout;
     }

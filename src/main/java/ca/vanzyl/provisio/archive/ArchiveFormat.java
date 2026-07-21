@@ -33,9 +33,9 @@ enum ArchiveFormat {
 
     Source openSource(Path archive) {
         if (this == ZIP) {
-            return new ZipArchiveSource(archive.toFile());
+            return new ZipArchiveSource(archive);
         }
-        return new TarGzArchiveSource(archive.toFile());
+        return new TarGzArchiveSource(archive);
     }
 
     ArchiveWriter openWriter(Path output, boolean posixLongFileMode, GzipCompressionOptions gzipCompression)

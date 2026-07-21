@@ -26,11 +26,11 @@ public class SourceLifecycleTest extends FileSystemAssert {
                 .build();
 
         File firstArchive = getTargetArchive("reuse-first.tar.gz");
-        archiver.archive(firstArchive, new StringListSource(Collections.singletonList("first")));
+        archiver.archive(firstArchive.toPath(), new StringListSource(Collections.singletonList("first")));
         new TarGzArchiveValidator(firstArchive).assertEntries("first");
 
         File secondArchive = getTargetArchive("reuse-second.tar.gz");
-        archiver.archive(secondArchive, new StringListSource(Collections.singletonList("second")));
+        archiver.archive(secondArchive.toPath(), new StringListSource(Collections.singletonList("second")));
         new TarGzArchiveValidator(secondArchive).assertEntries("second");
     }
 
@@ -43,7 +43,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
                 .executable("**");
 
         File archive = getTargetArchive("builder-snapshot.tar.gz");
-        archiver.archive(archive, new StringListSource(Arrays.asList("second", "first")));
+        archiver.archive(archive.toPath(), new StringListSource(Arrays.asList("second", "first")));
 
         assertEquals(Arrays.asList("second", "first"), entryNames(archive));
     }
@@ -53,13 +53,13 @@ public class SourceLifecycleTest extends FileSystemAssert {
         Archiver archiver = Archiver.builder().hardLinkIncludes("**/*.jar").build();
 
         archiver.archive(
-                getTargetArchive("hard-link-state-first.tar.gz"),
+                getTargetArchive("hard-link-state-first.tar.gz").toPath(),
                 new StringListSource(Collections.singletonList("first/library.jar")));
         File secondArchive = getTargetArchive("hard-link-state-second.tar.gz");
-        archiver.archive(secondArchive, new StringListSource(Collections.singletonList("second/library.jar")));
+        archiver.archive(secondArchive.toPath(), new StringListSource(Collections.singletonList("second/library.jar")));
 
         List<EntryType> types = new ArrayList<>();
-        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(secondArchive)
+        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(secondArchive.toPath())
                 .forEachEntry(entry -> types.add(entry.getType()));
         assertEquals(Arrays.asList(EntryType.DIRECTORY, EntryType.FILE), types);
     }
@@ -77,12 +77,12 @@ public class SourceLifecycleTest extends FileSystemAssert {
         try {
             Future<?> first = executor.submit(() -> {
                 start.await();
-                archiver.archive(firstArchive, new StringListSource(Arrays.asList("b", "a")));
+                archiver.archive(firstArchive.toPath(), new StringListSource(Arrays.asList("b", "a")));
                 return null;
             });
             Future<?> second = executor.submit(() -> {
                 start.await();
-                archiver.archive(secondArchive, new StringListSource(Arrays.asList("d", "c")));
+                archiver.archive(secondArchive.toPath(), new StringListSource(Arrays.asList("d", "c")));
                 return null;
             });
             start.countDown();
@@ -100,7 +100,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
     public void sourceIsClosedAfterSuccessfulTraversal() throws Exception {
         TrackingSource source = new TrackingSource(Collections.singletonList("entry"), null, null);
 
-        Archiver.builder().build().archive(getTargetArchive("source-close-success.tar.gz"), source);
+        Archiver.builder()
+                .build()
+                .archive(getTargetArchive("source-close-success.tar.gz").toPath(), source);
 
         assertEquals(1, source.closeCount);
     }
@@ -111,7 +113,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
         TrackingSource source = new TrackingSource(Collections.emptyList(), readFailure, null);
 
         try {
-            Archiver.builder().build().archive(getTargetArchive("source-read-failure.tar.gz"), source);
+            Archiver.builder()
+                    .build()
+                    .archive(getTargetArchive("source-read-failure.tar.gz").toPath(), source);
             fail("Expected source traversal to fail");
         } catch (IOException e) {
             assertSame(readFailure, e);
@@ -126,7 +130,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
         TrackingSource source = new TrackingSource(Collections.singletonList("entry"), null, closeFailure);
 
         try {
-            Archiver.builder().build().archive(getTargetArchive("source-close-failure.tar.gz"), source);
+            Archiver.builder()
+                    .build()
+                    .archive(getTargetArchive("source-close-failure.tar.gz").toPath(), source);
             fail("Expected source close to fail");
         } catch (IOException e) {
             assertSame(closeFailure, e);
@@ -141,7 +147,12 @@ public class SourceLifecycleTest extends FileSystemAssert {
         TrackingSource source = new TrackingSource(Arrays.asList("duplicate", "duplicate"), null, closeFailure);
 
         try {
-            Archiver.builder().build().archive(getTargetArchive("source-suppressed-close-failure.tar.gz"), source);
+            Archiver.builder()
+                    .build()
+                    .archive(
+                            getTargetArchive("source-suppressed-close-failure.tar.gz")
+                                    .toPath(),
+                            source);
             fail("Expected duplicate entry to fail");
         } catch (IllegalArgumentException e) {
             assertEquals("Duplicate archive entry duplicate", e.getMessage());
@@ -157,7 +168,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
         TrackingSource source = new TrackingSource(Arrays.asList("duplicate", "duplicate"), null, null);
 
         try {
-            Archiver.builder().build().archive(getTargetArchive("source-entry-failure.tar.gz"), source);
+            Archiver.builder()
+                    .build()
+                    .archive(getTargetArchive("source-entry-failure.tar.gz").toPath(), source);
             fail("Expected duplicate entry to fail");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("duplicate"));
@@ -176,7 +189,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
             Archiver.builder()
                     .build()
                     .archive(
-                            getTargetArchive("source-spec-close-failure.tar.gz"),
+                            getTargetArchive("source-spec-close-failure.tar.gz").toPath(),
                             SourceSpec.builder(first)
                                     .destinationPrefix("first/")
                                     .build(),
@@ -194,7 +207,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     private List<String> entryNames(File archive) throws IOException {
         List<String> names = new ArrayList<>();
-        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(archive)
+        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(archive.toPath())
                 .forEachEntry(entry -> names.add(entry.getName()));
         return names;
     }

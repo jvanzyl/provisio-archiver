@@ -18,7 +18,7 @@ public class ArchiveSourceContentTest extends FileSystemAssert {
         int[] entryCount = {0};
         boolean[] opened = {false};
 
-        new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz")).forEachEntry(entry -> {
+        new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath()).forEachEntry(entry -> {
             entryCount[0]++;
             if (!opened[0] && entry.getType() == EntryType.FILE) {
                 try (InputStream inputStream = entry.getContent().open()) {
@@ -36,7 +36,7 @@ public class ArchiveSourceContentTest extends FileSystemAssert {
     public void tarEntryContentIsSingleUseAndExpiresAfterItsCallback() throws Exception {
         EntryContent[] expired = {null};
 
-        new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz")).forEachEntry(entry -> {
+        new TarGzArchiveSource(getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath()).forEachEntry(entry -> {
             if (expired[0] == null && entry.getType() == EntryType.FILE) {
                 expired[0] = entry.getContent();
                 try (InputStream ignored = expired[0].open()) {
@@ -65,7 +65,7 @@ public class ArchiveSourceContentTest extends FileSystemAssert {
         long[] size = {-1};
         long[] crc = {-1};
 
-        new ZipArchiveSource(getSourceArchive("jenv.zip")).forEachEntry(entry -> {
+        new ZipArchiveSource(getSourceArchive("jenv.zip").toPath()).forEachEntry(entry -> {
             if (expired[0] == null && entry.getType() == EntryType.FILE) {
                 expired[0] = entry.getContent();
                 size[0] = expired[0].size();

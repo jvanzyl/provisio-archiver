@@ -7,10 +7,10 @@
  */
 package ca.vanzyl.provisio.archive.generator;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
@@ -23,16 +23,16 @@ public class JarArtifactGenerator implements ArtifactGenerator {
 
     private final long sizeInMegabytes;
     private final Random rnd;
-    private final File file;
+    private final Path file;
 
-    public JarArtifactGenerator(File file, long sizeInMegabytes) {
+    public JarArtifactGenerator(Path file, long sizeInMegabytes) {
         this.file = file;
         this.sizeInMegabytes = sizeInMegabytes * bytesInMegabyte;
         this.rnd = new Random(12345);
     }
 
     public void generate() throws IOException {
-        try (OutputStream outputStream = new FileOutputStream(file)) {
+        try (OutputStream outputStream = Files.newOutputStream(file)) {
             writeTo(outputStream);
         }
     }

@@ -21,7 +21,7 @@ public class SymbolicLinkInTarGzTest extends FileSystemAssert {
 
         File archive = getSourceArchive("jenv.tar.gz");
         UnArchiver unArchiver = UnArchiver.builder().useRoot(false).build();
-        unArchiver.unarchive(archive, tarGzDirectory);
+        unArchiver.unarchive(archive.toPath(), tarGzDirectory.toPath());
 
         Path link = tarGzDirectory.toPath().resolve("bin/jenv");
         Path target = Files.readSymbolicLink(link);
@@ -38,7 +38,7 @@ public class SymbolicLinkInTarGzTest extends FileSystemAssert {
 
         File archive = getSourceArchive("jenv.zip");
         UnArchiver unArchiver = UnArchiver.builder().useRoot(false).build();
-        unArchiver.unarchive(archive, tarGzDirectory);
+        unArchiver.unarchive(archive.toPath(), tarGzDirectory.toPath());
 
         Path link = tarGzDirectory.toPath().resolve("bin/jenv");
         Path target = Files.readSymbolicLink(link);

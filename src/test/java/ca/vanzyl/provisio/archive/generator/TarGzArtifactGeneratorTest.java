@@ -13,7 +13,8 @@ public class TarGzArtifactGeneratorTest extends FileSystemAssert {
         File artifactLayoutDirectory = getOutputDirectory("tar-gz-layout");
         File targetArchive = getTargetArchive("generated.tar.gz");
 
-        ArtifactGenerator generator = new TarGzArtifactGenerator(targetArchive, artifactLayoutDirectory)
+        ArtifactGenerator generator = new TarGzArtifactGenerator(
+                        targetArchive.toPath(), artifactLayoutDirectory.toPath())
                 .entry("1/one.txt", "one")
                 .entry("2/two.txt", "two")
                 .entry("3/three.txt", "three");

@@ -10,11 +10,11 @@ package ca.vanzyl.provisio.archive.tar;
 import ca.vanzyl.provisio.archive.EntryContent;
 import ca.vanzyl.provisio.archive.Source;
 import ca.vanzyl.provisio.archive.SourceEntry;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
@@ -23,16 +23,16 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 
 public class TarGzArchiveSource implements Source {
 
-    private final File archive;
+    private final Path archive;
 
-    public TarGzArchiveSource(File archive) {
+    public TarGzArchiveSource(Path archive) {
         this.archive = archive;
     }
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
         try (TarArchiveInputStream inputStream =
-                new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive), true))) {
+                new TarArchiveInputStream(new GzipCompressorInputStream(Files.newInputStream(archive), true))) {
             TarArchiveEntry archiveEntry;
             while ((archiveEntry = inputStream.getNextTarEntry()) != null) {
                 acceptEntry(inputStream, archiveEntry, consumer);
