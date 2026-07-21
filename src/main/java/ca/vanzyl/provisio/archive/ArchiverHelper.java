@@ -51,12 +51,6 @@ public class ArchiverHelper {
     }
 
     private static boolean isTarGz(File file) {
-        return file.getName().endsWith(".tgz")
-                || file.getName().endsWith("tar.gz")
-                || file.getName().endsWith("tar.xz");
-    }
-
-    private static boolean isTarXz(File file) {
-        return file.getName().endsWith(".txz") || file.getName().endsWith("tar.xz");
+        return file.getName().endsWith(".tgz") || file.getName().endsWith("tar.gz");
     }
 }

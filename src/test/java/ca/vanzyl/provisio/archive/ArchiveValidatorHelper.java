@@ -8,9 +8,7 @@ public class ArchiveValidatorHelper {
         ArchiveValidator archiveHandler;
         if (isZip(archive)) {
             archiveHandler = new ZipArchiveValidator(archive);
-        } else if (archive.getName().endsWith(".tgz")
-                || archive.getName().endsWith("tar.gz")
-                || archive.getName().endsWith("tar.xz")) {
+        } else if (archive.getName().endsWith(".tgz") || archive.getName().endsWith("tar.gz")) {
             archiveHandler = new TarGzArchiveValidator(archive);
         } else {
             throw new RuntimeException("Cannot detect how to create a validator for " + archive.getName());

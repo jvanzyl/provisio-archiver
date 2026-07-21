@@ -10,7 +10,6 @@ module ca.vanzyl.provisio.archive {
     requires org.apache.commons.compress;
     requires org.apache.commons.io;
     requires org.apache.commons.codec;
-    requires org.tukaani.xz;
     requires org.codehaus.plexus.util;
 
     exports ca.vanzyl.provisio.archive;

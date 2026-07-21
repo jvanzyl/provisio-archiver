@@ -26,8 +26,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
 
@@ -71,21 +69,13 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
 
     @Override
     public ArchiveInputStream getInputStream() throws IOException {
-        if (archive.getName().endsWith(".xz")) {
-            return new TarArchiveInputStream(new XZCompressorInputStream(new FileInputStream(archive)));
-        } else {
-            return new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive)));
-        }
+        return new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive)));
     }
 
     @Override
     public ArchiveOutputStream getOutputStream() throws IOException {
-        TarArchiveOutputStream stream;
-        if (archive.getName().endsWith(".xz")) {
-            stream = new TarArchiveOutputStream(new XZCompressorOutputStream(new FileOutputStream(archive)));
-        } else {
-            stream = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
-        }
+        TarArchiveOutputStream stream =
+                new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(archive)));
         if (posixLongFileMode) {
             stream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
         }
