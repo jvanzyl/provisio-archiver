@@ -98,10 +98,13 @@ public class ArchivePathTest extends FileSystemAssert {
         File prefixedArchive = getTargetArchive("unsafe-prefix.tar.gz");
         Files.deleteIfExists(prefixedArchive.toPath());
         try {
-            Archiver.builder().withPrefix("../escape").build().archive(prefixedArchive, new NamedSource("entry"));
+            SourceSpec source = SourceSpec.builder(new NamedSource("entry"))
+                    .destinationPrefix("../escape")
+                    .build();
+            Archiver.builder().build().archive(prefixedArchive, source);
             fail("Expected unsafe prefix to fail");
         } catch (IOException expected) {
-            assertTrue(expected.getMessage().startsWith("Invalid archive prefix:"));
+            assertTrue(expected.getMessage().startsWith("Invalid source destination prefix:"));
         }
         assertFalse(prefixedArchive.exists());
 
@@ -167,7 +170,11 @@ public class ArchivePathTest extends FileSystemAssert {
             public void close() throws IOException {}
         };
 
-        Archiver.builder().useRoot(false).withPrefix("prefix/").build().archive(archive, source);
+        SourceSpec sourceSpec = SourceSpec.builder(source)
+                .useRoot(false)
+                .destinationPrefix("prefix/")
+                .build();
+        Archiver.builder().build().archive(archive, sourceSpec);
 
         int[] links = {0};
         new TarGzArchiveSource(archive).forEachEntry(entry -> {

@@ -2,6 +2,7 @@ package ca.vanzyl.provisio.archive;
 
 import static org.junit.Assert.assertEquals;
 
+import ca.vanzyl.provisio.archive.source.DirectorySource;
 import ca.vanzyl.provisio.archive.source.FileSource;
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,11 +62,12 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveWithIncludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
-                .includes("**/4.txt") //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .includes("**/4.txt")
                 .build();
         File archive = FileSystemAssert.getTargetArchive("includes-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
 
         validator.assertEntries(
@@ -80,12 +82,13 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveWithMultipleIncludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
-                .includes("**/3.txt") //
-                .includes("**/4.txt") //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .includes("**/3.txt")
+                .includes("**/4.txt")
                 .build();
         File archive = FileSystemAssert.getTargetArchive("includes-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
 
         validator.assertEntries(
@@ -122,11 +125,12 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveWithExcludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
                 .excludes("**/4**") // We want to exclude all items with "4" which includes the directory entry
                 .build();
         File archive = FileSystemAssert.getTargetArchive("excludes-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
 
         validator.assertEntries(
@@ -150,11 +154,12 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveWithoutRoot() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
-                .useRoot(false) //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .useRoot(false)
                 .build();
         File archive = FileSystemAssert.getTargetArchive("without-root-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
         validator.assertEntries("0/", "0/0.txt", "1/", "1/1.txt", "2/", "2/2.txt", "3/", "3/3.txt", "4/", "4/4.txt");
         validator.assertContentOfEntryInArchive("0/0.txt", "0");
@@ -167,11 +172,12 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveWithPrefix() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
-                .withPrefix("prefix/") //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .destinationPrefix("prefix/")
                 .build();
         File archive = FileSystemAssert.getTargetArchive("with-prefix-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
         validator.assertEntries(
                 "prefix/",
@@ -196,12 +202,13 @@ public abstract class ArchiveTypeTest {
     @Test
     public void createArchiveUsingFlatten() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
-        Archiver archiver = Archiver.builder() //
-                .useRoot(false) //
-                .flatten(true) //
+        Archiver archiver = Archiver.builder().build();
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .useRoot(false)
+                .flatten(true)
                 .build();
         File archive = FileSystemAssert.getTargetArchive("flatten-archive-0." + getArchiveExtension());
-        archiver.archive(archive, archiveDirectory);
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
         validator.assertEntries("0.txt", "1.txt", "2.txt", "3.txt", "4.txt");
         validator.assertContentOfEntryInArchive("0.txt", "0");
@@ -422,11 +429,13 @@ public abstract class ArchiveTypeTest {
 
     @Test
     public void validateArchiveWithLongPath() throws Exception {
-        Archiver archiver =
-                Archiver.builder().useRoot(false).posixLongFileMode(true).build();
+        Archiver archiver = Archiver.builder().posixLongFileMode(true).build();
         File archive = FileSystemAssert.getTargetArchive("archive-with-long-path." + getArchiveExtension());
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-with-long-path");
-        archiver.archive(archive, archiveDirectory);
+        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory))
+                .useRoot(false)
+                .build();
+        archiver.archive(archive, source);
         ArchiveValidator validator = validator(archive);
         validator.assertContentOfEntryInArchive(
                 "one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/thirteen/fourteen/fifteen/sixteen/seventeen/entry.txt",

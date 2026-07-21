@@ -106,9 +106,11 @@ spooling moves into the archive session when explicit ordering is introduced.
 
 ### Per-source mapping and safe paths
 
-Mapping belongs to each source rather than only to the global `Archiver`
-configuration. A source specification will carry destination prefix,
-`useRoot`, includes, excludes, and flattening.
+Mapping now belongs to each source rather than to the global `Archiver`
+configuration. An immutable `SourceSpec` carries its source, destination prefix,
+`useRoot`, includes, excludes, and flattening. The global mapping methods were
+removed from `ArchiverBuilder`, so one operation can combine independently
+mapped sources without hidden policy leaking between them.
 
 All source and mapped entry names and link targets now pass through the shared
 `ArchivePath` representation. It rejects absolute paths, `.` and `..` traversal,

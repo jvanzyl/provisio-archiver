@@ -35,21 +35,13 @@ public class Archiver {
     // see http://www.info-zip.org/FAQ.html#limits
     public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
     private final List<String> executables;
-    private final boolean useRoot;
-    private final boolean flatten;
     private final boolean normalize;
-    private final String prefix;
-    private final Selector selector;
     private final ArchiverBuilder builder;
 
     private Archiver(ArchiverBuilder builder) {
         this.builder = builder;
         this.executables = builder.executables;
-        this.useRoot = builder.useRoot;
-        this.flatten = builder.flatten;
         this.normalize = builder.normalize;
-        this.prefix = builder.prefix;
-        this.selector = new Selector(builder.includes, builder.excludes);
     }
 
     public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -65,6 +57,14 @@ public class Archiver {
     }
 
     public void archive(File archive, Source... sources) throws IOException {
+        SourceSpec[] sourceSpecs = new SourceSpec[sources.length];
+        for (int i = 0; i < sources.length; i++) {
+            sourceSpecs[i] = SourceSpec.of(sources[i]);
+        }
+        archive(archive, sourceSpecs);
+    }
+
+    public void archive(File archive, SourceSpec... sources) throws IOException {
         Path output = archive.toPath().toAbsolutePath();
         Files.createDirectories(output.getParent());
         Path temporary = Files.createTempFile(
@@ -81,7 +81,7 @@ public class Archiver {
         }
     }
 
-    private void writeArchive(File formatSource, File output, Source... sources) throws IOException {
+    private void writeArchive(File formatSource, File output, SourceSpec... sources) throws IOException {
         ArchiveFormat format = ArchiveFormat.detect(formatSource.toPath());
         OutputEntryFactory outputEntryFactory = new OutputEntryFactory(format, builder);
         Map<String, OutputEntry> entries = new TreeMap<>();
@@ -94,10 +94,10 @@ public class Archiver {
             // provided entries result in IllegalArgumentException
             //
             Map<String, Boolean> paths = new HashMap<>();
-            for (Source source : sources) {
-                try (Source closeableSource = source) {
+            for (SourceSpec sourceSpec : sources) {
+                try (Source closeableSource = sourceSpec.source()) {
                     closeableSource.forEachEntry(entry -> addSourceEntry(
-                            closeableSource, entry, outputEntryFactory, paths, entries, writer, contentSpool));
+                            sourceSpec, entry, outputEntryFactory, paths, entries, writer, contentSpool));
                 }
             }
 
@@ -118,7 +118,7 @@ public class Archiver {
     }
 
     private void addSourceEntry(
-            Source source,
+            SourceSpec sourceSpec,
             SourceEntry entry,
             OutputEntryFactory outputEntryFactory,
             Map<String, Boolean> paths,
@@ -127,15 +127,15 @@ public class Archiver {
             ContentSpool contentSpool)
             throws IOException {
         ArchivePath sourcePath = ArchivePath.parse(entry.getName(), "source entry path");
-        if (!selector.include(sourcePath.entryName(entry.getType()))) {
+        if (!sourceSpec.includes(sourcePath.entryName(entry.getType()))) {
             return;
         }
-        if (source.isDirectory() && flatten && entry.isDirectory()) {
+        if (sourceSpec.source().isDirectory() && sourceSpec.flatten() && entry.isDirectory()) {
             return;
         }
-        ArchivePath outputPath = mapPath(source, sourcePath);
+        ArchivePath outputPath = mapPath(sourceSpec, sourcePath);
         String entryName = outputPath.entryName(entry.getType());
-        String linkTarget = mapLinkTarget(source, outputPath, entry);
+        String linkTarget = mapLinkTarget(sourceSpec, outputPath, entry);
         boolean isExecutable = false;
         for (String executable : executables) {
             if (SelectorUtils.match(executable, entry.getName())) {
@@ -166,26 +166,26 @@ public class Archiver {
         }
     }
 
-    private ArchivePath mapPath(Source source, ArchivePath sourcePath) throws IOException {
+    private ArchivePath mapPath(SourceSpec sourceSpec, ArchivePath sourcePath) throws IOException {
         ArchivePath mapped = sourcePath;
-        if (source.isDirectory()) {
-            if (!useRoot) {
+        if (sourceSpec.source().isDirectory()) {
+            if (!sourceSpec.useRoot()) {
                 mapped = mapped.withoutFirstSegment();
             }
-            if (flatten) {
+            if (sourceSpec.flatten()) {
                 mapped = mapped.fileName();
             }
         }
-        return mapped.prepend(prefix, "archive prefix");
+        return mapped.prepend(sourceSpec.destinationPrefix(), "source destination prefix");
     }
 
-    private String mapLinkTarget(Source source, ArchivePath outputPath, SourceEntry entry) throws IOException {
+    private String mapLinkTarget(SourceSpec sourceSpec, ArchivePath outputPath, SourceEntry entry) throws IOException {
         if (entry.isSymbolicLink()) {
             return ArchivePath.validateSymbolicLinkTarget(outputPath, entry.getLinkTarget());
         }
         if (entry.isHardLink()) {
             ArchivePath sourceTarget = ArchivePath.parse(entry.getLinkTarget(), "hard link target");
-            return mapPath(source, sourceTarget).value();
+            return mapPath(sourceSpec, sourceTarget).value();
         }
         return null;
     }
@@ -327,39 +327,11 @@ public class Archiver {
 
     public static class ArchiverBuilder {
 
-        List<String> includes = new ArrayList<>();
-        List<String> excludes = new ArrayList<>();
         List<String> executables = new ArrayList<>();
-        boolean useRoot = true;
-        boolean flatten = false;
         boolean normalize = false;
-        String prefix;
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
-
-        public ArchiverBuilder includes(String... includes) {
-            return includes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(includes))));
-        }
-
-        public ArchiverBuilder includes(Iterable<String> includes) {
-            includes.forEach(this.includes::add);
-            return this;
-        }
-
-        public ArchiverBuilder excludes(String... excludes) {
-            return excludes(Collections.unmodifiableList(new ArrayList<>(Arrays.asList(excludes))));
-        }
-
-        public ArchiverBuilder excludes(Iterable<String> excludes) {
-            excludes.forEach(this.excludes::add);
-            return this;
-        }
-
-        public ArchiverBuilder useRoot(boolean useRoot) {
-            this.useRoot = useRoot;
-            return this;
-        }
 
         /**
          * Enables or disables the Jar entry normalization.
@@ -377,16 +349,6 @@ public class Archiver {
 
         public ArchiverBuilder executable(Iterable<String> executables) {
             executables.forEach(this.executables::add);
-            return this;
-        }
-
-        public ArchiverBuilder flatten(boolean flatten) {
-            this.flatten = flatten;
-            return this;
-        }
-
-        public ArchiverBuilder withPrefix(String prefix) {
-            this.prefix = prefix;
             return this;
         }
 

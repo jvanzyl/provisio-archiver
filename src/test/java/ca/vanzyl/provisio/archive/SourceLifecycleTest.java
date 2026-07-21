@@ -97,6 +97,32 @@ public class SourceLifecycleTest extends FileSystemAssert {
         assertEquals(1, source.closeCount);
     }
 
+    @Test
+    public void independentlyConfiguredSourcesAreEachClosedWhenALaterSourceFails() throws Exception {
+        TrackingSource first = new TrackingSource(Collections.singletonList("first"), null, null);
+        IOException readFailure = new IOException("second source failed");
+        TrackingSource second = new TrackingSource(Collections.emptyList(), readFailure, null);
+
+        try {
+            Archiver.builder()
+                    .build()
+                    .archive(
+                            getTargetArchive("source-spec-close-failure.tar.gz"),
+                            SourceSpec.builder(first)
+                                    .destinationPrefix("first/")
+                                    .build(),
+                            SourceSpec.builder(second)
+                                    .destinationPrefix("second/")
+                                    .build());
+            fail("Expected second source traversal to fail");
+        } catch (IOException expected) {
+            assertSame(readFailure, expected);
+        }
+
+        assertEquals(1, first.closeCount);
+        assertEquals(1, second.closeCount);
+    }
+
     private static class TrackingSource implements Source {
 
         private final List<String> entries;
