@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.input.CloseShieldInputStream;
 
@@ -42,6 +43,9 @@ public class TarGzArchiveSource implements Source {
     private void acceptEntry(TarArchiveInputStream inputStream, TarArchiveEntry archiveEntry, EntryConsumer consumer)
             throws IOException {
         String name = archiveEntry.getName();
+        if (!archiveEntry.isCheckSumOK()) {
+            throw new IOException("Invalid tar header checksum for " + name);
+        }
         int mode = archiveEntry.getMode();
         long time = archiveEntry.getModTime().getTime();
         if (archiveEntry.isDirectory()) {
@@ -50,7 +54,8 @@ public class TarGzArchiveSource implements Source {
             consumer.accept(SourceEntry.symbolicLink(name, archiveEntry.getLinkName(), mode, time));
         } else if (archiveEntry.isLink()) {
             consumer.accept(SourceEntry.hardLink(name, archiveEntry.getLinkName(), mode, time));
-        } else if (archiveEntry.isFile()) {
+        } else if (archiveEntry.getLinkFlag() == TarConstants.LF_NORMAL
+                || archiveEntry.getLinkFlag() == TarConstants.LF_OLDNORM) {
             SequentialEntryContent content = new SequentialEntryContent(inputStream, archiveEntry.getSize());
             try {
                 consumer.accept(SourceEntry.file(name, content, mode, time));

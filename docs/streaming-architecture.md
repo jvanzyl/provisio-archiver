@@ -74,6 +74,13 @@ Every source and writer must be closed with try-with-resources. When processing
 and closing both fail, the processing failure remains primary and the close
 failure is suppressed.
 
+Archive-backed sources validate the content they actually consume. ZIP entry
+streams check their uncompressed size and central-directory CRC at end of input.
+Tar sources reject invalid header checksums and special entry types rather than
+treating every non-directory entry as a regular file. Metadata-only ZIP
+deduplication remains an explicit trust mode: duplicate content deliberately not
+opened in that mode cannot be independently validated.
+
 ### Ordering is separate from normalization
 
 Normalization describes reproducible metadata. Ordering describes when entries

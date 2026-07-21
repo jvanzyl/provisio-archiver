@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.zip.CRC32;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
@@ -104,16 +105,49 @@ public class ZipArchiveSource implements Source {
         public InputStream open() throws IOException {
             ensureActive();
             return new FilterInputStream(zipFile.getInputStream(archiveEntry)) {
+                private final CRC32 crc32 = new CRC32();
+                private long size;
+                private boolean validated;
+
                 @Override
                 public int read() throws IOException {
                     ensureActive();
-                    return super.read();
+                    int value = super.read();
+                    if (value == -1) {
+                        validateContent();
+                    } else {
+                        crc32.update(value);
+                        size++;
+                    }
+                    return value;
                 }
 
                 @Override
                 public int read(byte[] bytes, int offset, int length) throws IOException {
                     ensureActive();
-                    return super.read(bytes, offset, length);
+                    int count = super.read(bytes, offset, length);
+                    if (count == -1) {
+                        validateContent();
+                    } else {
+                        crc32.update(bytes, offset, count);
+                        size += count;
+                    }
+                    return count;
+                }
+
+                private void validateContent() throws IOException {
+                    if (validated) {
+                        return;
+                    }
+                    validated = true;
+                    if (size != archiveEntry.getSize()) {
+                        throw new IOException("ZIP entry size mismatch for " + archiveEntry.getName() + ": expected "
+                                + archiveEntry.getSize() + " but read " + size);
+                    }
+                    if (archiveEntry.getCrc() != -1 && crc32.getValue() != archiveEntry.getCrc()) {
+                        throw new IOException("ZIP entry CRC mismatch for " + archiveEntry.getName() + ": expected "
+                                + archiveEntry.getCrc() + " but calculated " + crc32.getValue());
+                    }
                 }
             };
         }
