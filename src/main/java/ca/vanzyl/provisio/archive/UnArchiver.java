@@ -17,10 +17,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.codehaus.plexus.util.io.CachingOutputStream;
@@ -86,8 +88,9 @@ public class UnArchiver {
         //
         Files.createDirectories(destinationDirectory);
         try (Source source = ArchiveFormat.detect(inputArchive).openSource(inputArchive)) {
-            source.forEachEntry(
-                    archiveEntry -> unarchiveEntry(inputArchive, destinationDirectory, entryProcessor, archiveEntry));
+            Set<String> outputPaths = new HashSet<>();
+            source.forEachEntry(archiveEntry ->
+                    unarchiveEntry(inputArchive, destinationDirectory, entryProcessor, archiveEntry, outputPaths));
         }
     }
 
@@ -95,14 +98,19 @@ public class UnArchiver {
             Path archive,
             Path outputDirectory,
             UnarchivingEnhancedEntryProcessor entryProcessor,
-            SourceEntry archiveEntry)
+            SourceEntry archiveEntry,
+            Set<String> outputPaths)
             throws IOException {
-        String entryName = adjustPath(true, archiveEntry.getName(), entryProcessor);
+        ArchivePath entryPath = adjustPath(true, archiveEntry.getName(), archiveEntry.getType(), entryProcessor);
+        String entryName = entryPath.entryName(archiveEntry.getType());
 
         if (!selector.include(entryName)) {
             return;
         }
-        Path outputFile = outputDirectory.resolve(entryName).normalize().toAbsolutePath();
+        if (!outputPaths.add(entryPath.value())) {
+            throw new IOException("Duplicate archive output path " + entryPath.value() + " in " + archive);
+        }
+        Path outputFile = outputDirectory.resolve(entryPath.value()).normalize().toAbsolutePath();
         if (!outputFile.startsWith(outputDirectory)) {
             throw new IOException("Archive escape attempt detected in " + archive);
         }
@@ -126,10 +134,9 @@ public class UnArchiver {
         }
 
         if (archiveEntry.isHardLink()) {
-            Path hardLinkSource = outputDirectory
-                    .resolve(adjustPath(false, archiveEntry.getLinkTarget(), entryProcessor))
-                    .normalize()
-                    .toAbsolutePath();
+            ArchivePath hardLinkPath = adjustPath(false, archiveEntry.getLinkTarget(), EntryType.FILE, entryProcessor);
+            Path hardLinkSource =
+                    outputDirectory.resolve(hardLinkPath.value()).normalize().toAbsolutePath();
             if (!hardLinkSource.startsWith(outputDirectory)) {
                 throw new IOException("Archive hardlink escape attempt detected in " + archive);
             }
@@ -143,22 +150,11 @@ public class UnArchiver {
             setFilePermission(archiveEntry, outputFile);
             entryProcessor.processed(entryName, outputFile);
         } else if (archiveEntry.isSymbolicLink()) {
-            // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
-            Path linkTarget = outputDirectory
-                    .resolve(entryName)
-                    .normalize()
-                    .toAbsolutePath()
-                    .resolve(archiveEntry.getLinkTarget())
-                    .normalize()
-                    .toAbsolutePath();
-            if (!linkTarget.startsWith(outputDirectory)) {
-                throw new IOException("Archive symlink escape attempt detected in " + archive);
-            }
-            // we intentionally want these relative; we checked them above fully resolved
-            Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getLinkTarget()));
+            String target = ArchivePath.validateSymbolicLinkTarget(entryPath, archiveEntry.getLinkTarget());
 
             Files.createDirectories(outputFile.getParent());
-            Files.createSymbolicLink(outputFile, target);
+            Files.deleteIfExists(outputFile);
+            Files.createSymbolicLink(outputFile, Paths.get(target));
             entryProcessor.processed(entryName, outputFile);
         } else {
             try (InputStream inputStream = archiveEntry.getContent().open();
@@ -174,22 +170,27 @@ public class UnArchiver {
         }
     }
 
-    private String adjustPath(boolean target, String entryName, UnarchivingEnhancedEntryProcessor entryProcessor) {
+    private ArchivePath adjustPath(
+            boolean target, String entryName, EntryType entryType, UnarchivingEnhancedEntryProcessor entryProcessor)
+            throws IOException {
+        ArchivePath path = ArchivePath.parse(entryName, target ? "archive entry path" : "hard link target");
         if (!useRoot) {
-            entryName = entryName.substring(entryName.indexOf('/') + 1);
+            path = path.withoutFirstSegment();
         }
         // Process the entry name before any output is created on disk
+        String processed;
         if (target) {
-            entryName = entryProcessor.targetName(entryName);
+            processed = entryProcessor.targetName(path.entryName(entryType));
         } else {
-            entryName = entryProcessor.sourceName(entryName);
+            processed = entryProcessor.sourceName(path.value());
         }
+        path = ArchivePath.parse(processed, target ? "processed archive entry path" : "processed hard link target");
         // So with an entry we may want to take a set of entry in a set of directories and flatten them
         // into one directory, or we may want to preserve the directory structure.
         if (flatten) {
-            entryName = entryName.substring(entryName.lastIndexOf("/") + 1);
+            path = path.fileName();
         }
-        return entryName;
+        return path;
     }
 
     private void setFilePermission(SourceEntry archiveEntry, Path outputFile) throws IOException {

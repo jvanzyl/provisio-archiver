@@ -28,8 +28,8 @@ final class OutputEntry {
         this.linkTarget = linkTarget;
     }
 
-    static OutputEntry from(String name, SourceEntry source, int fileMode, long time) {
-        return new OutputEntry(name, source.getType(), source.getContent(), fileMode, time, source.getLinkTarget());
+    static OutputEntry from(String name, SourceEntry source, int fileMode, long time, String linkTarget) {
+        return new OutputEntry(name, source.getType(), source.getContent(), fileMode, time, linkTarget);
     }
 
     static OutputEntry hardLink(String name, String target, int fileMode, long time) {

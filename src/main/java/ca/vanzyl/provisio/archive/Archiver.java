@@ -126,24 +126,16 @@ public class Archiver {
             ArchiveWriter writer,
             ContentSpool contentSpool)
             throws IOException {
-        String entryName = entry.getName();
-        if (!selector.include(entryName)) {
+        ArchivePath sourcePath = ArchivePath.parse(entry.getName(), "source entry path");
+        if (!selector.include(sourcePath.entryName(entry.getType()))) {
             return;
         }
-        if (source.isDirectory()) {
-            if (!useRoot) {
-                entryName = entryName.substring(entryName.indexOf('/') + 1);
-            }
-            if (flatten) {
-                if (entry.isDirectory()) {
-                    return;
-                }
-                entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
-            }
+        if (source.isDirectory() && flatten && entry.isDirectory()) {
+            return;
         }
-        if (prefix != null) {
-            entryName = prefix + entryName;
-        }
+        ArchivePath outputPath = mapPath(source, sourcePath);
+        String entryName = outputPath.entryName(entry.getType());
+        String linkTarget = mapLinkTarget(source, outputPath, entry);
         boolean isExecutable = false;
         for (String executable : executables) {
             if (SelectorUtils.match(executable, entry.getName())) {
@@ -151,27 +143,51 @@ public class Archiver {
                 break;
             }
         }
-        // If we have a directory entry then make sure we append a trailing "/"
-        if (entry.isDirectory() && !entryName.endsWith("/")) {
-            entryName += "/";
-        }
         // Create any missing intermediate directory entries
         for (String directoryName : getParentDirectoryNames(entryName)) {
-            if (!paths.containsKey(directoryName)) {
-                paths.put(directoryName, Boolean.FALSE);
-                OutputEntry directoryEntry =
-                        outputEntryFactory.create(directoryName, SourceEntry.directory(directoryName, -1, 0), false);
+            String directoryPath = directoryName.substring(0, directoryName.length() - 1);
+            if (!paths.containsKey(directoryPath)) {
+                paths.put(directoryPath, Boolean.FALSE);
+                OutputEntry directoryEntry = outputEntryFactory.create(
+                        directoryName, SourceEntry.directory(directoryName, -1, 0), false, null);
                 addEntry(directoryName, directoryEntry, entries, writer);
             }
         }
-        if (!paths.containsKey(entryName)) {
-            paths.put(entryName, Boolean.TRUE);
+        String path = outputPath.value();
+        if (!paths.containsKey(path)) {
+            paths.put(path, Boolean.TRUE);
             SourceEntry stableEntry = normalize ? contentSpool.stabilize(entry) : entry;
-            OutputEntry archiveEntry = outputEntryFactory.create(entryName, stableEntry, isExecutable);
+            OutputEntry archiveEntry = outputEntryFactory.create(entryName, stableEntry, isExecutable, linkTarget);
             addEntry(entryName, archiveEntry, entries, writer);
-        } else if (Boolean.TRUE.equals(paths.get(entryName))) {
+        } else if (Boolean.TRUE.equals(paths.get(path)) || !entry.isDirectory()) {
             throw new IllegalArgumentException("Duplicate archive entry " + entryName);
+        } else {
+            paths.put(path, Boolean.TRUE);
         }
+    }
+
+    private ArchivePath mapPath(Source source, ArchivePath sourcePath) throws IOException {
+        ArchivePath mapped = sourcePath;
+        if (source.isDirectory()) {
+            if (!useRoot) {
+                mapped = mapped.withoutFirstSegment();
+            }
+            if (flatten) {
+                mapped = mapped.fileName();
+            }
+        }
+        return mapped.prepend(prefix, "archive prefix");
+    }
+
+    private String mapLinkTarget(Source source, ArchivePath outputPath, SourceEntry entry) throws IOException {
+        if (entry.isSymbolicLink()) {
+            return ArchivePath.validateSymbolicLinkTarget(outputPath, entry.getLinkTarget());
+        }
+        if (entry.isHardLink()) {
+            ArchivePath sourceTarget = ArchivePath.parse(entry.getLinkTarget(), "hard link target");
+            return mapPath(source, sourceTarget).value();
+        }
+        return null;
     }
 
     private Iterable<String> getParentDirectoryNames(String entryName) {
@@ -203,18 +219,8 @@ public class Archiver {
         }
     }
 
-    /**
-     * Adds an entry to the Jar file, normalizing the name.
-     *
-     * @param entryName the name of the entry in the Jar file
-     */
     private void addEntry(String entryName, OutputEntry entry, Map<String, OutputEntry> entries, ArchiveWriter writer)
             throws IOException {
-        if (entryName.startsWith("/")) {
-            entryName = entryName.substring(1);
-        } else if (entryName.startsWith("./")) {
-            entryName = entryName.substring(2);
-        }
         if (normalize) {
             entries.put(entryName, entry);
         } else {
@@ -237,7 +243,7 @@ public class Archiver {
             }
         }
 
-        private OutputEntry create(String name, SourceEntry source, boolean executable) {
+        private OutputEntry create(String name, SourceEntry source, boolean executable, String linkTarget) {
             int mode = source.getFileMode();
             if (mode != -1 && executable) {
                 mode = ca.vanzyl.provisio.archive.perms.FileMode.makeExecutable(mode);
@@ -255,11 +261,11 @@ public class Archiver {
                 if (target != null) {
                     return OutputEntry.hardLink(name, target.getName(), mode, time);
                 }
-                OutputEntry entry = OutputEntry.from(name, source, mode, time);
+                OutputEntry entry = OutputEntry.from(name, source, mode, time, linkTarget);
                 hardLinkTargets.put(sourceFileName, entry);
                 return entry;
             }
-            return OutputEntry.from(name, source, mode, time);
+            return OutputEntry.from(name, source, mode, time, linkTarget);
         }
     }
 

@@ -110,10 +110,17 @@ Mapping belongs to each source rather than only to the global `Archiver`
 configuration. A source specification will carry destination prefix,
 `useRoot`, includes, excludes, and flattening.
 
-All mapped entry names and link targets pass through a shared archive-path
-validator. It rejects absolute paths, `.` and `..` traversal, Windows drive and
-UNC paths, NUL characters, and collisions produced by mapping or flattening.
-Archive paths use `/` independently of the host platform.
+All source and mapped entry names and link targets now pass through the shared
+`ArchivePath` representation. It rejects absolute paths, `.` and `..` traversal,
+Windows drive and UNC paths, NUL characters, and collisions produced by
+canonicalization or mapping. Repeated separators and `\` are canonicalized to
+`/` independently of the host platform.
+
+Hard-link targets are archive-root paths and receive the same root-removal and
+prefix mapping as their entries. Symbolic-link targets remain relative: parent
+segments are accepted only when resolving the target against the link location
+stays inside the archive root. Unarchiving applies the same validation after an
+entry processor changes a path and before creating anything at that path.
 
 ### Format writers and hard links
 
