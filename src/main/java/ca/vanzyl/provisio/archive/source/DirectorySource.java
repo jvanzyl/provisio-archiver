@@ -7,12 +7,10 @@
  */
 package ca.vanzyl.provisio.archive.source;
 
-import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.codehaus.plexus.util.DirectoryScanner;
@@ -25,56 +23,31 @@ public class DirectorySource implements Source {
     }
 
     @Override
-    public Iterable<ExtendedArchiveEntry> entries() {
-        return () -> new DirectoryEntryIterator(sourceDirectories);
-    }
-
-    static class DirectoryEntryIterator implements Iterator<ExtendedArchiveEntry> {
-        final List<FileEntry> files = new ArrayList<>();
-        int currentFileIndex;
-
-        DirectoryEntryIterator(File[] sourceDirectories) {
-            for (File sourceDirectory : sourceDirectories) {
-                String normalizedSourceDirectory = sourceDirectory.getName().replace('\\', '/');
-                DirectoryScanner scanner = new DirectoryScanner();
-                scanner.setBasedir(sourceDirectory);
-                scanner.setCaseSensitive(true);
-                scanner.scan();
-                //
-                // We need to include the directories to preserved the archiving of empty directories. We are also
-                // sorting in natural
-                // order because it seems that on the Linux with GitHub Actions the files are coming off the disk not
-                // naturally sorted.
-                // I thought this was always the case, but apparently not. Sorting here makes sure that everything
-                // beyond this point
-                // will be in sorted order as our reproducibility model depends on this fact.
-                //
-                Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories())
-                        .flatMap(Stream::of)
-                        .sorted()
-                        .forEach(f -> {
-                            if (!f.isEmpty()) {
-                                File file = new File(sourceDirectory, f);
-                                String archiveEntryName = normalizedSourceDirectory + "/" + f.replace('\\', '/');
-                                files.add(new FileEntry(archiveEntryName, file));
-                            }
-                        });
-            }
+    public void forEachEntry(EntryConsumer consumer) throws IOException {
+        List<FileEntry> files = new ArrayList<>();
+        for (File sourceDirectory : sourceDirectories) {
+            String normalizedSourceDirectory = sourceDirectory.getName().replace('\\', '/');
+            DirectoryScanner scanner = new DirectoryScanner();
+            scanner.setBasedir(sourceDirectory);
+            scanner.setCaseSensitive(true);
+            scanner.scan();
+            //
+            // We need to include the directories to preserve the archiving of empty directories. We also sort in
+            // natural order because filesystem traversal order differs across platforms.
+            //
+            Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories())
+                    .flatMap(Stream::of)
+                    .sorted()
+                    .forEach(f -> {
+                        if (!f.isEmpty()) {
+                            File file = new File(sourceDirectory, f);
+                            String archiveEntryName = normalizedSourceDirectory + "/" + f.replace('\\', '/');
+                            files.add(new FileEntry(archiveEntryName, file));
+                        }
+                    });
         }
-
-        @Override
-        public boolean hasNext() {
-            return currentFileIndex != files.size();
-        }
-
-        @Override
-        public ExtendedArchiveEntry next() {
-            return files.get(currentFileIndex++);
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("remove method not implemented");
+        for (FileEntry file : files) {
+            consumer.accept(file);
         }
     }
 

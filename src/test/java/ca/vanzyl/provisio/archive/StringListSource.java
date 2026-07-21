@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
 public class StringListSource implements Source {
@@ -17,8 +16,10 @@ public class StringListSource implements Source {
     }
 
     @Override
-    public Iterable<ExtendedArchiveEntry> entries() {
-        return () -> new StringEntryIterator(entries.iterator());
+    public void forEachEntry(EntryConsumer consumer) throws IOException {
+        for (String entry : entries) {
+            consumer.accept(new StringEntry(entry));
+        }
     }
 
     @Override
@@ -109,30 +110,6 @@ public class StringListSource implements Source {
         @Override
         public long getTime() {
             return 0;
-        }
-    }
-
-    static class StringEntryIterator implements Iterator<ExtendedArchiveEntry> {
-
-        final Iterator<String> delegate;
-
-        public StringEntryIterator(Iterator<String> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return delegate.hasNext();
-        }
-
-        @Override
-        public ExtendedArchiveEntry next() {
-            return new StringEntry(delegate.next());
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("remove method not implemented");
         }
     }
 }

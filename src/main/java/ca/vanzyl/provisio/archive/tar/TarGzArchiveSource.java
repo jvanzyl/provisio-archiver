@@ -16,34 +16,36 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
-import java.util.Iterator;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.io.IOUtils;
 
 public class TarGzArchiveSource implements Source {
 
-    private final ArchiveInputStream archiveInputStream;
+    private final File archive;
 
     public TarGzArchiveSource(File archive) {
-        try {
-            archiveInputStream = ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder())
-                    .getInputStream();
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
-        }
+        this.archive = archive;
     }
 
     @Override
-    public Iterable<ExtendedArchiveEntry> entries() {
-        return ArchiveEntryIterator::new;
+    public void forEachEntry(EntryConsumer consumer) throws IOException {
+        try (ArchiveInputStream archiveInputStream =
+                ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder()).getInputStream()) {
+            TarArchiveEntry archiveEntry;
+            while ((archiveEntry = (TarArchiveEntry) archiveInputStream.getNextEntry()) != null) {
+                consumer.accept(new EntrySourceArchiveEntry(archiveInputStream, archiveEntry));
+            }
+        }
     }
 
     class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
 
-        final TarArchiveEntry archiveEntry;
+        private final ArchiveInputStream archiveInputStream;
+        private final TarArchiveEntry archiveEntry;
 
-        public EntrySourceArchiveEntry(TarArchiveEntry archiveEntry) {
+        public EntrySourceArchiveEntry(ArchiveInputStream archiveInputStream, TarArchiveEntry archiveEntry) {
+            this.archiveInputStream = archiveInputStream;
             this.archiveEntry = archiveEntry;
         }
 
@@ -124,34 +126,8 @@ public class TarGzArchiveSource implements Source {
         }
     }
 
-    class ArchiveEntryIterator implements Iterator<ExtendedArchiveEntry> {
-
-        TarArchiveEntry archiveEntry;
-
-        @Override
-        public ExtendedArchiveEntry next() {
-            return new EntrySourceArchiveEntry(archiveEntry);
-        }
-
-        @Override
-        public boolean hasNext() {
-            try {
-                return (archiveEntry = (TarArchiveEntry) archiveInputStream.getNextEntry()) != null;
-            } catch (IOException e) {
-                return false;
-            }
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("remove method not implemented");
-        }
-    }
-
     @Override
-    public void close() throws IOException {
-        archiveInputStream.close();
-    }
+    public void close() throws IOException {}
 
     @Override
     public boolean isDirectory() {

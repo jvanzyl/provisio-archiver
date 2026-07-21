@@ -19,39 +19,39 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Iterator;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
 
 public class ZipArchiveSource implements Source {
 
-    private final ZipFile zipFile;
-    private final Enumeration<ZipArchiveEntry> entries;
+    private final File archive;
 
     public ZipArchiveSource(File archive) {
-        try {
-            zipFile = ZipFile.builder()
-                    .setFile(archive)
-                    .setUseUnicodeExtraFields(false)
-                    .get();
-            // UTF-8 is the default charset
-            entries = zipFile.getEntries();
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Cannot determine the type of archive %s.", archive), e);
-        }
+        this.archive = archive;
     }
 
     @Override
-    public Iterable<ExtendedArchiveEntry> entries() {
-        return ArchiveEntryIterator::new;
+    public void forEachEntry(EntryConsumer consumer) throws IOException {
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(archive)
+                .setUseUnicodeExtraFields(false)
+                .get()) {
+            // UTF-8 is the default charset
+            Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();
+            while (entries.hasMoreElements()) {
+                consumer.accept(new EntrySourceArchiveEntry(zipFile, entries.nextElement()));
+            }
+        }
     }
 
     class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
 
-        final ZipArchiveEntry archiveEntry;
+        private final ZipFile zipFile;
+        private final ZipArchiveEntry archiveEntry;
 
-        public EntrySourceArchiveEntry(ZipArchiveEntry archiveEntry) {
+        public EntrySourceArchiveEntry(ZipFile zipFile, ZipArchiveEntry archiveEntry) {
+            this.zipFile = zipFile;
             this.archiveEntry = archiveEntry;
         }
 
@@ -98,9 +98,9 @@ public class ZipArchiveSource implements Source {
 
         @Override
         public void writeEntry(OutputStream outputStream) throws IOException {
-            // We specifically do not close the entry because if you do then you can't read anymore archive entries from
-            // the stream
-            IOUtils.copyLarge(getInputStream(), outputStream);
+            try (InputStream inputStream = getInputStream()) {
+                IOUtils.copyLarge(inputStream, outputStream);
+            }
         }
 
         @Override
@@ -142,28 +142,8 @@ public class ZipArchiveSource implements Source {
         }
     }
 
-    class ArchiveEntryIterator implements Iterator<ExtendedArchiveEntry> {
-
-        @Override
-        public ExtendedArchiveEntry next() {
-            return new EntrySourceArchiveEntry(entries.nextElement());
-        }
-
-        @Override
-        public boolean hasNext() {
-            return entries.hasMoreElements();
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("remove method not implemented");
-        }
-    }
-
     @Override
-    public void close() throws IOException {
-        zipFile.close();
-    }
+    public void close() throws IOException {}
 
     @Override
     public boolean isDirectory() {

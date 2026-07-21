@@ -79,91 +79,99 @@ public class UnArchiver {
         requireNonNull(outputDirectory);
         requireNonNull(entryProcessor);
 
-        archive = archive.toAbsolutePath();
-        outputDirectory = outputDirectory.normalize().toAbsolutePath();
+        Path inputArchive = archive.toAbsolutePath();
+        Path destinationDirectory = outputDirectory.normalize().toAbsolutePath();
         //
         // These are the contributions that unpacking this archive is providing
         //
-        Files.createDirectories(outputDirectory);
-        Source source =
-                ArchiverHelper.getArchiveHandler(archive.toFile(), builder).getArchiveSource();
-        for (ExtendedArchiveEntry archiveEntry : source.entries()) {
-            String entryName = adjustPath(true, archiveEntry.getName(), entryProcessor);
+        Files.createDirectories(destinationDirectory);
+        try (Source source =
+                ArchiverHelper.getArchiveHandler(inputArchive.toFile(), builder).getArchiveSource()) {
+            source.forEachEntry(
+                    archiveEntry -> unarchiveEntry(inputArchive, destinationDirectory, entryProcessor, archiveEntry));
+        }
+    }
 
-            if (!selector.include(entryName)) {
-                continue;
-            }
-            Path outputFile = outputDirectory.resolve(entryName).normalize().toAbsolutePath();
-            if (!outputFile.startsWith(outputDirectory)) {
-                throw new IOException("Archive escape attempt detected in " + archive);
-            }
+    private void unarchiveEntry(
+            Path archive,
+            Path outputDirectory,
+            UnarchivingEnhancedEntryProcessor entryProcessor,
+            ExtendedArchiveEntry archiveEntry)
+            throws IOException {
+        String entryName = adjustPath(true, archiveEntry.getName(), entryProcessor);
 
-            if (archiveEntry.isDirectory()) {
-                Files.createDirectories(outputFile);
-                entryProcessor.processed(entryName, outputFile);
-                continue;
-            }
+        if (!selector.include(entryName)) {
+            return;
+        }
+        Path outputFile = outputDirectory.resolve(entryName).normalize().toAbsolutePath();
+        if (!outputFile.startsWith(outputDirectory)) {
+            throw new IOException("Archive escape attempt detected in " + archive);
+        }
 
-            //
-            // If we take an archive and flatten it into the output directory the first entry will
-            // match the output directory which exists so it will cause an error trying to make it
-            //
-            if (outputFile.equals(outputDirectory)) {
-                entryProcessor.processed(entryName, outputFile);
-                continue;
-            }
-            if (!Files.isDirectory(outputFile.getParent())) {
-                Files.createDirectories(outputFile.getParent());
-            }
+        if (archiveEntry.isDirectory()) {
+            Files.createDirectories(outputFile);
+            entryProcessor.processed(entryName, outputFile);
+            return;
+        }
 
-            if (archiveEntry.isHardLink()) {
-                Path hardLinkSource = outputDirectory
-                        .resolve(adjustPath(false, archiveEntry.getHardLinkPath(), entryProcessor))
-                        .normalize()
-                        .toAbsolutePath();
-                if (!hardLinkSource.startsWith(outputDirectory)) {
-                    throw new IOException("Archive hardlink escape attempt detected in " + archive);
-                }
-                if (dereferenceHardlinks) {
-                    Files.copy(hardLinkSource, outputFile, StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    // Remove any existing file or link as Files.createLink has no option to overwrite
-                    Files.deleteIfExists(outputFile);
-                    Files.createLink(outputFile, hardLinkSource);
-                }
-                setFilePermission(archiveEntry, outputFile);
-                entryProcessor.processed(entryName, outputFile);
-            } else if (archiveEntry.isSymbolicLink()) {
-                // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
-                Path linkTarget = outputDirectory
-                        .resolve(entryName)
-                        .normalize()
-                        .toAbsolutePath()
-                        .resolve(archiveEntry.getSymbolicLinkPath())
-                        .normalize()
-                        .toAbsolutePath();
-                if (!linkTarget.startsWith(outputDirectory)) {
-                    throw new IOException("Archive symlink escape attempt detected in " + archive);
-                }
-                // we intentionally want these relative; we checked them above fully resolved
-                Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getSymbolicLinkPath()));
+        //
+        // If we take an archive and flatten it into the output directory the first entry will
+        // match the output directory which exists so it will cause an error trying to make it
+        //
+        if (outputFile.equals(outputDirectory)) {
+            entryProcessor.processed(entryName, outputFile);
+            return;
+        }
+        if (!Files.isDirectory(outputFile.getParent())) {
+            Files.createDirectories(outputFile.getParent());
+        }
 
-                Files.createDirectories(outputFile.getParent());
-                Files.createSymbolicLink(outputFile, target);
-                entryProcessor.processed(entryName, outputFile);
+        if (archiveEntry.isHardLink()) {
+            Path hardLinkSource = outputDirectory
+                    .resolve(adjustPath(false, archiveEntry.getHardLinkPath(), entryProcessor))
+                    .normalize()
+                    .toAbsolutePath();
+            if (!hardLinkSource.startsWith(outputDirectory)) {
+                throw new IOException("Archive hardlink escape attempt detected in " + archive);
+            }
+            if (dereferenceHardlinks) {
+                Files.copy(hardLinkSource, outputFile, StandardCopyOption.REPLACE_EXISTING);
             } else {
-                try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
-                    entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
-                    outputStream.close();
-                    if (outputStream.isModified()) {
-                        setFilePermission(archiveEntry, outputFile);
-                    }
-                } finally {
-                    entryProcessor.processed(entryName, outputFile);
+                // Remove any existing file or link as Files.createLink has no option to overwrite
+                Files.deleteIfExists(outputFile);
+                Files.createLink(outputFile, hardLinkSource);
+            }
+            setFilePermission(archiveEntry, outputFile);
+            entryProcessor.processed(entryName, outputFile);
+        } else if (archiveEntry.isSymbolicLink()) {
+            // We expect symlinks to be relative as they are not generally useful in a tarball otherwise
+            Path linkTarget = outputDirectory
+                    .resolve(entryName)
+                    .normalize()
+                    .toAbsolutePath()
+                    .resolve(archiveEntry.getSymbolicLinkPath())
+                    .normalize()
+                    .toAbsolutePath();
+            if (!linkTarget.startsWith(outputDirectory)) {
+                throw new IOException("Archive symlink escape attempt detected in " + archive);
+            }
+            // we intentionally want these relative; we checked them above fully resolved
+            Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getSymbolicLinkPath()));
+
+            Files.createDirectories(outputFile.getParent());
+            Files.createSymbolicLink(outputFile, target);
+            entryProcessor.processed(entryName, outputFile);
+        } else {
+            try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
+                entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
+                outputStream.close();
+                if (outputStream.isModified()) {
+                    setFilePermission(archiveEntry, outputFile);
                 }
+            } finally {
+                entryProcessor.processed(entryName, outputFile);
             }
         }
-        source.close();
     }
 
     private String adjustPath(boolean target, String entryName, UnarchivingEnhancedEntryProcessor entryProcessor) {

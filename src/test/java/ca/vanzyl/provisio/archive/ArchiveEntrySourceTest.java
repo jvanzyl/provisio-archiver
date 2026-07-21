@@ -1,7 +1,12 @@
 package ca.vanzyl.provisio.archive;
 
+import static org.junit.Assert.fail;
+
 import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
 import org.junit.Test;
 
 public class ArchiveEntrySourceTest extends FileSystemAssert {
@@ -76,5 +81,24 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
         unArchiver.unarchive(archive, outputDirectory);
         assertDirectoryExists(outputDirectory, "apache-maven-3.0.4");
         assertFileIsExecutable(outputDirectory, "apache-maven-3.0.4/bin/mvn");
+    }
+
+    @Test
+    public void truncatedTarGzIsReportedAsAReadFailure() throws Exception {
+        byte[] source = Files.readAllBytes(
+                getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath());
+        File truncated = getTargetArchive("truncated-source.tar.gz");
+        Files.write(truncated.toPath(), Arrays.copyOf(source, source.length / 2));
+
+        try {
+            Archiver.builder()
+                    .build()
+                    .archive(
+                            getTargetArchive("archive-from-truncated-source.tar.gz"),
+                            new TarGzArchiveSource(truncated));
+            fail("Expected the truncated source archive to fail");
+        } catch (IOException expected) {
+            // The checked failure must not be mistaken for the end of the tar stream.
+        }
     }
 }

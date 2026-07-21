@@ -28,8 +28,6 @@ public class Archiver {
     // ZIP timestamps have a resolution of 2 seconds.
     // see http://www.info-zip.org/FAQ.html#limits
     public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
-    private final Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
-
     private final List<String> executables;
     private final boolean useRoot;
     private final boolean flatten;
@@ -62,6 +60,7 @@ public class Archiver {
 
     public void archive(File archive, Source... sources) throws IOException {
         ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(archive, builder);
+        Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
         try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
             //
@@ -71,57 +70,10 @@ public class Archiver {
             //
             Map<String, Boolean> paths = new HashMap<>();
             for (Source source : sources) {
-                for (ExtendedArchiveEntry entry : source.entries()) {
-                    String entryName = entry.getName();
-                    if (!selector.include(entryName)) {
-                        continue;
-                    }
-                    if (source.isDirectory()) {
-                        if (!useRoot) {
-                            entryName = entryName.substring(entryName.indexOf('/') + 1);
-                        }
-                        if (flatten) {
-                            if (entry.isDirectory()) {
-                                continue;
-                            }
-                            entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
-                        }
-                    }
-                    if (prefix != null) {
-                        entryName = prefix + entryName;
-                    }
-                    boolean isExecutable = false;
-                    for (String executable : executables) {
-                        if (SelectorUtils.match(executable, entry.getName())) {
-                            isExecutable = true;
-                            break;
-                        }
-                    }
-                    // If we have a directory entry then make sure we append a trailing "/"
-                    if (entry.isDirectory() && !entryName.endsWith("/")) {
-                        entryName += "/";
-                    }
-                    // Create any missing intermediate directory entries
-                    for (String directoryName : getParentDirectoryNames(entryName)) {
-                        if (!paths.containsKey(directoryName)) {
-                            paths.put(directoryName, Boolean.FALSE);
-                            ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(
-                                    directoryName, new DirectoryEntry(directoryName), false);
-                            addEntry(directoryName, directoryEntry, aos);
-                        }
-                    }
-                    if (!paths.containsKey(entryName)) {
-                        paths.put(entryName, Boolean.TRUE);
-                        ExtendedArchiveEntry archiveEntry =
-                                archiveHandler.createEntryFor(entryName, entry, isExecutable);
-                        addEntry(entryName, archiveEntry, aos);
-                    } else {
-                        if (Boolean.TRUE.equals(paths.get(entryName))) {
-                            throw new IllegalArgumentException("Duplicate archive entry " + entryName);
-                        }
-                    }
+                try (Source closeableSource = source) {
+                    closeableSource.forEachEntry(
+                            entry -> addSourceEntry(closeableSource, entry, archiveHandler, paths, entries, aos));
                 }
-                source.close();
             }
 
             if (!entries.isEmpty()) {
@@ -130,6 +82,61 @@ public class Archiver {
                     writeEntry(archiveEntry, aos);
                 }
             }
+        }
+    }
+
+    private void addSourceEntry(
+            Source source,
+            ExtendedArchiveEntry entry,
+            ArchiveHandler archiveHandler,
+            Map<String, Boolean> paths,
+            Map<String, ExtendedArchiveEntry> entries,
+            ArchiveOutputStream aos)
+            throws IOException {
+        String entryName = entry.getName();
+        if (!selector.include(entryName)) {
+            return;
+        }
+        if (source.isDirectory()) {
+            if (!useRoot) {
+                entryName = entryName.substring(entryName.indexOf('/') + 1);
+            }
+            if (flatten) {
+                if (entry.isDirectory()) {
+                    return;
+                }
+                entryName = entryName.substring(entryName.lastIndexOf('/') + 1);
+            }
+        }
+        if (prefix != null) {
+            entryName = prefix + entryName;
+        }
+        boolean isExecutable = false;
+        for (String executable : executables) {
+            if (SelectorUtils.match(executable, entry.getName())) {
+                isExecutable = true;
+                break;
+            }
+        }
+        // If we have a directory entry then make sure we append a trailing "/"
+        if (entry.isDirectory() && !entryName.endsWith("/")) {
+            entryName += "/";
+        }
+        // Create any missing intermediate directory entries
+        for (String directoryName : getParentDirectoryNames(entryName)) {
+            if (!paths.containsKey(directoryName)) {
+                paths.put(directoryName, Boolean.FALSE);
+                ExtendedArchiveEntry directoryEntry =
+                        archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
+                addEntry(directoryName, directoryEntry, entries, aos);
+            }
+        }
+        if (!paths.containsKey(entryName)) {
+            paths.put(entryName, Boolean.TRUE);
+            ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+            addEntry(entryName, archiveEntry, entries, aos);
+        } else if (Boolean.TRUE.equals(paths.get(entryName))) {
+            throw new IllegalArgumentException("Duplicate archive entry " + entryName);
         }
     }
 
@@ -177,7 +184,12 @@ public class Archiver {
      *
      * @param entryName the name of the entry in the Jar file
      */
-    private void addEntry(String entryName, ExtendedArchiveEntry entry, ArchiveOutputStream aos) throws IOException {
+    private void addEntry(
+            String entryName,
+            ExtendedArchiveEntry entry,
+            Map<String, ExtendedArchiveEntry> entries,
+            ArchiveOutputStream aos)
+            throws IOException {
         if (entryName.startsWith("/")) {
             entryName = entryName.substring(1);
         } else if (entryName.startsWith("./")) {

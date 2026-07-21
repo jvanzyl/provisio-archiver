@@ -7,12 +7,20 @@
  */
 package ca.vanzyl.provisio.archive;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-public interface Source {
-    Iterable<ExtendedArchiveEntry> entries();
+public interface Source extends Closeable {
+
+    void forEachEntry(EntryConsumer consumer) throws IOException;
 
     boolean isDirectory();
 
+    @Override
     void close() throws IOException;
+
+    @FunctionalInterface
+    interface EntryConsumer {
+        void accept(ExtendedArchiveEntry entry) throws IOException;
+    }
 }

@@ -7,11 +7,9 @@
  */
 package ca.vanzyl.provisio.archive.source;
 
-import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 
 public class FileSource implements Source {
 
@@ -29,8 +27,8 @@ public class FileSource implements Source {
     }
 
     @Override
-    public Iterable<ExtendedArchiveEntry> entries() {
-        return Collections.singleton(new FileEntry(archiveEntryName, file));
+    public void forEachEntry(EntryConsumer consumer) throws IOException {
+        consumer.accept(new FileEntry(archiveEntryName, file));
     }
 
     @Override
