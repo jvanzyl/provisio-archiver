@@ -1,6 +1,8 @@
 package ca.vanzyl.provisio.archive;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import ca.vanzyl.provisio.archive.source.FileSource;
 import java.io.File;
@@ -8,8 +10,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.List;
+import java.util.Random;
 import org.codehaus.plexus.util.Os;
 import org.codehaus.swizzle.stream.ReplaceStringInputStream;
 import org.junit.Assume;
@@ -431,6 +436,58 @@ public abstract class ArchiveTypeTest {
         validator.assertContentOfEntryInArchive(
                 "one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/thirteen/fourteen/fifteen/sixteen/seventeen/entry.txt",
                 "entry.txt");
+    }
+
+    @Test
+    public void createArchiveWithCompressionLevel() throws Exception {
+        File content = compressibleFile();
+
+        File fastest = FileSystemAssert.getTargetArchive("compression-level-0." + getArchiveExtension());
+        Archiver.builder().compressionLevel(0).build().archive(fastest, new FileSource("content.txt", content));
+
+        File best = FileSystemAssert.getTargetArchive("compression-level-9." + getArchiveExtension());
+        Archiver.builder().compressionLevel(9).build().archive(best, new FileSource("content.txt", content));
+
+        assertTrue(
+                "Expected level 9 to produce a smaller archive than level 0, but got " + best.length() + " >= "
+                        + fastest.length(),
+                best.length() < fastest.length());
+
+        // The level must not affect what comes back out.
+        validator(best).assertEntries("content.txt");
+        validator(fastest).assertEntries("content.txt");
+    }
+
+    @Test
+    public void compressionLevelRejectsOutOfRangeValues() {
+        for (int level : new int[] {-2, 10}) {
+            try {
+                Archiver.builder().compressionLevel(level);
+                fail("Expected compression level " + level + " to be rejected.");
+            } catch (IllegalArgumentException expected) {
+                // expected
+            }
+        }
+    }
+
+    /**
+     * Writes a file that is compressible enough for the difference between compression levels to be measurable in
+     * every archive format under test, including xz where even the lowest preset compresses well.
+     */
+    private File compressibleFile() throws IOException {
+        File file = new File("target/compressible-content.txt");
+        file.getParentFile().mkdirs();
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random(0);
+        for (int i = 0; i < 20000; i++) {
+            sb.append("entry-")
+                    .append(i)
+                    .append('-')
+                    .append(random.nextInt(1000))
+                    .append('\n');
+        }
+        Files.write(file.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
+        return file;
     }
 
     public static String sha1(File file) throws Exception {
