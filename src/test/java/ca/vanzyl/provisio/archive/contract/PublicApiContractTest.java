@@ -75,8 +75,8 @@ public class PublicApiContractTest {
             });
         }
 
-        assertEquals(asList("renamed.txt", "custom.txt"), names);
-        assertEquals(asList("file source", "custom source"), contents);
+        assertEquals(asList("custom.txt", "renamed.txt"), names);
+        assertEquals(asList("custom source", "file source"), contents);
     }
 
     @Test
