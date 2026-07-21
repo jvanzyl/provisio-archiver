@@ -23,7 +23,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.write(archive.toPath(), original);
 
         try {
-            Archiver.builder().normalize(true).build().archive(archive, new FailingSource());
+            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive, new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());
@@ -40,7 +40,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.deleteIfExists(archive.toPath());
 
         try {
-            Archiver.builder().normalize(true).build().archive(archive, new FailingSource());
+            Archiver.builder().entryOrder(EntryOrder.NAME).build().archive(archive, new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());

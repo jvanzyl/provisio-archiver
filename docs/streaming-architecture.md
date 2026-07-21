@@ -79,7 +79,7 @@ failure is suppressed.
 Normalization describes reproducible metadata. Ordering describes when entries
 can be emitted. They are independent policies.
 
-The proposed entry-order choices are:
+The entry-order choices are:
 
 * `NAME`: retain current normalized, name-sorted behavior. Source content is
   safely spooled while its source is open and sorted only after it is no longer
@@ -87,9 +87,10 @@ The proposed entry-order choices are:
 * `SOURCE`: preserve deterministic source order and write each entry before
   advancing its source. This is the direct streaming path.
 
-The new API makes ordering explicit instead of deriving it from normalization.
-Source order is the direct streaming path; name order is available when a caller
-requires canonical sorting and accepts spooling.
+The `EntryOrder` API now makes ordering explicit instead of deriving it from
+normalization. `SOURCE` is the default direct-streaming path. `NAME` is available
+when a caller requires canonical sorting and accepts callback-time spooling.
+Metadata normalization has no effect on entry order.
 
 ### Entries and content
 
@@ -106,8 +107,8 @@ including:
 
 ZIP sources expose size and CRC from their central directory without opening
 compressed content. Sequential tar content is consumed immediately in source
-order. The current name-sorted path safely spools callback-scoped content; that
-spooling moves into the archive session when explicit ordering is introduced.
+order. The name-sorted path safely spools callback-scoped content inside the
+archive session, while source order writes before the callback returns.
 
 ### Per-source mapping and safe paths
 

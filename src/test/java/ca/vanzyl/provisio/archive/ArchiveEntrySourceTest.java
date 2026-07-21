@@ -18,7 +18,11 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
         Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
 
         File outputArchive = getTargetArchive("normalized-from-tar.tar.gz");
-        Archiver.builder().normalize(true).build().archive(outputArchive, new TarGzArchiveSource(sourceArchive));
+        Archiver.builder()
+                .normalize(true)
+                .entryOrder(EntryOrder.NAME)
+                .build()
+                .archive(outputArchive, new TarGzArchiveSource(sourceArchive));
 
         ArchiveValidator validator = new TarGzArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");
@@ -32,7 +36,11 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
         Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
 
         File outputArchive = getTargetArchive("normalized-from-zip.zip");
-        Archiver.builder().normalize(true).build().archive(outputArchive, new ZipArchiveSource(sourceArchive));
+        Archiver.builder()
+                .normalize(true)
+                .entryOrder(EntryOrder.NAME)
+                .build()
+                .archive(outputArchive, new ZipArchiveSource(sourceArchive));
 
         ArchiveValidator validator = new ZipArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");

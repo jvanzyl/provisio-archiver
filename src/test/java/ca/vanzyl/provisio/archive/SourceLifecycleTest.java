@@ -34,9 +34,9 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     @Test
     public void builtArchiverDoesNotObserveLaterBuilderMutation() throws Exception {
-        Archiver.ArchiverBuilder builder = Archiver.builder().normalize(false);
+        Archiver.ArchiverBuilder builder = Archiver.builder().entryOrder(EntryOrder.SOURCE);
         Archiver archiver = builder.build();
-        builder.normalize(true).executable("**");
+        builder.entryOrder(EntryOrder.NAME).normalize(true).executable("**");
 
         File archive = getTargetArchive("builder-snapshot.tar.gz");
         archiver.archive(archive, new StringListSource(Arrays.asList("second", "first")));
@@ -62,7 +62,8 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     @Test
     public void configuredArchiverCanRunConcurrentIndependentOperations() throws Exception {
-        Archiver archiver = Archiver.builder().normalize(true).build();
+        Archiver archiver =
+                Archiver.builder().normalize(true).entryOrder(EntryOrder.NAME).build();
         File firstArchive = getTargetArchive("concurrent-first.tar.gz");
         File secondArchive = getTargetArchive("concurrent-second.tar.gz");
         CountDownLatch start = new CountDownLatch(1);

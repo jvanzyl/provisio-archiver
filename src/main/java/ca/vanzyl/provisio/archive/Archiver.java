@@ -7,6 +7,8 @@
  */
 package ca.vanzyl.provisio.archive;
 
+import static java.util.Objects.requireNonNull;
+
 import ca.vanzyl.provisio.archive.source.DirectorySource;
 import java.io.File;
 import java.io.IOException;
@@ -94,6 +96,7 @@ public class Archiver {
 
         List<String> executables = new ArrayList<>();
         boolean normalize = false;
+        EntryOrder entryOrder = EntryOrder.SOURCE;
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
@@ -105,6 +108,16 @@ public class Archiver {
          */
         public ArchiverBuilder normalize(boolean normalize) {
             this.normalize = normalize;
+            return this;
+        }
+
+        /**
+         * Selects source-order streaming or name-sorted output independently of metadata normalization.
+         *
+         * @param entryOrder output entry order
+         */
+        public ArchiverBuilder entryOrder(EntryOrder entryOrder) {
+            this.entryOrder = requireNonNull(entryOrder);
             return this;
         }
 

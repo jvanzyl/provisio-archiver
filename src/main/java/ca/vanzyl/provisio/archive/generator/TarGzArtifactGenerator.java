@@ -8,6 +8,7 @@
 package ca.vanzyl.provisio.archive.generator;
 
 import ca.vanzyl.provisio.archive.Archiver;
+import ca.vanzyl.provisio.archive.EntryOrder;
 import ca.vanzyl.provisio.archive.SourceSpec;
 import ca.vanzyl.provisio.archive.source.DirectorySource;
 import java.io.File;
@@ -42,8 +43,11 @@ public class TarGzArtifactGenerator implements ArtifactGenerator {
 
     public void generate() throws IOException {
         artifactLayout.build();
-        Archiver archiver =
-                Archiver.builder().normalize(true).posixLongFileMode(true).build();
+        Archiver archiver = Archiver.builder()
+                .normalize(true)
+                .entryOrder(EntryOrder.NAME)
+                .posixLongFileMode(true)
+                .build();
         SourceSpec source = SourceSpec.builder(new DirectorySource(artifactLayout.directory()))
                 .useRoot(false)
                 .build();

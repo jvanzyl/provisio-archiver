@@ -372,7 +372,8 @@ public abstract class ArchiveTypeTest {
     @Test
     public void validateArchiveHasDOSEpochTimes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-time-0");
-        Archiver archiver = Archiver.builder().normalize(true).build();
+        Archiver archiver =
+                Archiver.builder().normalize(true).entryOrder(EntryOrder.NAME).build();
         File archive = FileSystemAssert.getTargetArchive("create-archive-time-0." + getArchiveExtension());
         archiver.archive(archive, archiveDirectory);
         ArchiveValidator validator = validator(archive);
@@ -410,7 +411,8 @@ public abstract class ArchiveTypeTest {
 
     @Test
     public void validateArchiveNormalized() throws Exception {
-        Archiver archiver = Archiver.builder().normalize(true).build();
+        Archiver archiver =
+                Archiver.builder().normalize(true).entryOrder(EntryOrder.NAME).build();
         File archive = FileSystemAssert.getTargetArchive("deterministicOrdering-0." + getArchiveExtension());
         // StringListSource with reverse order
         archiver.archive(archive, new StringListSource(List.of("e", "d", "c", "b", "a")));

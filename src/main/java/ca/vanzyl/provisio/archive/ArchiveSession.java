@@ -90,7 +90,7 @@ final class ArchiveSession implements Closeable {
         String path = outputPath.value();
         if (!paths.containsKey(path)) {
             paths.put(path, Boolean.TRUE);
-            SourceEntry stableEntry = options.normalize() ? contentSpool.stabilize(entry) : entry;
+            SourceEntry stableEntry = options.entryOrder() == EntryOrder.NAME ? contentSpool.stabilize(entry) : entry;
             OutputEntry archiveEntry = createOutputEntry(entryName, stableEntry, executable, linkTarget);
             addEntry(entryName, archiveEntry);
         } else if (Boolean.TRUE.equals(paths.get(path)) || !entry.isDirectory()) {
@@ -177,7 +177,7 @@ final class ArchiveSession implements Closeable {
     }
 
     private void addEntry(String entryName, OutputEntry entry) throws IOException {
-        if (options.normalize()) {
+        if (options.entryOrder() == EntryOrder.NAME) {
             entries.put(entryName, entry);
         } else {
             writer.write(entry);

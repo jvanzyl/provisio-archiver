@@ -40,6 +40,7 @@ public class HardLinkInTarGzTest extends FileSystemAssert {
 
         Archiver archiver = Archiver.builder()
                 .normalize(true)
+                .entryOrder(EntryOrder.NAME)
                 .hardLinkIncludes("**/*.jar")
                 .posixLongFileMode(true)
                 .build();
