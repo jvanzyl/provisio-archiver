@@ -71,7 +71,9 @@ Use `Sources.zip(path)` or `Sources.tarGz(path)` when the format is known.
 
 `ContentIdentityMode.VERIFIED` is the default and confirms duplicate content
 with SHA-256. `SIZE_AND_CRC32` is an explicit trust and performance tradeoff
-for sources such as ZIP central directories.
+for sources such as ZIP central directories. Entries that do not report CRC32
+remain eligible for links to and from entries that do: their CRC32 is computed
+as part of the read already required to verify or write them.
 
 ## Supply a custom streaming source
 

@@ -141,6 +141,9 @@ prefix mapping as their entries. Symbolic-link targets remain relative: parent
 segments are accepted only when resolving the target against the link location
 stays inside the archive root. Unarchiving applies the same validation after an
 entry processor changes a path and before creating anything at that path.
+When `useRoot` is false, an explicit directory entry naming only the removed
+source root is omitted; its children still create any required destination
+directories. This avoids retaining the removed name as an empty directory.
 
 ### Format writers and hard links
 
@@ -164,7 +167,11 @@ Size and CRC remain useful candidate metadata but are not exact identity.
 duplicate content. In name order, one representative is spooled for each
 metadata identity and supplies the content for the first sorted target. Missing
 or invalid metadata falls back to verified identity instead of producing an
-unsafe link.
+unsafe link. CRC32 is also calculated while such content is already being read,
+so later entries with source-reported metadata can link to it. Conversely, an
+entry without metadata is read once before output when a same-size metadata
+candidate already exists. This preserves deduplication across loose files, TAR
+entries, and ZIP entries rather than partitioning targets by source capability.
 
 ### Output integrity and reproducibility
 
