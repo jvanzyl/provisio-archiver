@@ -8,11 +8,8 @@
 package ca.vanzyl.provisio.archive;
 
 import ca.vanzyl.provisio.archive.source.DirectorySource;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,13 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
-import org.apache.commons.io.IOUtils;
-import org.codehaus.plexus.util.SelectorUtils;
 
 public class Archiver {
 
@@ -34,14 +25,10 @@ public class Archiver {
     // ZIP timestamps have a resolution of 2 seconds.
     // see http://www.info-zip.org/FAQ.html#limits
     public static final long MINIMUM_TIMESTAMP_INCREMENT = 2000L;
-    private final List<String> executables;
-    private final boolean normalize;
-    private final ArchiverBuilder builder;
+    private final ArchiveOptions options;
 
     private Archiver(ArchiverBuilder builder) {
-        this.builder = builder;
-        this.executables = builder.executables;
-        this.normalize = builder.normalize;
+        options = new ArchiveOptions(builder);
     }
 
     public void archive(File archive, List<String> sourceDirectories) throws IOException {
@@ -83,29 +70,11 @@ public class Archiver {
 
     private void writeArchive(File formatSource, File output, SourceSpec... sources) throws IOException {
         ArchiveFormat format = ArchiveFormat.detect(formatSource.toPath());
-        OutputEntryFactory outputEntryFactory = new OutputEntryFactory(format, builder);
-        Map<String, OutputEntry> entries = new TreeMap<>();
-
-        try (ContentSpool contentSpool = new ContentSpool(output.toPath().getParent());
-                ArchiveWriter writer = format.openWriter(output.toPath(), builder)) {
-            //
-            // collected archive entry paths mapped to true for explicitly provided entries
-            // and to false for implicitly created directory entries duplicate explicitly
-            // provided entries result in IllegalArgumentException
-            //
-            Map<String, Boolean> paths = new HashMap<>();
+        try (ArchiveSession session = new ArchiveSession(output.toPath(), format, options)) {
             for (SourceSpec sourceSpec : sources) {
-                try (Source closeableSource = sourceSpec.source()) {
-                    closeableSource.forEachEntry(entry -> addSourceEntry(
-                            sourceSpec, entry, outputEntryFactory, paths, entries, writer, contentSpool));
-                }
+                session.add(sourceSpec);
             }
-
-            if (!entries.isEmpty()) {
-                for (Map.Entry<String, OutputEntry> entry : entries.entrySet()) {
-                    writer.write(entry.getValue());
-                }
-            }
+            session.finish();
         }
     }
 
@@ -114,210 +83,6 @@ public class Archiver {
             Files.move(temporary, output, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException e) {
             Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
-
-    private void addSourceEntry(
-            SourceSpec sourceSpec,
-            SourceEntry entry,
-            OutputEntryFactory outputEntryFactory,
-            Map<String, Boolean> paths,
-            Map<String, OutputEntry> entries,
-            ArchiveWriter writer,
-            ContentSpool contentSpool)
-            throws IOException {
-        ArchivePath sourcePath = ArchivePath.parse(entry.getName(), "source entry path");
-        if (!sourceSpec.includes(sourcePath.entryName(entry.getType()))) {
-            return;
-        }
-        if (sourceSpec.source().isDirectory() && sourceSpec.flatten() && entry.isDirectory()) {
-            return;
-        }
-        ArchivePath outputPath = mapPath(sourceSpec, sourcePath);
-        String entryName = outputPath.entryName(entry.getType());
-        String linkTarget = mapLinkTarget(sourceSpec, outputPath, entry);
-        boolean isExecutable = false;
-        for (String executable : executables) {
-            if (SelectorUtils.match(executable, entry.getName())) {
-                isExecutable = true;
-                break;
-            }
-        }
-        // Create any missing intermediate directory entries
-        for (String directoryName : getParentDirectoryNames(entryName)) {
-            String directoryPath = directoryName.substring(0, directoryName.length() - 1);
-            if (!paths.containsKey(directoryPath)) {
-                paths.put(directoryPath, Boolean.FALSE);
-                OutputEntry directoryEntry = outputEntryFactory.create(
-                        directoryName, SourceEntry.directory(directoryName, -1, 0), false, null);
-                addEntry(directoryName, directoryEntry, entries, writer);
-            }
-        }
-        String path = outputPath.value();
-        if (!paths.containsKey(path)) {
-            paths.put(path, Boolean.TRUE);
-            SourceEntry stableEntry = normalize ? contentSpool.stabilize(entry) : entry;
-            OutputEntry archiveEntry = outputEntryFactory.create(entryName, stableEntry, isExecutable, linkTarget);
-            addEntry(entryName, archiveEntry, entries, writer);
-        } else if (Boolean.TRUE.equals(paths.get(path)) || !entry.isDirectory()) {
-            throw new IllegalArgumentException("Duplicate archive entry " + entryName);
-        } else {
-            paths.put(path, Boolean.TRUE);
-        }
-    }
-
-    private ArchivePath mapPath(SourceSpec sourceSpec, ArchivePath sourcePath) throws IOException {
-        ArchivePath mapped = sourcePath;
-        if (sourceSpec.source().isDirectory()) {
-            if (!sourceSpec.useRoot()) {
-                mapped = mapped.withoutFirstSegment();
-            }
-            if (sourceSpec.flatten()) {
-                mapped = mapped.fileName();
-            }
-        }
-        return mapped.prepend(sourceSpec.destinationPrefix(), "source destination prefix");
-    }
-
-    private String mapLinkTarget(SourceSpec sourceSpec, ArchivePath outputPath, SourceEntry entry) throws IOException {
-        if (entry.isSymbolicLink()) {
-            return ArchivePath.validateSymbolicLinkTarget(outputPath, entry.getLinkTarget());
-        }
-        if (entry.isHardLink()) {
-            ArchivePath sourceTarget = ArchivePath.parse(entry.getLinkTarget(), "hard link target");
-            return mapPath(sourceSpec, sourceTarget).value();
-        }
-        return null;
-    }
-
-    private Iterable<String> getParentDirectoryNames(String entryName) {
-        List<String> directoryNames = new ArrayList<>();
-        StringTokenizer st = new StringTokenizer(entryName, "/");
-        if (st.hasMoreTokens()) {
-            StringBuilder directoryName = new StringBuilder(st.nextToken());
-            while (st.hasMoreTokens()) {
-                directoryName.append('/');
-                directoryNames.add(directoryName.toString());
-                directoryName.append(st.nextToken());
-            }
-        }
-        return directoryNames;
-    }
-
-    /**
-     * Returns the normalized timestamp for a jar entry based on its name. This is necessary since javac will, when loading a class X, prefer a source file to a class file, if both files have the same
-     * timestamp. Therefore, we need to adjust the timestamp for class files to slightly after the normalized time.
-     *
-     * @param name The name of the file for which we should return the normalized timestamp.
-     * @return the time for a new Jar file entry in milliseconds since the epoch.
-     */
-    private long normalizedTimestamp(String name) {
-        if (name.endsWith(".class")) {
-            return DOS_EPOCH_IN_JAVA_TIME + MINIMUM_TIMESTAMP_INCREMENT;
-        } else {
-            return DOS_EPOCH_IN_JAVA_TIME;
-        }
-    }
-
-    private void addEntry(String entryName, OutputEntry entry, Map<String, OutputEntry> entries, ArchiveWriter writer)
-            throws IOException {
-        if (normalize) {
-            entries.put(entryName, entry);
-        } else {
-            writer.write(entry);
-        }
-    }
-
-    private final class OutputEntryFactory {
-
-        private final ArchiveFormat format;
-        private final Selector hardLinkSelector;
-        private final Map<String, OutputEntry> hardLinkTargets = new HashMap<>();
-
-        private OutputEntryFactory(ArchiveFormat format, ArchiverBuilder builder) {
-            this.format = format;
-            if (!builder.hardLinkIncludes.isEmpty() || !builder.hardLinkExcludes.isEmpty()) {
-                hardLinkSelector = new Selector(builder.hardLinkIncludes, builder.hardLinkExcludes);
-            } else {
-                hardLinkSelector = new Selector(null, Collections.singletonList("**/**"));
-            }
-        }
-
-        private OutputEntry create(String name, SourceEntry source, boolean executable, String linkTarget) {
-            int mode = source.getFileMode();
-            if (mode != -1 && executable) {
-                mode = ca.vanzyl.provisio.archive.perms.FileMode.makeExecutable(mode);
-            } else if (mode == -1 && executable) {
-                mode = ca.vanzyl.provisio.archive.perms.FileMode.EXECUTABLE_FILE.getBits();
-            }
-
-            long time = normalize ? normalizedTimestamp(name) : -1;
-            if (format == ArchiveFormat.TAR_GZ
-                    && source.getType() == EntryType.FILE
-                    && hardLinkSelector.include(name)) {
-                String sourceFileName =
-                        source.getName().substring(source.getName().lastIndexOf('/') + 1);
-                OutputEntry target = hardLinkTargets.get(sourceFileName);
-                if (target != null) {
-                    return OutputEntry.hardLink(name, target.getName(), mode, time);
-                }
-                OutputEntry entry = OutputEntry.from(name, source, mode, time, linkTarget);
-                hardLinkTargets.put(sourceFileName, entry);
-                return entry;
-            }
-            return OutputEntry.from(name, source, mode, time, linkTarget);
-        }
-    }
-
-    private static final class ContentSpool implements Closeable {
-
-        private final Path temporaryDirectory;
-        private final List<Path> contentFiles = new ArrayList<>();
-
-        private ContentSpool(Path temporaryDirectory) {
-            this.temporaryDirectory = temporaryDirectory;
-        }
-
-        private SourceEntry stabilize(SourceEntry entry) throws IOException {
-            if (entry.getType() != EntryType.FILE) {
-                return entry;
-            }
-
-            Path content = Files.createTempFile(temporaryDirectory, ".provisio-entry-", ".tmp");
-            boolean completed = false;
-            try {
-                try (InputStream inputStream = entry.getContent().open();
-                        OutputStream outputStream = Files.newOutputStream(content)) {
-                    IOUtils.copyLarge(inputStream, outputStream);
-                }
-                SourceEntry stableEntry = entry.withContent(EntryContents.of(content));
-                contentFiles.add(content);
-                completed = true;
-                return stableEntry;
-            } finally {
-                if (!completed) {
-                    Files.deleteIfExists(content);
-                }
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            IOException failure = null;
-            for (Path content : contentFiles) {
-                try {
-                    Files.deleteIfExists(content);
-                } catch (IOException e) {
-                    if (failure == null) {
-                        failure = e;
-                    } else {
-                        failure.addSuppressed(e);
-                    }
-                }
-            }
-            if (failure != null) {
-                throw failure;
-            }
         }
     }
 

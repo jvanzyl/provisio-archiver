@@ -7,9 +7,14 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.Test;
 
 public class SourceLifecycleTest extends FileSystemAssert {
@@ -25,6 +30,63 @@ public class SourceLifecycleTest extends FileSystemAssert {
         File secondArchive = getTargetArchive("reuse-second.tar.gz");
         archiver.archive(secondArchive, new StringListSource(Collections.singletonList("second")));
         new TarGzArchiveValidator(secondArchive).assertEntries("second");
+    }
+
+    @Test
+    public void builtArchiverDoesNotObserveLaterBuilderMutation() throws Exception {
+        Archiver.ArchiverBuilder builder = Archiver.builder().normalize(false);
+        Archiver archiver = builder.build();
+        builder.normalize(true).executable("**");
+
+        File archive = getTargetArchive("builder-snapshot.tar.gz");
+        archiver.archive(archive, new StringListSource(Arrays.asList("second", "first")));
+
+        assertEquals(Arrays.asList("second", "first"), entryNames(archive));
+    }
+
+    @Test
+    public void hardLinkCandidatesDoNotLeakBetweenArchiveOperations() throws Exception {
+        Archiver archiver = Archiver.builder().hardLinkIncludes("**/*.jar").build();
+
+        archiver.archive(
+                getTargetArchive("hard-link-state-first.tar.gz"),
+                new StringListSource(Collections.singletonList("first/library.jar")));
+        File secondArchive = getTargetArchive("hard-link-state-second.tar.gz");
+        archiver.archive(secondArchive, new StringListSource(Collections.singletonList("second/library.jar")));
+
+        List<EntryType> types = new ArrayList<>();
+        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(secondArchive)
+                .forEachEntry(entry -> types.add(entry.getType()));
+        assertEquals(Arrays.asList(EntryType.DIRECTORY, EntryType.FILE), types);
+    }
+
+    @Test
+    public void configuredArchiverCanRunConcurrentIndependentOperations() throws Exception {
+        Archiver archiver = Archiver.builder().normalize(true).build();
+        File firstArchive = getTargetArchive("concurrent-first.tar.gz");
+        File secondArchive = getTargetArchive("concurrent-second.tar.gz");
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> first = executor.submit(() -> {
+                start.await();
+                archiver.archive(firstArchive, new StringListSource(Arrays.asList("b", "a")));
+                return null;
+            });
+            Future<?> second = executor.submit(() -> {
+                start.await();
+                archiver.archive(secondArchive, new StringListSource(Arrays.asList("d", "c")));
+                return null;
+            });
+            start.countDown();
+            first.get();
+            second.get();
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertEquals(Arrays.asList("a", "b"), entryNames(firstArchive));
+        assertEquals(Arrays.asList("c", "d"), entryNames(secondArchive));
     }
 
     @Test
@@ -121,6 +183,13 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
         assertEquals(1, first.closeCount);
         assertEquals(1, second.closeCount);
+    }
+
+    private List<String> entryNames(File archive) throws IOException {
+        List<String> names = new ArrayList<>();
+        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(archive)
+                .forEachEntry(entry -> names.add(entry.getName()));
+        return names;
     }
 
     private static class TrackingSource implements Source {

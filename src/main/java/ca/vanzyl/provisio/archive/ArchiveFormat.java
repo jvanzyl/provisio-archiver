@@ -38,10 +38,10 @@ enum ArchiveFormat {
         return new TarGzArchiveSource(archive.toFile());
     }
 
-    ArchiveWriter openWriter(Path output, Archiver.ArchiverBuilder builder) throws IOException {
+    ArchiveWriter openWriter(Path output, boolean posixLongFileMode) throws IOException {
         if (this == ZIP) {
             return new ZipArchiveWriter(output);
         }
-        return new TarGzArchiveWriter(output, builder.posixLongFileMode);
+        return new TarGzArchiveWriter(output, posixLongFileMode);
     }
 }

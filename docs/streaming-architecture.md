@@ -51,6 +51,11 @@ An archive session owns all mutable state and temporary content for exactly one
 output operation. A configured `Archiver` must not retain entries, paths,
 hard-link candidates, or source-backed content between invocations.
 
+`ArchiveSession` now owns the writer, content spool, mapped-path index, delayed
+entries, and transitional hard-link candidates for one operation. `Archiver`
+captures an immutable configuration snapshot when it is built, so later builder
+mutation and concurrent archive operations cannot share or alter session state.
+
 ### Source traversal and lifetime
 
 Sources need a checked, lifetime-aware traversal operation. Archive-backed
