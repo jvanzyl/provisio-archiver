@@ -174,11 +174,15 @@ The known consumers are maintained together with this repository:
   runtime assembly, unpacking, and archive production;
 * [Takari Lifecycle](https://github.com/takari/takari-lifecycle), whose JAR
   implementation supplies custom sources and entries and invokes `Archiver`.
+* [Maveniverse Toolrunner](https://github.com/maveniverse/toolrunner), whose
+  shared module uses `UnArchiver` in production code.
 
 Development proceeds against a locally installed archiver build. Each consumer
 is updated on its own branch after the new archiver contract is stable. Consumer
 tests must pass before the breaking archiver release is considered usable.
 Publishing and pull requests remain separate, explicitly authorized operations.
+The evidence and limits of the downstream search are recorded in
+[downstream-consumers.md](downstream-consumers.md).
 
 ## Testing expectations
 
