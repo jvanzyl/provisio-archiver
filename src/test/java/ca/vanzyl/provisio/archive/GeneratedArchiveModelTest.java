@@ -6,8 +6,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FilterInputStream;
@@ -178,9 +176,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
     }
 
     private Source openArchive(File archive) {
-        return archive.getName().endsWith(".zip")
-                ? new ZipArchiveSource(archive.toPath())
-                : new TarGzArchiveSource(archive.toPath());
+        return Sources.archive(archive.toPath());
     }
 
     private ObservedArchive readArchive(File archive) throws IOException {
@@ -215,7 +211,7 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
 
     private Map<String, SourceEntry> readEntries(File archive) throws IOException {
         Map<String, SourceEntry> entries = new LinkedHashMap<>();
-        try (Source source = new TarGzArchiveSource(archive.toPath())) {
+        try (Source source = Sources.tarGz(archive.toPath())) {
             source.forEachEntry(entry -> entries.put(entry.getName(), entry));
         }
         return entries;

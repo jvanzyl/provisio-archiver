@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +70,7 @@ public class EntryOrderTest extends FileSystemAssert {
 
     private List<String> entryNames(File archive) throws IOException {
         List<String> names = new ArrayList<>();
-        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> names.add(entry.getName()));
+        Sources.tarGz(archive.toPath()).forEachEntry(entry -> names.add(entry.getName()));
         return names;
     }
 

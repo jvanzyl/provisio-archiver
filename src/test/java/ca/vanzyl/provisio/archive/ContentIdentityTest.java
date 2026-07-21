@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -94,7 +92,7 @@ public class ContentIdentityTest extends FileSystemAssert {
         File outputArchive = getTargetArchive("identity-metadata-from-zip.tar.gz");
 
         metadataHardLinkingArchiver(EntryOrder.NAME)
-                .archive(outputArchive.toPath(), new ZipArchiveSource(sourceArchive.toPath()));
+                .archive(outputArchive.toPath(), Sources.zip(sourceArchive.toPath()));
 
         Map<String, SourceEntry> entries = entries(outputArchive);
         assertEquals(EntryType.FILE, entries.get("a/a.jar").getType());
@@ -275,7 +273,7 @@ public class ContentIdentityTest extends FileSystemAssert {
 
     private static List<SourceEntry> entryList(File archive) throws IOException {
         List<SourceEntry> entries = new ArrayList<>();
-        try (Source source = new TarGzArchiveSource(archive.toPath())) {
+        try (Source source = Sources.tarGz(archive.toPath())) {
             source.forEachEntry(entries::add);
         }
         return entries;

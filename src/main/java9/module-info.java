@@ -15,7 +15,4 @@ module ca.vanzyl.provisio.archive {
     exports ca.vanzyl.provisio.archive;
     exports ca.vanzyl.provisio.archive.generator;
     exports ca.vanzyl.provisio.archive.perms;
-    exports ca.vanzyl.provisio.archive.source;
-    exports ca.vanzyl.provisio.archive.tar;
-    exports ca.vanzyl.provisio.archive.zip;
 }

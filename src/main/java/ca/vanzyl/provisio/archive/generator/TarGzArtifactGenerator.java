@@ -11,7 +11,7 @@ import ca.vanzyl.provisio.archive.Archiver;
 import ca.vanzyl.provisio.archive.EntryOrder;
 import ca.vanzyl.provisio.archive.ReproducibilityPolicy;
 import ca.vanzyl.provisio.archive.SourceSpec;
-import ca.vanzyl.provisio.archive.source.DirectorySource;
+import ca.vanzyl.provisio.archive.Sources;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,7 +49,7 @@ public class TarGzArtifactGenerator implements ArtifactGenerator {
                 .entryOrder(EntryOrder.NAME)
                 .posixLongFileMode(true)
                 .build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(artifactLayout.directory()))
+        SourceSpec source = SourceSpec.builder(Sources.directory(artifactLayout.directory()))
                 .useRoot(false)
                 .build();
         archiver.archive(artifact, source);

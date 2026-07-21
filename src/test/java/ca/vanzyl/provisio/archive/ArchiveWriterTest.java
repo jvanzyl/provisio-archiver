@@ -5,8 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +31,7 @@ public class ArchiveWriterTest extends FileSystemAssert {
         Archiver.builder().build().archive(archive.toPath(), new LinkSource());
 
         int[] hardLinks = {0};
-        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> {
+        Sources.tarGz(archive.toPath()).forEachEntry(entry -> {
             if (entry.isHardLink()) {
                 hardLinks[0]++;
                 assertEquals("target.txt", entry.getLinkTarget());
@@ -69,9 +67,9 @@ public class ArchiveWriterTest extends FileSystemAssert {
                 .build()
                 .archive(
                         archive.toPath(),
-                        new TarGzArchiveSource(getSourceArchive("jenv.tar.gz").toPath()));
+                        Sources.tarGz(getSourceArchive("jenv.tar.gz").toPath()));
 
-        assertSymbolicLink(new TarGzArchiveSource(archive.toPath()));
+        assertSymbolicLink(Sources.tarGz(archive.toPath()));
     }
 
     @Test
@@ -81,9 +79,9 @@ public class ArchiveWriterTest extends FileSystemAssert {
                 .build()
                 .archive(
                         archive.toPath(),
-                        new TarGzArchiveSource(getSourceArchive("jenv.tar.gz").toPath()));
+                        Sources.tarGz(getSourceArchive("jenv.tar.gz").toPath()));
 
-        assertSymbolicLink(new ZipArchiveSource(archive.toPath()));
+        assertSymbolicLink(Sources.zip(archive.toPath()));
     }
 
     @Test

@@ -9,7 +9,6 @@ package ca.vanzyl.provisio.archive;
 
 import static java.util.Objects.requireNonNull;
 
-import ca.vanzyl.provisio.archive.source.DirectorySource;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -33,7 +32,7 @@ public class Archiver {
     }
 
     public void archive(Path archive, Path... sourceDirectories) throws IOException {
-        archive(archive, new DirectorySource(sourceDirectories));
+        archive(archive, Sources.directories(sourceDirectories));
     }
 
     public void archive(Path archive, Source... sources) throws IOException {

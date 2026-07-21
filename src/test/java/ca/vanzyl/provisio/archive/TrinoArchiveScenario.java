@@ -1,7 +1,5 @@
 package ca.vanzyl.provisio.archive;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -27,7 +25,7 @@ final class TrinoArchiveScenario {
                 .build()
                 .archive(sourceArchive, new JarLikeSource(entryCount, payloads));
 
-        TrackingSource source = new TrackingSource(new ZipArchiveSource(sourceArchive));
+        TrackingSource source = new TrackingSource(Sources.zip(sourceArchive));
         long started = System.nanoTime();
         Archiver.builder()
                 .entryOrder(EntryOrder.SOURCE)
@@ -41,7 +39,7 @@ final class TrinoArchiveScenario {
 
         int[] regularFiles = {0};
         int[] hardLinks = {0};
-        try (Source output = new TarGzArchiveSource(outputArchive)) {
+        try (Source output = Sources.tarGz(outputArchive)) {
             output.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     regularFiles[0]++;

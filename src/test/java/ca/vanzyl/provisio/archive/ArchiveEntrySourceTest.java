@@ -2,8 +2,6 @@ package ca.vanzyl.provisio.archive;
 
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,7 +20,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
-                .archive(outputArchive.toPath(), new TarGzArchiveSource(sourceArchive.toPath()));
+                .archive(outputArchive.toPath(), Sources.tarGz(sourceArchive.toPath()));
 
         ArchiveValidator validator = new TarGzArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");
@@ -40,7 +38,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
                 .reproducibility(ReproducibilityPolicy.NORMALIZED)
                 .entryOrder(EntryOrder.NAME)
                 .build()
-                .archive(outputArchive.toPath(), new ZipArchiveSource(sourceArchive.toPath()));
+                .archive(outputArchive.toPath(), Sources.zip(sourceArchive.toPath()));
 
         ArchiveValidator validator = new ZipArchiveValidator(outputArchive);
         validator.assertSortedEntries("a", "b");
@@ -54,8 +52,8 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
                 .build();
 
         File archive = getTargetArchive("archive-from-archive.tar.gz");
-        Source source = new TarGzArchiveSource(
-                getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath());
+        Source source =
+                Sources.tarGz(getSourceArchive("apache-maven-3.0.4-bin.tar.gz").toPath());
         archiver.archive(archive.toPath(), source);
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
         // note that original archive is missing 3 directory entries
@@ -134,7 +132,7 @@ public class ArchiveEntrySourceTest extends FileSystemAssert {
                     .archive(
                             getTargetArchive("archive-from-truncated-source.tar.gz")
                                     .toPath(),
-                            new TarGzArchiveSource(truncated.toPath()));
+                            Sources.tarGz(truncated.toPath()));
             fail("Expected the truncated source archive to fail");
         } catch (IOException expected) {
             // The checked failure must not be mistaken for the end of the tar stream.

@@ -2,8 +2,6 @@ package ca.vanzyl.provisio.archive;
 
 import static org.junit.Assert.assertEquals;
 
-import ca.vanzyl.provisio.archive.source.DirectorySource;
-import ca.vanzyl.provisio.archive.source.FileSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -64,7 +62,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveWithIncludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .includes("**/4.txt")
                 .build();
         File archive = FileSystemAssert.getTargetArchive("includes-archive-0." + getArchiveExtension());
@@ -84,7 +82,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveWithMultipleIncludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .includes("**/3.txt")
                 .includes("**/4.txt")
                 .build();
@@ -127,7 +125,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveWithExcludes() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .excludes("**/4**") // We want to exclude all items with "4" which includes the directory entry
                 .build();
         File archive = FileSystemAssert.getTargetArchive("excludes-archive-0." + getArchiveExtension());
@@ -156,7 +154,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveWithoutRoot() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .useRoot(false)
                 .build();
         File archive = FileSystemAssert.getTargetArchive("without-root-archive-0." + getArchiveExtension());
@@ -174,7 +172,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveWithPrefix() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .destinationPrefix("prefix/")
                 .build();
         File archive = FileSystemAssert.getTargetArchive("with-prefix-archive-0." + getArchiveExtension());
@@ -204,7 +202,7 @@ public abstract class ArchiveTypeTest {
     public void createArchiveUsingFlatten() throws Exception {
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-0");
         Archiver archiver = Archiver.builder().build();
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .useRoot(false)
                 .flatten(true)
                 .build();
@@ -353,7 +351,7 @@ public abstract class ArchiveTypeTest {
     public void testIntermediateDirectoryEntries() throws Exception {
         Archiver archiver = Archiver.builder().build();
         File archive = FileSystemAssert.getTargetArchive("create-intermediate-directories." + getArchiveExtension());
-        archiver.archive(archive.toPath(), new FileSource("1/2/file.txt", Paths.get("src/test/files/0.txt")));
+        archiver.archive(archive.toPath(), Sources.file("1/2/file.txt", Paths.get("src/test/files/0.txt")));
         ArchiveValidator validator = validator(archive);
         validator.assertEntries("1/", "1/2/", "1/2/file.txt");
     }
@@ -364,8 +362,8 @@ public abstract class ArchiveTypeTest {
         File archive = FileSystemAssert.getTargetArchive("create-intermediate-directories." + getArchiveExtension());
         archiver.archive(
                 archive.toPath(),
-                new FileSource("1/2/file.txt", Paths.get("src/test/files/0.txt")),
-                new FileSource("1/2/file.txt", Paths.get("src/test/files/0.txt")));
+                Sources.file("1/2/file.txt", Paths.get("src/test/files/0.txt")),
+                Sources.file("1/2/file.txt", Paths.get("src/test/files/0.txt")));
         ArchiveValidator validator = validator(archive);
         validator.assertEntries("1/", "1/2/", "1/2/file.txt");
     }
@@ -439,7 +437,7 @@ public abstract class ArchiveTypeTest {
         Archiver archiver = Archiver.builder().posixLongFileMode(true).build();
         File archive = FileSystemAssert.getTargetArchive("archive-with-long-path." + getArchiveExtension());
         File archiveDirectory = FileSystemAssert.getArchiveProject("archive-with-long-path");
-        SourceSpec source = SourceSpec.builder(new DirectorySource(archiveDirectory.toPath()))
+        SourceSpec source = SourceSpec.builder(Sources.directories(archiveDirectory.toPath()))
                 .useRoot(false)
                 .build();
         archiver.archive(archive.toPath(), source);

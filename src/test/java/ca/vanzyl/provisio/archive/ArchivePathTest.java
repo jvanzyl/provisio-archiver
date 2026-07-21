@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -177,7 +176,7 @@ public class ArchivePathTest extends FileSystemAssert {
         Archiver.builder().build().archive(archive.toPath(), sourceSpec);
 
         int[] links = {0};
-        new TarGzArchiveSource(archive.toPath()).forEachEntry(entry -> {
+        Sources.tarGz(archive.toPath()).forEachEntry(entry -> {
             if (entry.isHardLink()) {
                 links[0]++;
                 assertEquals("prefix/target", entry.getLinkTarget());

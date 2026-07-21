@@ -59,8 +59,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
         archiver.archive(secondArchive.toPath(), new StringListSource(Collections.singletonList("second/library.jar")));
 
         List<EntryType> types = new ArrayList<>();
-        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(secondArchive.toPath())
-                .forEachEntry(entry -> types.add(entry.getType()));
+        Sources.tarGz(secondArchive.toPath()).forEachEntry(entry -> types.add(entry.getType()));
         assertEquals(Arrays.asList(EntryType.DIRECTORY, EntryType.FILE), types);
     }
 
@@ -207,8 +206,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
 
     private List<String> entryNames(File archive) throws IOException {
         List<String> names = new ArrayList<>();
-        new ca.vanzyl.provisio.archive.tar.TarGzArchiveSource(archive.toPath())
-                .forEachEntry(entry -> names.add(entry.getName()));
+        Sources.tarGz(archive.toPath()).forEachEntry(entry -> names.add(entry.getName()));
         return names;
     }
 

@@ -3,8 +3,6 @@ package ca.vanzyl.provisio.archive;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
-import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +34,7 @@ public class ArchiveScaleTest extends FileSystemAssert {
         assertEquals(0, spoolFiles(output.getParent()));
         long[] size = {0};
         long[] crc32 = {0};
-        try (Source archive = new TarGzArchiveSource(output)) {
+        try (Source archive = Sources.tarGz(output)) {
             archive.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     try (InputStream input = entry.getContent().open()) {
@@ -70,7 +68,7 @@ public class ArchiveScaleTest extends FileSystemAssert {
         assertEquals(0, spoolFiles(output.getParent()));
 
         int[] files = {0};
-        try (Source archive = new ZipArchiveSource(output)) {
+        try (Source archive = Sources.zip(output)) {
             archive.forEachEntry(entry -> {
                 if (entry.getType() == EntryType.FILE) {
                     files[0]++;
