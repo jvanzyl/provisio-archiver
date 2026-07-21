@@ -21,11 +21,11 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.io.IOUtils;
 
-public class TarGzXzArchiveSource implements Source {
+public class TarGzArchiveSource implements Source {
 
     private final ArchiveInputStream archiveInputStream;
 
-    public TarGzXzArchiveSource(File archive) {
+    public TarGzArchiveSource(File archive) {
         try {
             archiveInputStream = ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder())
                     .getInputStream();

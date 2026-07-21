@@ -9,7 +9,7 @@ package ca.vanzyl.provisio.archive;
 
 import ca.vanzyl.provisio.archive.Archiver.ArchiverBuilder;
 import ca.vanzyl.provisio.archive.UnArchiver.UnArchiverBuilder;
-import ca.vanzyl.provisio.archive.tar.TarGzXzArchiveHandler;
+import ca.vanzyl.provisio.archive.tar.TarGzArchiveHandler;
 import ca.vanzyl.provisio.archive.zip.ZipArchiveHandler;
 import java.io.File;
 import java.util.Collections;
@@ -21,7 +21,7 @@ public class ArchiverHelper {
         if (isZip(archive)) {
             archiveHandler = new ZipArchiveHandler(archive);
         } else if (isTarGz(archive)) {
-            archiveHandler = new TarGzXzArchiveHandler(
+            archiveHandler = new TarGzArchiveHandler(
                     archive, builder.posixLongFileMode, builder.hardLinkIncludes, builder.hardLinkExcludes);
         } else {
             throw new RuntimeException("Cannot detect how to read " + archive.getName());
@@ -34,7 +34,7 @@ public class ArchiverHelper {
         if (isZip(archive)) {
             archiveHandler = new ZipArchiveHandler(archive);
         } else if (isTarGz(archive)) {
-            archiveHandler = new TarGzXzArchiveHandler(
+            archiveHandler = new TarGzArchiveHandler(
                     archive, builder.posixLongFileMode, Collections.emptyList(), Collections.emptyList());
         } else {
             throw new RuntimeException("Cannot detect how to read " + archive.getName());

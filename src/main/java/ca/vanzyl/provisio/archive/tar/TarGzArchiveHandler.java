@@ -27,14 +27,14 @@ import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
+public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
     private final File archive;
     private final boolean posixLongFileMode;
     private final Map<String, ExtendedArchiveEntry> processedFilesNames;
     private final Selector hardLinkSelector;
 
-    public TarGzXzArchiveHandler(
+    public TarGzArchiveHandler(
             File archive, boolean posixLongFileMode, List<String> hardLinkIncludes, List<String> hardLinkExcludes) {
         this.archive = archive;
         this.posixLongFileMode = posixLongFileMode;
@@ -84,7 +84,7 @@ public class TarGzXzArchiveHandler extends ArchiveHandlerSupport {
 
     @Override
     public Source getArchiveSource() {
-        return new TarGzXzArchiveSource(archive);
+        return new TarGzArchiveSource(archive);
     }
 
     private String fileNameOf(ExtendedArchiveEntry entry) {
