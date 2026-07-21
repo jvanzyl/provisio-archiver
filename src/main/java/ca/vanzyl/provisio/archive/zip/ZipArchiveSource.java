@@ -9,15 +9,14 @@ package ca.vanzyl.provisio.archive.zip;
 
 import static ca.vanzyl.provisio.archive.zip.ExtendedZipArchiveEntry.dosToJavaTime;
 
-import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
+import ca.vanzyl.provisio.archive.EntryContent;
 import ca.vanzyl.provisio.archive.Source;
-import ca.vanzyl.provisio.archive.perms.FileMode;
-import java.io.ByteArrayOutputStream;
+import ca.vanzyl.provisio.archive.SourceEntry;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
@@ -37,108 +36,39 @@ public class ZipArchiveSource implements Source {
                 .setFile(archive)
                 .setUseUnicodeExtraFields(false)
                 .get()) {
-            // UTF-8 is the default charset
             Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();
             while (entries.hasMoreElements()) {
-                consumer.accept(new EntrySourceArchiveEntry(zipFile, entries.nextElement()));
+                acceptEntry(zipFile, entries.nextElement(), consumer);
             }
         }
     }
 
-    class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
-
-        private final ZipFile zipFile;
-        private final ZipArchiveEntry archiveEntry;
-
-        public EntrySourceArchiveEntry(ZipFile zipFile, ZipArchiveEntry archiveEntry) {
-            this.zipFile = zipFile;
-            this.archiveEntry = archiveEntry;
+    private void acceptEntry(ZipFile zipFile, ZipArchiveEntry archiveEntry, EntryConsumer consumer) throws IOException {
+        String name = archiveEntry.getName();
+        int mode = archiveEntry.getUnixMode();
+        long time = archiveEntry.getTime();
+        if (time != -1) {
+            time = dosToJavaTime(time, false);
         }
 
-        @Override
-        public String getName() {
-            return archiveEntry.getName();
+        if (archiveEntry.isDirectory()) {
+            consumer.accept(SourceEntry.directory(name, mode, time));
+            return;
         }
 
-        @Override
-        public InputStream getInputStream() throws IOException {
-            return zipFile.getInputStream(archiveEntry);
-        }
-
-        @Override
-        public boolean isSymbolicLink() {
-            return archiveEntry.isUnixSymlink();
-        }
-
-        @Override
-        public String getSymbolicLinkPath() {
-            try (InputStream is = getInputStream();
-                    ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                IOUtils.copyLarge(is, os);
-                return os.toString();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        ZipEntryContent content = new ZipEntryContent(zipFile, archiveEntry);
+        try {
+            if (archiveEntry.isUnixSymlink()) {
+                String target;
+                try (InputStream inputStream = content.open()) {
+                    target = new String(IOUtils.toByteArray(inputStream), StandardCharsets.UTF_8);
+                }
+                consumer.accept(SourceEntry.symbolicLink(name, target, mode, time));
+            } else {
+                consumer.accept(SourceEntry.file(name, content, mode, time));
             }
-        }
-
-        @Override
-        public boolean isHardLink() {
-            return false;
-        }
-
-        @Override
-        public String getHardLinkPath() {
-            return null;
-        }
-
-        @Override
-        public long getSize() {
-            return archiveEntry.getSize();
-        }
-
-        @Override
-        public void writeEntry(OutputStream outputStream) throws IOException {
-            try (InputStream inputStream = getInputStream()) {
-                IOUtils.copyLarge(inputStream, outputStream);
-            }
-        }
-
-        @Override
-        public void setFileMode(int mode) {}
-
-        @Override
-        public int getFileMode() {
-            return archiveEntry.getUnixMode();
-        }
-
-        @Override
-        public void setSize(long size) {}
-
-        @Override
-        public void setTime(long time) {}
-
-        @Override
-        public boolean isDirectory() {
-            return archiveEntry.isDirectory();
-        }
-
-        @Override
-        public Date getLastModifiedDate() {
-            return null;
-        }
-
-        @Override
-        public boolean isExecutable() {
-            return FileMode.EXECUTABLE_FILE.equals(getFileMode());
-        }
-
-        @Override
-        public long getTime() {
-            long time = archiveEntry.getTime();
-            if (time != -1) {
-                return dosToJavaTime(time, false);
-            }
-            return time;
+        } finally {
+            content.invalidate();
         }
     }
 
@@ -148,5 +78,60 @@ public class ZipArchiveSource implements Source {
     @Override
     public boolean isDirectory() {
         return true;
+    }
+
+    private static final class ZipEntryContent implements EntryContent {
+
+        private final ZipFile zipFile;
+        private final ZipArchiveEntry archiveEntry;
+        private boolean active = true;
+
+        private ZipEntryContent(ZipFile zipFile, ZipArchiveEntry archiveEntry) {
+            this.zipFile = zipFile;
+            this.archiveEntry = archiveEntry;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            ensureActive();
+            return new FilterInputStream(zipFile.getInputStream(archiveEntry)) {
+                @Override
+                public int read() throws IOException {
+                    ensureActive();
+                    return super.read();
+                }
+
+                @Override
+                public int read(byte[] bytes, int offset, int length) throws IOException {
+                    ensureActive();
+                    return super.read(bytes, offset, length);
+                }
+            };
+        }
+
+        @Override
+        public long size() {
+            return archiveEntry.getSize();
+        }
+
+        @Override
+        public long crc32() {
+            return archiveEntry.getCrc();
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        private void invalidate() {
+            active = false;
+        }
+
+        private void ensureActive() throws IOException {
+            if (!active) {
+                throw new IOException("ZIP entry content is no longer active");
+            }
+        }
     }
 }

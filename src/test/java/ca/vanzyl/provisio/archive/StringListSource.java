@@ -1,10 +1,7 @@
 package ca.vanzyl.provisio.archive;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class StringListSource implements Source {
@@ -18,8 +15,12 @@ public class StringListSource implements Source {
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
         for (String entry : entries) {
-            consumer.accept(new StringEntry(entry));
+            consumer.accept(entry(entry));
         }
+    }
+
+    static SourceEntry entry(String name) {
+        return SourceEntry.file(name, EntryContents.of(name.getBytes(StandardCharsets.UTF_8)), 0, 0);
     }
 
     @Override
@@ -29,87 +30,4 @@ public class StringListSource implements Source {
 
     @Override
     public void close() {}
-
-    static class StringEntry implements ExtendedArchiveEntry {
-
-        final String name;
-
-        public StringEntry(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public InputStream getInputStream() {
-            return new ByteArrayInputStream(name.getBytes());
-        }
-
-        @Override
-        public boolean isSymbolicLink() {
-            return false;
-        }
-
-        @Override
-        public String getSymbolicLinkPath() {
-            return null;
-        }
-
-        @Override
-        public boolean isHardLink() {
-            return false;
-        }
-
-        @Override
-        public String getHardLinkPath() {
-            return null;
-        }
-
-        @Override
-        public long getSize() {
-            return name.length();
-        }
-
-        @Override
-        public void writeEntry(OutputStream outputStream) throws IOException {
-            getInputStream().transferTo(outputStream);
-        }
-
-        @Override
-        public void setFileMode(int mode) {}
-
-        @Override
-        public int getFileMode() {
-            return 0;
-        }
-
-        @Override
-        public void setSize(long size) {}
-
-        @Override
-        public void setTime(long time) {}
-
-        @Override
-        public boolean isDirectory() {
-            return false;
-        }
-
-        @Override
-        public Date getLastModifiedDate() {
-            return null;
-        }
-
-        @Override
-        public boolean isExecutable() {
-            return false;
-        }
-
-        @Override
-        public long getTime() {
-            return 0;
-        }
-    }
 }

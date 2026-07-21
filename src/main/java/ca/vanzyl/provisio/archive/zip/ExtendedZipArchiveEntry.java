@@ -8,9 +8,12 @@
 package ca.vanzyl.provisio.archive.zip;
 
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
+import ca.vanzyl.provisio.archive.SourceEntry;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -18,9 +21,9 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 
 public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements ExtendedArchiveEntry {
 
-    private final ExtendedArchiveEntry entry;
+    private final SourceEntry entry;
 
-    public ExtendedZipArchiveEntry(String entryName, ExtendedArchiveEntry entry) {
+    public ExtendedZipArchiveEntry(String entryName, SourceEntry entry) {
         super(entryName);
         this.entry = entry;
     }
@@ -37,22 +40,27 @@ public class ExtendedZipArchiveEntry extends ZipArchiveEntry implements Extended
 
     @Override
     public void writeEntry(OutputStream outputStream) throws IOException {
-        entry.writeEntry(outputStream);
+        try (InputStream inputStream = getInputStream()) {
+            org.apache.commons.io.IOUtils.copyLarge(inputStream, outputStream);
+        }
     }
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return entry.getInputStream();
+        if (entry.isSymbolicLink()) {
+            return new ByteArrayInputStream(entry.getLinkTarget().getBytes(StandardCharsets.UTF_8));
+        }
+        return entry.getContent().open();
     }
 
     @Override
     public boolean isSymbolicLink() {
-        return false;
+        return entry.isSymbolicLink();
     }
 
     @Override
     public String getSymbolicLinkPath() {
-        return null;
+        return entry.isSymbolicLink() ? entry.getLinkTarget() : null;
     }
 
     @Override

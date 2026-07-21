@@ -116,7 +116,7 @@ public class SourceLifecycleTest extends FileSystemAssert {
                 throw traversalFailure;
             }
             for (String entry : entries) {
-                consumer.accept(new StringListSource.StringEntry(entry));
+                consumer.accept(StringListSource.entry(entry));
             }
         }
 

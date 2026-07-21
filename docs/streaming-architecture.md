@@ -59,10 +59,11 @@ entry. This permits tar read failures to propagate as `IOException` and makes it
 impossible for the normal streaming path to retain an entry beyond the lifetime
 of its source stream.
 
-The new source contract uses checked callback traversal directly. The iterable
-`Source.entries()` contract does not need to survive the breaking release. Tar
-and ZIP sources implement the same lifetime rule: an entry is consumed within
-its callback before the source advances.
+The source contract now uses checked callback traversal directly. The iterable
+`Source.entries()` contract was removed. Tar and ZIP sources implement the same
+lifetime rule: an entry is consumed within its callback before the source
+advances. Tar content is single-use; ZIP content is repeatable while its callback
+is active. Both reject access after the callback returns.
 
 Every source and writer must be closed with try-with-resources. When processing
 and closing both fail, the processing failure remains primary and the close
@@ -87,8 +88,8 @@ requires canonical sorting and accepts spooling.
 
 ### Entries and content
 
-New internal entry types will separate immutable source metadata from output
-metadata. Entry content will carry the operations and facts needed by assembly,
+`SourceEntry` now separates immutable source metadata from mutable output-format
+entries. `EntryContent` carries the operations and facts needed by assembly,
 including:
 
 * content length;
@@ -98,9 +99,10 @@ including:
 * temporary spooling when sorting, filtering, or tar identity calculation
   requires it.
 
-ZIP sources can expose size and CRC from their central directory without opening
+ZIP sources expose size and CRC from their central directory without opening
 compressed content. Sequential tar content is consumed immediately in source
-order and is spooled only when a later policy requires repeatable content.
+order. The current name-sorted path safely spools callback-scoped content; that
+spooling moves into the archive session when explicit ordering is introduced.
 
 ### Per-source mapping and safe paths
 

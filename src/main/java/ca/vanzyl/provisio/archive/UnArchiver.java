@@ -96,7 +96,7 @@ public class UnArchiver {
             Path archive,
             Path outputDirectory,
             UnarchivingEnhancedEntryProcessor entryProcessor,
-            ExtendedArchiveEntry archiveEntry)
+            SourceEntry archiveEntry)
             throws IOException {
         String entryName = adjustPath(true, archiveEntry.getName(), entryProcessor);
 
@@ -128,7 +128,7 @@ public class UnArchiver {
 
         if (archiveEntry.isHardLink()) {
             Path hardLinkSource = outputDirectory
-                    .resolve(adjustPath(false, archiveEntry.getHardLinkPath(), entryProcessor))
+                    .resolve(adjustPath(false, archiveEntry.getLinkTarget(), entryProcessor))
                     .normalize()
                     .toAbsolutePath();
             if (!hardLinkSource.startsWith(outputDirectory)) {
@@ -149,21 +149,22 @@ public class UnArchiver {
                     .resolve(entryName)
                     .normalize()
                     .toAbsolutePath()
-                    .resolve(archiveEntry.getSymbolicLinkPath())
+                    .resolve(archiveEntry.getLinkTarget())
                     .normalize()
                     .toAbsolutePath();
             if (!linkTarget.startsWith(outputDirectory)) {
                 throw new IOException("Archive symlink escape attempt detected in " + archive);
             }
             // we intentionally want these relative; we checked them above fully resolved
-            Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getSymbolicLinkPath()));
+            Path target = outputDirectory.relativize(outputDirectory.resolve(archiveEntry.getLinkTarget()));
 
             Files.createDirectories(outputFile.getParent());
             Files.createSymbolicLink(outputFile, target);
             entryProcessor.processed(entryName, outputFile);
         } else {
-            try (CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
-                entryProcessor.processStream(archiveEntry.getName(), archiveEntry.getInputStream(), outputStream);
+            try (InputStream inputStream = archiveEntry.getContent().open();
+                    CachingOutputStream outputStream = new CachingOutputStream(outputFile)) {
+                entryProcessor.processStream(archiveEntry.getName(), inputStream, outputStream);
                 outputStream.close();
                 if (outputStream.isModified()) {
                     setFilePermission(archiveEntry, outputFile);
@@ -192,7 +193,7 @@ public class UnArchiver {
         return entryName;
     }
 
-    private void setFilePermission(ExtendedArchiveEntry archiveEntry, Path outputFile) throws IOException {
+    private void setFilePermission(SourceEntry archiveEntry, Path outputFile) throws IOException {
         int mode = archiveEntry.getFileMode();
         //
         // Currently, zip entries produced by plexus-archiver return 0 for the unix mode, so I'm doing something wrong,

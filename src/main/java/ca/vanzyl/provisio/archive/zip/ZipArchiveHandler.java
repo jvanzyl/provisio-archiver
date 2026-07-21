@@ -10,6 +10,7 @@ package ca.vanzyl.provisio.archive.zip;
 import ca.vanzyl.provisio.archive.ArchiveHandlerSupport;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Source;
+import ca.vanzyl.provisio.archive.SourceEntry;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,7 +29,7 @@ public class ZipArchiveHandler extends ArchiveHandlerSupport {
     }
 
     @Override
-    public ExtendedArchiveEntry newEntry(String entryName, ExtendedArchiveEntry entry) {
+    public ExtendedArchiveEntry newEntry(String entryName, SourceEntry entry) {
         return new ExtendedZipArchiveEntry(entryName, entry);
     }
 

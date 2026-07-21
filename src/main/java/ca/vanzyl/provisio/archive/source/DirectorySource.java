@@ -7,11 +7,15 @@
  */
 package ca.vanzyl.provisio.archive.source;
 
+import ca.vanzyl.provisio.archive.EntryContents;
 import ca.vanzyl.provisio.archive.Source;
+import ca.vanzyl.provisio.archive.SourceEntry;
+import ca.vanzyl.provisio.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.codehaus.plexus.util.DirectoryScanner;
 
@@ -24,7 +28,7 @@ public class DirectorySource implements Source {
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
-        List<FileEntry> files = new ArrayList<>();
+        List<SourceEntry> files = new ArrayList<>();
         for (File sourceDirectory : sourceDirectories) {
             String normalizedSourceDirectory = sourceDirectory.getName().replace('\\', '/');
             DirectoryScanner scanner = new DirectoryScanner();
@@ -35,18 +39,27 @@ public class DirectorySource implements Source {
             // We need to include the directories to preserve the archiving of empty directories. We also sort in
             // natural order because filesystem traversal order differs across platforms.
             //
-            Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories())
+            List<String> entryNames = Stream.of(scanner.getIncludedFiles(), scanner.getIncludedDirectories())
                     .flatMap(Stream::of)
                     .sorted()
-                    .forEach(f -> {
-                        if (!f.isEmpty()) {
-                            File file = new File(sourceDirectory, f);
-                            String archiveEntryName = normalizedSourceDirectory + "/" + f.replace('\\', '/');
-                            files.add(new FileEntry(archiveEntryName, file));
-                        }
-                    });
+                    .collect(Collectors.toList());
+            for (String entryName : entryNames) {
+                if (!entryName.isEmpty()) {
+                    File file = new File(sourceDirectory, entryName);
+                    String archiveEntryName = normalizedSourceDirectory + "/" + entryName.replace('\\', '/');
+                    files.add(
+                            file.isDirectory()
+                                    ? SourceEntry.directory(
+                                            archiveEntryName, FileMode.getFileMode(file), file.lastModified())
+                                    : SourceEntry.file(
+                                            archiveEntryName,
+                                            EntryContents.of(file.toPath()),
+                                            FileMode.getFileMode(file),
+                                            file.lastModified()));
+                }
+            }
         }
-        for (FileEntry file : files) {
+        for (SourceEntry file : files) {
             consumer.accept(file);
         }
     }

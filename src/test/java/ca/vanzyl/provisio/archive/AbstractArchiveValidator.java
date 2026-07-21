@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +25,9 @@ public abstract class AbstractArchiveValidator implements ArchiveValidator {
         try (Source closeableSource = source) {
             closeableSource.forEachEntry(entry -> {
                 OutputStream outputStream = new ByteArrayOutputStream();
-                entry.getInputStream().transferTo(outputStream);
+                try (InputStream inputStream = entry.getContent().open()) {
+                    inputStream.transferTo(outputStream);
+                }
                 entries.put(
                         entry.getName(),
                         new TestEntry(entry.getName(), outputStream.toString(), entry.getTime(), entry.getSize()));

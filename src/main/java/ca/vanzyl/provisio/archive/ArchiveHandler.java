@@ -16,9 +16,9 @@ public interface ArchiveHandler {
 
     ArchiveInputStream getInputStream() throws IOException;
 
-    ExtendedArchiveEntry createEntryFor(String entryName, ExtendedArchiveEntry entry, boolean isExecutable);
+    ExtendedArchiveEntry createEntryFor(String entryName, SourceEntry entry, boolean isExecutable);
 
-    ExtendedArchiveEntry newEntry(String entryName, ExtendedArchiveEntry entry);
+    ExtendedArchiveEntry newEntry(String entryName, SourceEntry entry);
 
     Source getArchiveSource();
 }

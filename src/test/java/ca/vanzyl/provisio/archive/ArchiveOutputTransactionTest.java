@@ -23,7 +23,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.write(archive.toPath(), original);
 
         try {
-            Archiver.builder().build().archive(archive, new FailingSource());
+            Archiver.builder().normalize(true).build().archive(archive, new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());
@@ -31,6 +31,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
 
         assertArrayEquals(original, Files.readAllBytes(archive.toPath()));
         assertEquals(0, temporaryFilesFor(archive.toPath()));
+        assertEquals(0, spooledContentFilesFor(archive.toPath()));
     }
 
     @Test
@@ -39,7 +40,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         Files.deleteIfExists(archive.toPath());
 
         try {
-            Archiver.builder().build().archive(archive, new FailingSource());
+            Archiver.builder().normalize(true).build().archive(archive, new FailingSource());
             fail("Expected archive creation to fail");
         } catch (IOException expected) {
             assertEquals("source failed", expected.getMessage());
@@ -47,6 +48,7 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
 
         assertFalse(archive.exists());
         assertEquals(0, temporaryFilesFor(archive.toPath()));
+        assertEquals(0, spooledContentFilesFor(archive.toPath()));
     }
 
     @Test
@@ -78,11 +80,18 @@ public class ArchiveOutputTransactionTest extends FileSystemAssert {
         }
     }
 
+    private long spooledContentFilesFor(Path archive) throws IOException {
+        try (Stream<Path> files = Files.list(archive.toAbsolutePath().getParent())) {
+            return files.filter(path -> path.getFileName().toString().startsWith(".provisio-entry-"))
+                    .count();
+        }
+    }
+
     private static class FailingSource implements Source {
 
         @Override
         public void forEachEntry(EntryConsumer consumer) throws IOException {
-            consumer.accept(new StringListSource.StringEntry("partial"));
+            consumer.accept(StringListSource.entry("partial"));
             throw new IOException("source failed");
         }
 

@@ -11,6 +11,7 @@ import ca.vanzyl.provisio.archive.ArchiveHandlerSupport;
 import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
 import ca.vanzyl.provisio.archive.Selector;
 import ca.vanzyl.provisio.archive.Source;
+import ca.vanzyl.provisio.archive.SourceEntry;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -23,7 +24,6 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
@@ -31,7 +31,7 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
 
     private final File archive;
     private final boolean posixLongFileMode;
-    private final Map<String, ExtendedArchiveEntry> processedFilesNames;
+    private final Map<String, SourceEntry> processedFilesNames;
     private final Selector hardLinkSelector;
 
     public TarGzArchiveHandler(
@@ -47,13 +47,11 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
     }
 
     @Override
-    public ExtendedArchiveEntry newEntry(String entryName, ExtendedArchiveEntry entry) {
+    public ExtendedArchiveEntry newEntry(String entryName, SourceEntry entry) {
         if (hardLinkSelector.include(entryName)) {
-            ExtendedArchiveEntry sourceToHardLink = processedFilesNames.get(fileNameOf(entry));
+            SourceEntry sourceToHardLink = processedFilesNames.get(fileNameOf(entry));
             if (sourceToHardLink != null) {
-                ExtendedTarArchiveEntry tarArchiveEntry = new ExtendedTarArchiveEntry(entryName, TarConstants.LF_LINK);
-                tarArchiveEntry.setLinkName(sourceToHardLink.getName());
-                return tarArchiveEntry;
+                return new ExtendedTarArchiveEntry(entryName, sourceToHardLink.getName());
             }
             processedFilesNames.put(fileNameOf(entry), entry);
         }
@@ -87,7 +85,7 @@ public class TarGzArchiveHandler extends ArchiveHandlerSupport {
         return new TarGzArchiveSource(archive);
     }
 
-    private String fileNameOf(ExtendedArchiveEntry entry) {
+    private String fileNameOf(SourceEntry entry) {
         return entry.getName().substring(entry.getName().lastIndexOf('/') + 1);
     }
 }

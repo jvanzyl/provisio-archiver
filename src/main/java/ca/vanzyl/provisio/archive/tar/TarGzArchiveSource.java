@@ -7,18 +7,18 @@
  */
 package ca.vanzyl.provisio.archive.tar;
 
-import ca.vanzyl.provisio.archive.ArchiverHelper;
-import ca.vanzyl.provisio.archive.ExtendedArchiveEntry;
+import ca.vanzyl.provisio.archive.EntryContent;
 import ca.vanzyl.provisio.archive.Source;
-import ca.vanzyl.provisio.archive.UnArchiver;
+import ca.vanzyl.provisio.archive.SourceEntry;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Date;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.input.CloseShieldInputStream;
 
 public class TarGzArchiveSource implements Source {
 
@@ -30,99 +30,35 @@ public class TarGzArchiveSource implements Source {
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
-        try (ArchiveInputStream archiveInputStream =
-                ArchiverHelper.getArchiveHandler(archive, UnArchiver.builder()).getInputStream()) {
+        try (TarArchiveInputStream inputStream =
+                new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive)))) {
             TarArchiveEntry archiveEntry;
-            while ((archiveEntry = (TarArchiveEntry) archiveInputStream.getNextEntry()) != null) {
-                consumer.accept(new EntrySourceArchiveEntry(archiveInputStream, archiveEntry));
+            while ((archiveEntry = inputStream.getNextTarEntry()) != null) {
+                acceptEntry(inputStream, archiveEntry, consumer);
             }
         }
     }
 
-    class EntrySourceArchiveEntry implements ExtendedArchiveEntry {
-
-        private final ArchiveInputStream archiveInputStream;
-        private final TarArchiveEntry archiveEntry;
-
-        public EntrySourceArchiveEntry(ArchiveInputStream archiveInputStream, TarArchiveEntry archiveEntry) {
-            this.archiveInputStream = archiveInputStream;
-            this.archiveEntry = archiveEntry;
-        }
-
-        @Override
-        public String getName() {
-            return archiveEntry.getName();
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            return archiveInputStream;
-        }
-
-        @Override
-        public boolean isSymbolicLink() {
-            return archiveEntry.isSymbolicLink();
-        }
-
-        @Override
-        public String getSymbolicLinkPath() {
-            return archiveEntry.getLinkName();
-        }
-
-        @Override
-        public boolean isHardLink() {
-            return archiveEntry.isLink();
-        }
-
-        @Override
-        public String getHardLinkPath() {
-            return archiveEntry.getLinkName();
-        }
-
-        @Override
-        public long getSize() {
-            return archiveEntry.getSize();
-        }
-
-        @Override
-        public void writeEntry(OutputStream outputStream) throws IOException {
-            // We specifically do not close the entry because if you do then you can't read anymore archive entries from
-            // the stream
-            IOUtils.copyLarge(getInputStream(), outputStream);
-        }
-
-        @Override
-        public void setFileMode(int mode) {}
-
-        @Override
-        public int getFileMode() {
-            return archiveEntry.getMode();
-        }
-
-        @Override
-        public void setSize(long size) {}
-
-        @Override
-        public void setTime(long time) {}
-
-        @Override
-        public boolean isDirectory() {
-            return archiveEntry.isDirectory();
-        }
-
-        @Override
-        public Date getLastModifiedDate() {
-            return null;
-        }
-
-        @Override
-        public boolean isExecutable() {
-            return false;
-        }
-
-        @Override
-        public long getTime() {
-            return archiveEntry.getModTime().getTime();
+    private void acceptEntry(TarArchiveInputStream inputStream, TarArchiveEntry archiveEntry, EntryConsumer consumer)
+            throws IOException {
+        String name = archiveEntry.getName();
+        int mode = archiveEntry.getMode();
+        long time = archiveEntry.getModTime().getTime();
+        if (archiveEntry.isDirectory()) {
+            consumer.accept(SourceEntry.directory(name, mode, time));
+        } else if (archiveEntry.isSymbolicLink()) {
+            consumer.accept(SourceEntry.symbolicLink(name, archiveEntry.getLinkName(), mode, time));
+        } else if (archiveEntry.isLink()) {
+            consumer.accept(SourceEntry.hardLink(name, archiveEntry.getLinkName(), mode, time));
+        } else if (archiveEntry.isFile()) {
+            SequentialEntryContent content = new SequentialEntryContent(inputStream, archiveEntry.getSize());
+            try {
+                consumer.accept(SourceEntry.file(name, content, mode, time));
+            } finally {
+                content.invalidate();
+            }
+        } else {
+            throw new IOException("Unsupported tar entry type for " + name);
         }
     }
 
@@ -132,5 +68,55 @@ public class TarGzArchiveSource implements Source {
     @Override
     public boolean isDirectory() {
         return true;
+    }
+
+    private static final class SequentialEntryContent implements EntryContent {
+
+        private final InputStream inputStream;
+        private final long size;
+        private boolean active = true;
+        private boolean opened;
+
+        private SequentialEntryContent(InputStream inputStream, long size) {
+            this.inputStream = inputStream;
+            this.size = size;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            ensureActive();
+            if (opened) {
+                throw new IOException("Tar entry content can only be opened once");
+            }
+            opened = true;
+            return new FilterInputStream(CloseShieldInputStream.wrap(inputStream)) {
+                @Override
+                public int read() throws IOException {
+                    ensureActive();
+                    return super.read();
+                }
+
+                @Override
+                public int read(byte[] bytes, int offset, int length) throws IOException {
+                    ensureActive();
+                    return super.read(bytes, offset, length);
+                }
+            };
+        }
+
+        @Override
+        public long size() {
+            return size;
+        }
+
+        private void invalidate() {
+            active = false;
+        }
+
+        private void ensureActive() throws IOException {
+            if (!active) {
+                throw new IOException("Tar entry content is no longer active");
+            }
+        }
     }
 }

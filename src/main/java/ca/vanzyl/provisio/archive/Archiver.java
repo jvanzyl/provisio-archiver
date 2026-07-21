@@ -7,10 +7,12 @@
  */
 package ca.vanzyl.provisio.archive;
 
-import ca.vanzyl.provisio.archive.source.DirectoryEntry;
 import ca.vanzyl.provisio.archive.source.DirectorySource;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.SelectorUtils;
 
 public class Archiver {
@@ -83,7 +86,8 @@ public class Archiver {
         ArchiveHandler archiveHandler = ArchiverHelper.getArchiveHandler(formatSource, output, builder);
         Map<String, ExtendedArchiveEntry> entries = new TreeMap<>();
 
-        try (ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
+        try (ContentSpool contentSpool = new ContentSpool(output.toPath().getParent());
+                ArchiveOutputStream aos = archiveHandler.getOutputStream()) {
             //
             // collected archive entry paths mapped to true for explicitly provided entries
             // and to false for implicitly created directory entries duplicate explicitly
@@ -92,8 +96,8 @@ public class Archiver {
             Map<String, Boolean> paths = new HashMap<>();
             for (Source source : sources) {
                 try (Source closeableSource = source) {
-                    closeableSource.forEachEntry(
-                            entry -> addSourceEntry(closeableSource, entry, archiveHandler, paths, entries, aos));
+                    closeableSource.forEachEntry(entry ->
+                            addSourceEntry(closeableSource, entry, archiveHandler, paths, entries, aos, contentSpool));
                 }
             }
 
@@ -116,11 +120,12 @@ public class Archiver {
 
     private void addSourceEntry(
             Source source,
-            ExtendedArchiveEntry entry,
+            SourceEntry entry,
             ArchiveHandler archiveHandler,
             Map<String, Boolean> paths,
             Map<String, ExtendedArchiveEntry> entries,
-            ArchiveOutputStream aos)
+            ArchiveOutputStream aos,
+            ContentSpool contentSpool)
             throws IOException {
         String entryName = entry.getName();
         if (!selector.include(entryName)) {
@@ -155,14 +160,15 @@ public class Archiver {
         for (String directoryName : getParentDirectoryNames(entryName)) {
             if (!paths.containsKey(directoryName)) {
                 paths.put(directoryName, Boolean.FALSE);
-                ExtendedArchiveEntry directoryEntry =
-                        archiveHandler.createEntryFor(directoryName, new DirectoryEntry(directoryName), false);
+                ExtendedArchiveEntry directoryEntry = archiveHandler.createEntryFor(
+                        directoryName, SourceEntry.directory(directoryName, -1, 0), false);
                 addEntry(directoryName, directoryEntry, entries, aos);
             }
         }
         if (!paths.containsKey(entryName)) {
             paths.put(entryName, Boolean.TRUE);
-            ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, entry, isExecutable);
+            SourceEntry stableEntry = normalize ? contentSpool.stabilize(entry) : entry;
+            ExtendedArchiveEntry archiveEntry = archiveHandler.createEntryFor(entryName, stableEntry, isExecutable);
             addEntry(entryName, archiveEntry, entries, aos);
         } else if (Boolean.TRUE.equals(paths.get(entryName))) {
             throw new IllegalArgumentException("Duplicate archive entry " + entryName);
@@ -238,6 +244,58 @@ public class Archiver {
             entry.writeEntry(aos);
         }
         aos.closeArchiveEntry();
+    }
+
+    private static final class ContentSpool implements Closeable {
+
+        private final Path temporaryDirectory;
+        private final List<Path> contentFiles = new ArrayList<>();
+
+        private ContentSpool(Path temporaryDirectory) {
+            this.temporaryDirectory = temporaryDirectory;
+        }
+
+        private SourceEntry stabilize(SourceEntry entry) throws IOException {
+            if (entry.getType() != EntryType.FILE) {
+                return entry;
+            }
+
+            Path content = Files.createTempFile(temporaryDirectory, ".provisio-entry-", ".tmp");
+            boolean completed = false;
+            try {
+                try (InputStream inputStream = entry.getContent().open();
+                        OutputStream outputStream = Files.newOutputStream(content)) {
+                    IOUtils.copyLarge(inputStream, outputStream);
+                }
+                SourceEntry stableEntry = entry.withContent(EntryContents.of(content));
+                contentFiles.add(content);
+                completed = true;
+                return stableEntry;
+            } finally {
+                if (!completed) {
+                    Files.deleteIfExists(content);
+                }
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            IOException failure = null;
+            for (Path content : contentFiles) {
+                try {
+                    Files.deleteIfExists(content);
+                } catch (IOException e) {
+                    if (failure == null) {
+                        failure = e;
+                    } else {
+                        failure.addSuppressed(e);
+                    }
+                }
+            }
+            if (failure != null) {
+                throw failure;
+            }
+        }
     }
 
     public static ArchiverBuilder builder() {

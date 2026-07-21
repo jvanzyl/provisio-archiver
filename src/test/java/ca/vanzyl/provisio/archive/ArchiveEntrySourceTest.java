@@ -3,6 +3,7 @@ package ca.vanzyl.provisio.archive;
 import static org.junit.Assert.fail;
 
 import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
+import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +11,34 @@ import java.util.Arrays;
 import org.junit.Test;
 
 public class ArchiveEntrySourceTest extends FileSystemAssert {
+
+    @Test
+    public void normalizedTarArchiveConsumesSourceContentBeforeTheCallbackExpires() throws Exception {
+        File sourceArchive = getTargetArchive("normalized-tar-source.tar.gz");
+        Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
+
+        File outputArchive = getTargetArchive("normalized-from-tar.tar.gz");
+        Archiver.builder().normalize(true).build().archive(outputArchive, new TarGzArchiveSource(sourceArchive));
+
+        ArchiveValidator validator = new TarGzArchiveValidator(outputArchive);
+        validator.assertSortedEntries("a", "b");
+        validator.assertContentOfEntryInArchive("a", "a");
+        validator.assertContentOfEntryInArchive("b", "b");
+    }
+
+    @Test
+    public void normalizedZipArchiveConsumesSourceContentBeforeTheCallbackExpires() throws Exception {
+        File sourceArchive = getTargetArchive("normalized-zip-source.zip");
+        Archiver.builder().build().archive(sourceArchive, new StringListSource(Arrays.asList("b", "a")));
+
+        File outputArchive = getTargetArchive("normalized-from-zip.zip");
+        Archiver.builder().normalize(true).build().archive(outputArchive, new ZipArchiveSource(sourceArchive));
+
+        ArchiveValidator validator = new ZipArchiveValidator(outputArchive);
+        validator.assertSortedEntries("a", "b");
+        validator.assertContentOfEntryInArchive("a", "a");
+        validator.assertContentOfEntryInArchive("b", "b");
+    }
 
     @Test
     public void readEntriesDirectlyFromAnArchiveToMakeAnotherArchive() throws Exception {

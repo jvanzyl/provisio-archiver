@@ -7,7 +7,10 @@
  */
 package ca.vanzyl.provisio.archive.source;
 
+import ca.vanzyl.provisio.archive.EntryContents;
 import ca.vanzyl.provisio.archive.Source;
+import ca.vanzyl.provisio.archive.SourceEntry;
+import ca.vanzyl.provisio.archive.perms.FileMode;
 import java.io.File;
 import java.io.IOException;
 
@@ -28,7 +31,15 @@ public class FileSource implements Source {
 
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
-        consumer.accept(new FileEntry(archiveEntryName, file));
+        if (file.isDirectory()) {
+            consumer.accept(SourceEntry.directory(archiveEntryName, FileMode.getFileMode(file), file.lastModified()));
+        } else {
+            consumer.accept(SourceEntry.file(
+                    archiveEntryName,
+                    EntryContents.of(file.toPath()),
+                    FileMode.getFileMode(file),
+                    file.lastModified()));
+        }
     }
 
     @Override
