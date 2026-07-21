@@ -11,5 +11,6 @@ hard links, bounded parallel gzip compression, and safe extraction.
 
 - [API and 1.x migration guide](docs/api.md)
 - [Streaming architecture](docs/streaming-architecture.md)
+- [2.0.0 release notes](docs/release-notes-2.0.0.md)
 - [Benchmark methodology](docs/benchmarks.md)
 - [Downstream consumer audit](docs/downstream-consumers.md)
