@@ -3,6 +3,7 @@ package ca.vanzyl.provisio.archive;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -51,6 +52,46 @@ public class ParallelGzipOutputStreamTest {
         assertTrue(gzip.pendingChunks() <= gzip.maximumPendingChunks());
         gzip.close();
         assertEquals(0, gzip.pendingChunks());
+    }
+
+    @Test
+    public void submissionAppliesBackpressureAtThePendingChunkLimit() throws Exception {
+        CountDownLatch compressorStarted = new CountDownLatch(1);
+        CountDownLatch releaseCompressor = new CountDownLatch(1);
+        CountDownLatch writeReturned = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ParallelGzipOutputStream gzip = new ParallelGzipOutputStream(output, 6, 4, 1, (source, length, level) -> {
+            compressorStarted.countDown();
+            try {
+                releaseCompressor.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("compressor interrupted", e);
+            }
+            return ParallelGzipOutputStream.compressMember(source, length, level);
+        });
+        Thread writer = new Thread(() -> {
+            try {
+                gzip.write(new byte[12]);
+            } catch (Throwable e) {
+                failure.set(e);
+            } finally {
+                writeReturned.countDown();
+            }
+        });
+        writer.start();
+        assertTrue(compressorStarted.await(5, TimeUnit.SECONDS));
+
+        assertFalse("The producer escaped gzip backpressure", writeReturned.await(100, TimeUnit.MILLISECONDS));
+        assertEquals(gzip.maximumPendingChunks(), gzip.pendingChunks());
+        releaseCompressor.countDown();
+        assertTrue(writeReturned.await(5, TimeUnit.SECONDS));
+        writer.join(5_000);
+        assertFalse(writer.isAlive());
+        assertNull(failure.get());
+        gzip.close();
+        assertArrayEquals(new byte[12], decompress(output.toByteArray()));
     }
 
     @Test

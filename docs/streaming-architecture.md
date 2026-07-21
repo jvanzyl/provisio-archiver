@@ -99,6 +99,11 @@ normalization. `SOURCE` is the default direct-streaming path. `NAME` is availabl
 when a caller requires canonical sorting and accepts callback-time spooling.
 Metadata normalization has no effect on entry order.
 
+`SOURCE` retains no entry-content spool files. `NAME` uses one closed temporary
+file per retained file entry, so its total temporary disk use is proportional to
+the input while live source and spool stream handles remain sequential. Every
+spool is removed when the archive session closes, on both success and failure.
+
 ### Entries and content
 
 `SourceEntry` now separates immutable source metadata from mutable output-format
