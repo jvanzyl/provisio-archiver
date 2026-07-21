@@ -1,0 +1,207 @@
+# Streaming archive architecture
+
+## Context
+
+Provisio Archiver is being extended to assemble normalized archives directly from
+other archives. The immediate motivation is the streaming packaging approach in
+[Trino PR 30400](https://github.com/trinodb/trino/pull/30400): avoid expanding
+source archives to disk, identify duplicate ZIP content from central-directory
+metadata, and compress the output efficiently without sacrificing
+reproducibility.
+
+The existing implementation already writes entries immediately when
+normalization is disabled. Normalized output is different: `Archiver` retains
+entries in a name-sorted map, closes each source, and writes the retained entries
+afterward. Entries backed by a sequential tar stream or an open `ZipFile` cannot
+be used safely after their source has advanced or closed.
+
+Several existing abstractions also combine responsibilities:
+
+* `ExtendedArchiveEntry` represents source metadata, source content, and a
+  mutable output entry.
+* `ArchiveHandler` combines format detection, reading, output creation, entry
+  conversion, and archive policy.
+* `TarGzArchiveHandler` currently decides hard-link identity using only the
+  source filename.
+* Normalization controls both metadata normalization and entry ordering.
+* Mutable entries retained by `Archiver` belong to the `Archiver` instance
+  rather than to one archive operation.
+
+These boundaries make direct streaming harder to reason about and make resource
+lifetime and error propagation fragile.
+
+## Design direction
+
+The intended internal pipeline is:
+
+```text
+Source
+  -> source entry and content
+  -> per-source mapping and archive-path validation
+  -> archive session
+       - duplicate-path detection
+       - implicit directories
+       - metadata normalization
+       - entry ordering
+       - content identity and hard-link selection
+  -> format-specific writer
+```
+
+An archive session owns all mutable state and temporary content for exactly one
+output operation. A configured `Archiver` must not retain entries, paths,
+hard-link candidates, or source-backed content between invocations.
+
+### Source traversal and lifetime
+
+Sources need a checked, lifetime-aware traversal operation. Archive-backed
+sources will consume an entry within a callback before advancing to the next
+entry. This permits tar read failures to propagate as `IOException` and makes it
+impossible for the normal streaming path to retain an entry beyond the lifetime
+of its source stream.
+
+The new source contract uses checked callback traversal directly. The iterable
+`Source.entries()` contract does not need to survive the breaking release. Tar
+and ZIP sources implement the same lifetime rule: an entry is consumed within
+its callback before the source advances.
+
+Every source and writer must be closed with try-with-resources. When processing
+and closing both fail, the processing failure remains primary and the close
+failure is suppressed.
+
+### Ordering is separate from normalization
+
+Normalization describes reproducible metadata. Ordering describes when entries
+can be emitted. They are independent policies.
+
+The proposed entry-order choices are:
+
+* `NAME`: retain current normalized, name-sorted behavior. Source content is
+  safely spooled while its source is open and sorted only after it is no longer
+  source-bound.
+* `SOURCE`: preserve deterministic source order and write each entry before
+  advancing its source. This is the direct streaming path.
+
+The new API makes ordering explicit instead of deriving it from normalization.
+Source order is the direct streaming path; name order is available when a caller
+requires canonical sorting and accepts spooling.
+
+### Entries and content
+
+New internal entry types will separate immutable source metadata from output
+metadata. Entry content will carry the operations and facts needed by assembly,
+including:
+
+* content length;
+* an optional CRC or other content identity known without reading;
+* whether content is repeatable or single-use;
+* copying or opening content;
+* temporary spooling when sorting, filtering, or tar identity calculation
+  requires it.
+
+ZIP sources can expose size and CRC from their central directory without opening
+compressed content. Sequential tar content is consumed immediately in source
+order and is spooled only when a later policy requires repeatable content.
+
+### Per-source mapping and safe paths
+
+Mapping belongs to each source rather than only to the global `Archiver`
+configuration. A source specification will carry destination prefix,
+`useRoot`, includes, excludes, and flattening.
+
+All mapped entry names and link targets pass through a shared archive-path
+validator. It rejects absolute paths, `.` and `..` traversal, Windows drive and
+UNC paths, NUL characters, and collisions produced by mapping or flattening.
+Archive paths use `/` independently of the host platform.
+
+### Format writers and hard links
+
+Format-specific writers encode entries; they do not decide assembly policy.
+Hard-link eligibility and content identity belong to the archive session. A tar
+writer receives either a regular output entry or an already selected hard-link
+entry.
+
+Filename equality is not content identity. Eligible content will be compared by
+available metadata such as size and CRC. Missing or invalid identity metadata
+must disable the metadata-only optimization rather than produce an unsafe link.
+The first matching entry is written normally and must precede all hard links to
+it.
+
+### Output integrity and reproducibility
+
+Output is written to a temporary sibling and moved into place only after all
+entries and compression trailers have been written successfully. A failure must
+not leave a partial archive at the requested destination.
+
+Reproducibility policy covers timestamps, the historical `.class` timestamp
+adjustment, modes, user and group metadata, entry ordering, and gzip headers.
+Parallel gzip must preserve deterministic chunk order and use bounded memory.
+
+## Compatibility decision
+
+This is a coordinated breaking release. Provisio Archiver does not retain
+source or binary compatibility with the existing entry, source, handler, or
+builder APIs. Avoiding a transitional compatibility layer keeps the new pipeline
+as the only implementation and prevents old lifetime and policy assumptions from
+leaking into it.
+
+The clean break permits this work to:
+
+* replace `ExtendedArchiveEntry` with separate source and output entry types;
+* replace iterable source traversal with checked callback traversal;
+* replace `ArchiveHandler` with format readers and writers;
+* make per-source mapping part of the source specification;
+* use `Path` and explicit archive formats as the primary API;
+* expose ordering and reproducibility as independent policies;
+* stop exporting format implementation packages;
+* remove obsolete `File` overloads and implementation-facing constructors.
+
+The release version must communicate the API break. No API-compatibility
+exclusions or deprecated adapters are required. XZ support and the old
+`TarGzXzArchiveHandler` and `TarGzXzArchiveSource` names remain removed as part
+of the same clean boundary.
+
+Behavior is preserved where it is a product requirement rather than an API
+accident. Tests continue to cover reproducible output, normalized metadata,
+permissions, safe paths, duplicate rejection, filtering, mapping, and correct
+link behavior. Ordering and performance behavior are specified by the new API
+rather than inherited implicitly from the old builder.
+
+## Coordinated consumer migration
+
+The known consumers are maintained together with this repository:
+
+* [Provisio](https://github.com/jvanzyl/provisio), which uses the archiver for
+  runtime assembly, unpacking, and archive production;
+* [Takari Lifecycle](https://github.com/takari/takari-lifecycle), whose JAR
+  implementation supplies custom sources and entries and invokes `Archiver`.
+
+Development proceeds against a locally installed archiver build. Each consumer
+is updated on its own branch after the new archiver contract is stable. Consumer
+tests must pass before the breaking archiver release is considered usable.
+Publishing and pull requests remain separate, explicitly authorized operations.
+
+## Testing expectations
+
+Each architectural step is accompanied by positive, negative, lifecycle, and
+consumer-contract tests. Coverage includes source reuse, close and suppressed-error
+behavior, corrupt and truncated inputs, duplicate and unsafe paths, mapping
+collisions, link targets, content-identity false positives, metadata-only ZIP
+deduplication, deterministic compression, bounded buffering, and semantic
+equivalence with expected archive contents and metadata.
+
+Performance measurements are benchmarks rather than timing assertions in the
+unit suite. Tests should instead prove structural properties such as avoiding an
+expanded intermediate tree and avoiding reads of ZIP content already identified
+as duplicate.
+
+## Future refactoring
+
+The clean break happens in this work rather than being deferred. No legacy
+adapter layer should be introduced for a future refactor to remove. Once
+Provisio and Takari Lifecycle have migrated, future refactoring can operate on
+the single source-entry, archive-session, and format-writer model.
+
+Public API should remain intentionally small even without a compatibility
+promise. Format implementations, spooling, deduplication indexes, compression
+workers, and archive-session state stay internal so they can be replaced without
+another coordinated consumer migration.
