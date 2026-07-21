@@ -244,7 +244,8 @@ equivalence with expected archive contents and metadata.
 Performance measurements are benchmarks rather than timing assertions in the
 unit suite. Tests should instead prove structural properties such as avoiding an
 expanded intermediate tree and avoiding reads of ZIP content already identified
-as duplicate.
+as duplicate. The opt-in workload and comparison guidance are described in
+[benchmarks.md](benchmarks.md).
 
 ## Future refactoring
 
