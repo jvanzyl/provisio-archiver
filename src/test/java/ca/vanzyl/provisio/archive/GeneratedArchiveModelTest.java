@@ -141,6 +141,22 @@ public class GeneratedArchiveModelTest extends FileSystemAssert {
         }
     }
 
+    @Test
+    public void executableSelectionUsesTheMappedOutputPath() throws Exception {
+        File output = getTargetArchive("mapped-executable.tar.gz");
+        Source source =
+                new LinkSource(SourceEntry.file("source-root/bin/run", EntryContents.of(bytes("run")), 0644, 0));
+        SourceSpec sourceSpec = SourceSpec.builder(source)
+                .useRoot(false)
+                .destinationPrefix("distribution")
+                .build();
+
+        Archiver.builder().executable("distribution/bin/run").build().archive(output.toPath(), sourceSpec);
+
+        SourceEntry entry = readEntries(output).get("distribution/bin/run");
+        assertEquals(0111, entry.getFileMode() & 0111);
+    }
+
     private List<ModelEntry> generateModel(long seed, int count) {
         Random random = new Random(seed);
         byte[][] payloads = new byte[7][];

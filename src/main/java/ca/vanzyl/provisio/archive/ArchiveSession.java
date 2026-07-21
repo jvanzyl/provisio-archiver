@@ -81,7 +81,7 @@ final class ArchiveSession implements Closeable {
         ArchivePath outputPath = mapPath(sourceSpec, sourcePath);
         String entryName = outputPath.entryName(entry.getType());
         String linkTarget = mapLinkTarget(sourceSpec, outputPath, entry);
-        boolean executable = isExecutable(entry.getName());
+        boolean executable = isExecutable(entry.getName()) || isExecutable(entryName);
 
         for (String directoryName : getParentDirectoryNames(entryName)) {
             String directoryPath = directoryName.substring(0, directoryName.length() - 1);
