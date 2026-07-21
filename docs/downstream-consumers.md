@@ -15,6 +15,9 @@ updated or explicitly assessed with the breaking release.
 `io.takari:takari-archiver:1.0.9`. Production dependencies occur in
 `provisio-core`, `provisio-maven`, and `provisio-maven-plugin`, with additional
 integration-test use. Provisio uses both archive creation and extraction APIs.
+Its migration includes `Path` arguments, the renamed
+`UnarchivingEntryProcessor`, and the root `Sources` facade where tests read
+archives.
 
 ### Takari Lifecycle
 
@@ -28,6 +31,8 @@ archiver types directly in its JAR implementation:
 
 Published `takari-lifecycle-plugin:2.3.4` resolves archiver `1.0.8`, as shown by
 its [deps.dev dependency graph](https://api.deps.dev/v3/systems/MAVEN/packages/io.takari.maven.plugins%3Atakari-lifecycle-plugin/versions/2.3.4:dependencies).
+Its migration must replace mutable legacy entries with `SourceEntry` and
+callback traversal while retaining its custom `Source` implementations.
 
 ### Maveniverse Toolrunner
 
@@ -43,6 +48,8 @@ consumer not visible in the archiver `1.0.9` reverse-dependency count:
 
 The latest published `shared:0.4.1` still resolves archiver `1.0.8`, as shown by
 its [deps.dev dependency graph](https://api.deps.dev/v3/systems/MAVEN/packages/eu.maveniverse.maven.toolrunner%3Ashared/versions/0.4.1:dependencies).
+Its extraction-only migration is limited to `Path` arguments and the current
+`UnArchiver` builder contract.
 
 ## Other source-visible consumers
 
@@ -51,7 +58,10 @@ because a new major version is published, but they should not be mistaken for
 proof that the API is unused.
 
 * [jvanzyl/provisio-tools](https://github.com/jvanzyl/provisio-tools) contains
-  production imports and is pinned to `0.1.27`.
+  production imports and is pinned to `0.1.27`. It uses `ArtifactEntry` as
+  model data and its tests use the synthetic artifact generators. Those
+  generator types are removed from the new library API, so Provisio Tools must
+  replace them locally before choosing to upgrade.
 * [sigstore/sigstore-maven](https://github.com/sigstore/sigstore-maven) is
   archived and uses `JarArtifactGenerator` only in tests, pinned to `0.1.29`.
 * [concord-workflow/concord-plugin-support](https://github.com/concord-workflow/concord-plugin-support)

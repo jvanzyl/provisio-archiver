@@ -2,7 +2,7 @@
 
 ## Context
 
-Provisio Archiver is being extended to assemble normalized archives directly from
+Provisio Archiver has been redesigned to assemble normalized archives directly from
 other archives. The immediate motivation is the streaming packaging approach in
 [Trino PR 30400](https://github.com/trinodb/trino/pull/30400): avoid expanding
 source archives to disk, identify duplicate ZIP content from central-directory
@@ -198,10 +198,13 @@ The clean break permits this work to:
 * replace iterable source traversal with checked callback traversal;
 * replace `ArchiveHandler` with format readers and writers;
 * make per-source mapping part of the source specification;
-* use `Path` and explicit archive formats as the primary API;
+* use `Path` and the root-package `Sources` facade as the primary API;
 * expose ordering and reproducibility as independent policies;
 * stop exporting format implementation packages;
-* remove obsolete `File` overloads and implementation-facing constructors.
+* remove obsolete `File` overloads and implementation-facing constructors;
+* remove synthetic artifact generators and general permission utilities from
+  the published API;
+* rename the sole extraction callback to `UnarchivingEntryProcessor`.
 
 The release version must communicate the API break. No API-compatibility
 exclusions or deprecated adapters are required. XZ support and the old
@@ -216,7 +219,7 @@ rather than inherited implicitly from the old builder.
 
 ## Coordinated consumer migration
 
-The known consumers are maintained together with this repository:
+The known current consumers to coordinate with this repository are:
 
 * [Provisio](https://github.com/jvanzyl/provisio), which uses the archiver for
   runtime assembly, unpacking, and archive production;
@@ -225,12 +228,19 @@ The known consumers are maintained together with this repository:
 * [Maveniverse Toolrunner](https://github.com/maveniverse/toolrunner), whose
   shared module uses `UnArchiver` in production code.
 
+Provisio Tools is pinned to an older archiver and does not block the coordinated
+upgrade above. Before it adopts this release, it must replace its use of the
+removed synthetic artifact-generator package with project-local test/data
+builders.
+
 Development proceeds against a locally installed archiver build. Each consumer
 is updated on its own branch after the new archiver contract is stable. Consumer
 tests must pass before the breaking archiver release is considered usable.
 Publishing and pull requests remain separate, explicitly authorized operations.
 The evidence and limits of the downstream search are recorded in
 [downstream-consumers.md](downstream-consumers.md).
+Supported API examples and the complete 1.x migration table are in
+[api.md](api.md).
 
 ## Testing expectations
 
@@ -250,9 +260,9 @@ as duplicate. The opt-in workload and comparison guidance are described in
 ## Future refactoring
 
 The clean break happens in this work rather than being deferred. No legacy
-adapter layer should be introduced for a future refactor to remove. Once
-Provisio and Takari Lifecycle have migrated, future refactoring can operate on
-the single source-entry, archive-session, and format-writer model.
+adapter layer remains for a future refactor to remove. Once the coordinated
+consumers have migrated, future refactoring can operate on the single
+source-entry, archive-session, and format-writer model.
 
 Public API should remain intentionally small even without a compatibility
 promise. Format implementations, spooling, deduplication indexes, compression
