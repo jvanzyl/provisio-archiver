@@ -15,8 +15,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.zip.CRC32;
@@ -38,9 +41,14 @@ public class ZipArchiveSource implements Source {
                 .setPath(archive)
                 .setUseUnicodeExtraFields(false)
                 .get()) {
-            Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();
-            while (entries.hasMoreElements()) {
-                acceptEntry(zipFile, entries.nextElement(), consumer);
+            Enumeration<ZipArchiveEntry> sourceEntries = zipFile.getEntries();
+            List<ZipArchiveEntry> entries = new ArrayList<>();
+            while (sourceEntries.hasMoreElements()) {
+                entries.add(sourceEntries.nextElement());
+            }
+            entries.sort(Comparator.comparing(ZipArchiveEntry::getName));
+            for (ZipArchiveEntry entry : entries) {
+                acceptEntry(zipFile, entry, consumer);
             }
         }
     }

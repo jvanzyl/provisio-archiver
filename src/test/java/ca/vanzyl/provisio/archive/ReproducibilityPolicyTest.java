@@ -8,6 +8,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
@@ -59,6 +62,38 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
 
         assertArrayEquals(Files.readAllBytes(serial.toPath()), Files.readAllBytes(parallel.toPath()));
         new TarGzArchiveValidator(parallel).assertSizeOfEntryInArchive("large.bin", content.length);
+    }
+
+    @Test
+    public void normalizedSourceOrderedDirectoryIsByteIdenticalAcrossCreationOrderAndMetadata() throws Exception {
+        Path firstRoot =
+                getOutputDirectory("reproducible-source-first").toPath().resolve("root");
+        Path secondRoot =
+                getOutputDirectory("reproducible-source-second").toPath().resolve("root");
+        createDirectorySource(firstRoot, Arrays.asList("z.txt", "a.txt"), 1_700_000_000_000L);
+        createDirectorySource(secondRoot, Arrays.asList("a.txt", "z.txt"), 1_800_000_000_000L);
+        File first = getTargetArchive("reproducible-source-first.tar.gz");
+        File second = getTargetArchive("reproducible-source-second.tar.gz");
+
+        createNormalizedSourceOrdered(first, Sources.directory(firstRoot));
+        createNormalizedSourceOrdered(second, Sources.directory(secondRoot));
+
+        assertArrayEquals(Files.readAllBytes(first.toPath()), Files.readAllBytes(second.toPath()));
+    }
+
+    @Test
+    public void normalizedSourceOrderedZipIsByteIdenticalAcrossInputEntryOrder() throws Exception {
+        Path firstInput = getTargetArchive("reproducible-source-first.zip").toPath();
+        Path secondInput = getTargetArchive("reproducible-source-second.zip").toPath();
+        createZip(firstInput, "z/library.jar", "a/library.jar");
+        createZip(secondInput, "a/library.jar", "z/library.jar");
+        File first = getTargetArchive("reproducible-zip-source-first.tar.gz");
+        File second = getTargetArchive("reproducible-zip-source-second.tar.gz");
+
+        createNormalizedMetadataSourceOrdered(first, Sources.zip(firstInput));
+        createNormalizedMetadataSourceOrdered(second, Sources.zip(secondInput));
+
+        assertArrayEquals(Files.readAllBytes(first.toPath()), Files.readAllBytes(second.toPath()));
     }
 
     @Test
@@ -131,6 +166,48 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
                         singleEntrySource(SourceEntry.file("large.bin", EntryContents.of(content), 0644, 0)));
     }
 
+    private void createNormalizedSourceOrdered(File archive, Source source) throws Exception {
+        Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .entryOrder(EntryOrder.SOURCE)
+                .build()
+                .archive(archive.toPath(), source);
+    }
+
+    private void createNormalizedMetadataSourceOrdered(File archive, Source source) throws Exception {
+        Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .entryOrder(EntryOrder.SOURCE)
+                .contentIdentity(ContentIdentityMode.SIZE_AND_CRC32)
+                .hardLinkIncludes("**/*.jar")
+                .build()
+                .archive(archive.toPath(), source);
+    }
+
+    private void createDirectorySource(Path root, Iterable<String> creationOrder, long timestamp) throws Exception {
+        Files.createDirectories(root);
+        for (String name : creationOrder) {
+            Path file = root.resolve(name);
+            Files.write(file, name.getBytes(StandardCharsets.UTF_8));
+            Files.setLastModifiedTime(file, FileTime.fromMillis(timestamp));
+        }
+        Files.setLastModifiedTime(root, FileTime.fromMillis(timestamp));
+    }
+
+    private void createZip(Path archive, String first, String second) throws Exception {
+        Source source = source(zipEntry(first), zipEntry(second));
+        Archiver.builder().entryOrder(EntryOrder.SOURCE).build().archive(archive, source);
+    }
+
+    private SourceEntry zipEntry(String name) {
+        boolean firstName = name.startsWith("a/");
+        return SourceEntry.file(
+                name,
+                EntryContents.of("same".getBytes(StandardCharsets.UTF_8)),
+                firstName ? 0600 : 0700,
+                firstName ? 1 : 2);
+    }
+
     private Source source(long timestamp, int regularMode, int executableMode) {
         return new Source() {
             @Override
@@ -159,10 +236,16 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
     }
 
     private Source singleEntrySource(SourceEntry entry) {
+        return source(entry);
+    }
+
+    private Source source(SourceEntry... entries) {
         return new Source() {
             @Override
             public void forEachEntry(EntryConsumer consumer) throws IOException {
-                consumer.accept(entry);
+                for (SourceEntry entry : entries) {
+                    consumer.accept(entry);
+                }
             }
 
             @Override
