@@ -1,5 +1,6 @@
 package ca.vanzyl.provisio.archive;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -13,6 +14,11 @@ import java.util.stream.Stream;
 final class TrinoArchiveScenario {
 
     Result run(Path directory, int entryCount, int uniquePayloadCount) throws IOException {
+        return run(directory, entryCount, uniquePayloadCount, ContentIdentityMode.SIZE_AND_CRC32);
+    }
+
+    Result run(Path directory, int entryCount, int uniquePayloadCount, ContentIdentityMode contentIdentityMode)
+            throws IOException {
         if (entryCount < 1 || uniquePayloadCount < 1 || uniquePayloadCount > entryCount) {
             throw new IllegalArgumentException("unique payload count must be between one and the entry count");
         }
@@ -29,7 +35,7 @@ final class TrinoArchiveScenario {
         long started = System.nanoTime();
         Archiver.builder()
                 .entryOrder(EntryOrder.SOURCE)
-                .contentIdentity(ContentIdentityMode.SIZE_AND_CRC32)
+                .contentIdentity(contentIdentityMode)
                 .hardLinkIncludes("**/*.jar")
                 .gzipCompressionThreads(4)
                 .gzipCompressionLevel(1)
@@ -63,6 +69,7 @@ final class TrinoArchiveScenario {
                 entryCount,
                 uniquePayloadCount,
                 source.contentOpenCount,
+                source.contentBytesRead,
                 regularFiles[0],
                 hardLinks[0],
                 elapsedNanos,
@@ -87,6 +94,7 @@ final class TrinoArchiveScenario {
         final int entries;
         final int uniquePayloads;
         final int contentOpens;
+        final long contentBytesRead;
         final int regularFiles;
         final int hardLinks;
         final long elapsedNanos;
@@ -99,6 +107,7 @@ final class TrinoArchiveScenario {
                 int entries,
                 int uniquePayloads,
                 int contentOpens,
+                long contentBytesRead,
                 int regularFiles,
                 int hardLinks,
                 long elapsedNanos,
@@ -109,6 +118,7 @@ final class TrinoArchiveScenario {
             this.entries = entries;
             this.uniquePayloads = uniquePayloads;
             this.contentOpens = contentOpens;
+            this.contentBytesRead = contentBytesRead;
             this.regularFiles = regularFiles;
             this.hardLinks = hardLinks;
             this.elapsedNanos = elapsedNanos;
@@ -151,6 +161,7 @@ final class TrinoArchiveScenario {
 
         private final Source delegate;
         private int contentOpenCount;
+        private long contentBytesRead;
 
         private TrackingSource(Source delegate) {
             this.delegate = delegate;
@@ -168,7 +179,25 @@ final class TrinoArchiveScenario {
                     @Override
                     public InputStream open() throws IOException {
                         contentOpenCount++;
-                        return content.open();
+                        return new FilterInputStream(content.open()) {
+                            @Override
+                            public int read() throws IOException {
+                                int value = super.read();
+                                if (value != -1) {
+                                    contentBytesRead++;
+                                }
+                                return value;
+                            }
+
+                            @Override
+                            public int read(byte[] bytes, int offset, int length) throws IOException {
+                                int count = super.read(bytes, offset, length);
+                                if (count > 0) {
+                                    contentBytesRead += count;
+                                }
+                                return count;
+                            }
+                        };
                     }
 
                     @Override
