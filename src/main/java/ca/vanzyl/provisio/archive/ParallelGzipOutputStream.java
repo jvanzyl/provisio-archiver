@@ -28,7 +28,7 @@ import java.util.zip.DeflaterOutputStream;
 final class ParallelGzipOutputStream extends OutputStream {
 
     interface ChunkCompressor {
-        byte[] compress(byte[] source, int length, int compressionLevel) throws IOException;
+        CompressedMember compress(byte[] source, int length, int compressionLevel) throws IOException;
     }
 
     private static final int GZIP_MAGIC_FIRST = 0x1f;
@@ -38,7 +38,7 @@ final class ParallelGzipOutputStream extends OutputStream {
 
     private final OutputStream output;
     private final ExecutorService executor;
-    private final Deque<Future<byte[]>> pending = new ArrayDeque<>();
+    private final Deque<Future<CompressedMember>> pending = new ArrayDeque<>();
     private final int compressionLevel;
     private final int chunkSize;
     private final int maximumPending;
@@ -195,9 +195,9 @@ final class ParallelGzipOutputStream extends OutputStream {
     }
 
     private void writeNextMember() throws IOException {
-        Future<byte[]> member = pending.removeFirst();
+        Future<CompressedMember> member = pending.removeFirst();
         try {
-            output.write(member.get());
+            member.get().writeTo(output);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while compressing gzip content", e);
@@ -216,14 +216,14 @@ final class ParallelGzipOutputStream extends OutputStream {
     }
 
     private void cancelPending() {
-        for (Future<byte[]> future : pending) {
+        for (Future<CompressedMember> future : pending) {
             future.cancel(true);
         }
         pending.clear();
     }
 
-    static byte[] compressMember(byte[] source, int length, int compressionLevel) throws IOException {
-        ByteArrayOutputStream member = new ByteArrayOutputStream(Math.max(32, length / 2));
+    static CompressedMember compressMember(byte[] source, int length, int compressionLevel) throws IOException {
+        MemberOutputStream member = new MemberOutputStream(compressedMemberCapacity(length));
         member.write(GZIP_MAGIC_FIRST);
         member.write(GZIP_MAGIC_SECOND);
         member.write(DEFLATE_METHOD);
@@ -245,7 +245,12 @@ final class ParallelGzipOutputStream extends OutputStream {
         crc32.update(source, 0, length);
         writeLittleEndian(member, crc32.getValue());
         writeLittleEndian(member, length);
-        return member.toByteArray();
+        return member.compressedMember();
+    }
+
+    private static int compressedMemberCapacity(int length) {
+        long capacity = (long) length + (length >>> 12) + (length >>> 14) + (length >>> 25) + 64;
+        return (int) Math.min(capacity, Integer.MAX_VALUE - 8L);
     }
 
     private static void writeLittleEndian(ByteArrayOutputStream output, long value) {
@@ -253,6 +258,40 @@ final class ParallelGzipOutputStream extends OutputStream {
         output.write((int) ((value >>> 8) & 0xff));
         output.write((int) ((value >>> 16) & 0xff));
         output.write((int) ((value >>> 24) & 0xff));
+    }
+
+    static final class CompressedMember {
+
+        private final byte[] buffer;
+        private final int length;
+
+        private CompressedMember(byte[] buffer, int length) {
+            this.buffer = buffer;
+            this.length = length;
+        }
+
+        byte[] buffer() {
+            return buffer;
+        }
+
+        int length() {
+            return length;
+        }
+
+        private void writeTo(OutputStream output) throws IOException {
+            output.write(buffer, 0, length);
+        }
+    }
+
+    private static final class MemberOutputStream extends ByteArrayOutputStream {
+
+        private MemberOutputStream(int capacity) {
+            super(capacity);
+        }
+
+        private CompressedMember compressedMember() {
+            return new CompressedMember(buf, count);
+        }
     }
 
     private static final class CompressorThreadFactory implements ThreadFactory {

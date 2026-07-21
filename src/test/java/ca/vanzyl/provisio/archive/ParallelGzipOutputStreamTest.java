@@ -103,6 +103,19 @@ public class ParallelGzipOutputStreamTest {
     }
 
     @Test
+    public void compressedMemberRetainsBackingBufferWithoutTrimmingCopy() throws Exception {
+        byte[] content = new byte[1024];
+
+        ParallelGzipOutputStream.CompressedMember member =
+                ParallelGzipOutputStream.compressMember(content, content.length, 6);
+
+        assertTrue(member.length() < member.buffer().length);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        output.write(member.buffer(), 0, member.length());
+        assertArrayEquals(content, decompress(output.toByteArray()));
+    }
+
+    @Test
     public void flushDoesNotMakePartialChunkBoundariesScheduleDependent() throws Exception {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ParallelGzipOutputStream gzip = new ParallelGzipOutputStream(output, 6, 32, 2);
