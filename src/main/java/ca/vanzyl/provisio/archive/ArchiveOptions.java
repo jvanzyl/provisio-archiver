@@ -21,6 +21,7 @@ final class ArchiveOptions {
     private final boolean posixLongFileMode;
     private final List<String> hardLinkIncludes;
     private final List<String> hardLinkExcludes;
+    private final GzipCompressionOptions gzipCompression;
 
     ArchiveOptions(Archiver.ArchiverBuilder builder) {
         executables = immutableCopy(builder.executables);
@@ -30,6 +31,7 @@ final class ArchiveOptions {
         posixLongFileMode = builder.posixLongFileMode;
         hardLinkIncludes = immutableCopy(builder.hardLinkIncludes);
         hardLinkExcludes = immutableCopy(builder.hardLinkExcludes);
+        gzipCompression = new GzipCompressionOptions(builder.gzipCompressionThreads, builder.gzipCompressionLevel);
     }
 
     List<String> executables() {
@@ -58,6 +60,10 @@ final class ArchiveOptions {
 
     List<String> hardLinkExcludes() {
         return hardLinkExcludes;
+    }
+
+    GzipCompressionOptions gzipCompression() {
+        return gzipCompression;
     }
 
     private static <T> List<T> immutableCopy(List<T> values) {

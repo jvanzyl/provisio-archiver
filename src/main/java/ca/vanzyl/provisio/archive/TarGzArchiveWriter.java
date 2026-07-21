@@ -14,23 +14,21 @@ import java.nio.file.Path;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.apache.commons.io.IOUtils;
 
 final class TarGzArchiveWriter implements ArchiveWriter {
 
+    private static final int COMPRESSION_CHUNK_SIZE = 8 * 1024 * 1024;
+
     private final TarArchiveOutputStream outputStream;
 
-    TarGzArchiveWriter(Path archive, boolean posixLongFileMode, ReproducibilityPolicy reproducibilityPolicy)
+    TarGzArchiveWriter(Path archive, boolean posixLongFileMode, GzipCompressionOptions gzipCompression)
             throws IOException {
-        GzipParameters parameters = new GzipParameters();
-        if (reproducibilityPolicy.normalized()) {
-            parameters.setModificationTime(0);
-            parameters.setOperatingSystem(255);
-        }
-        outputStream =
-                new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(archive), parameters));
+        outputStream = new TarArchiveOutputStream(new ParallelGzipOutputStream(
+                Files.newOutputStream(archive),
+                gzipCompression.level(),
+                COMPRESSION_CHUNK_SIZE,
+                gzipCompression.threads()));
         if (posixLongFileMode) {
             outputStream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
         }

@@ -47,7 +47,7 @@ final class ArchiveSession implements Closeable {
         this.format = format;
         this.options = options;
         contentSpool = new ContentSpool(output.getParent());
-        writer = format.openWriter(output, options.posixLongFileMode(), options.reproducibilityPolicy());
+        writer = format.openWriter(output, options.posixLongFileMode(), options.gzipCompression());
         if (!options.hardLinkIncludes().isEmpty() || !options.hardLinkExcludes().isEmpty()) {
             hardLinkSelector = new Selector(options.hardLinkIncludes(), options.hardLinkExcludes());
         } else {

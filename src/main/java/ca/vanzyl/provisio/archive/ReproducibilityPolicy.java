@@ -67,10 +67,6 @@ public enum ReproducibilityPolicy {
         return this == NORMALIZED ? "" : null;
     }
 
-    boolean normalized() {
-        return this == NORMALIZED;
-    }
-
     private static boolean isExecutable(int mode) {
         return mode != -1 && (mode & 0111) != 0;
     }

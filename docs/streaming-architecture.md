@@ -165,7 +165,12 @@ output. `NORMALIZED` fixes timestamps (including the historical `.class`
 adjustment), canonicalizes modes while retaining executable semantics, clears
 tar user and group ownership, and fixes gzip header fields. `PRESERVE` carries
 source timestamps and modes. Entry ordering remains an independent policy.
-Parallel gzip must preserve deterministic chunk order and use bounded memory.
+Tar output now uses fixed 8 MiB gzip members compressed by a configurable worker
+pool. Completed members are emitted in submission order, so output is identical
+across worker counts. At most twice the worker count is pending, bounding source
+and compressed-result memory. Empty streams, worker and output failures,
+interruption, cancellation, concatenated-member reads, and deterministic output
+are covered directly.
 
 ## Compatibility decision
 

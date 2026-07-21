@@ -31,7 +31,7 @@ public class TarGzArchiveSource implements Source {
     @Override
     public void forEachEntry(EntryConsumer consumer) throws IOException {
         try (TarArchiveInputStream inputStream =
-                new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive)))) {
+                new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(archive), true))) {
             TarArchiveEntry archiveEntry;
             while ((archiveEntry = inputStream.getNextTarEntry()) != null) {
                 acceptEntry(inputStream, archiveEntry, consumer);

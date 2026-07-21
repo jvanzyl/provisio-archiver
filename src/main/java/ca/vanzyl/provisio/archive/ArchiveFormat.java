@@ -38,11 +38,11 @@ enum ArchiveFormat {
         return new TarGzArchiveSource(archive.toFile());
     }
 
-    ArchiveWriter openWriter(Path output, boolean posixLongFileMode, ReproducibilityPolicy reproducibilityPolicy)
+    ArchiveWriter openWriter(Path output, boolean posixLongFileMode, GzipCompressionOptions gzipCompression)
             throws IOException {
         if (this == ZIP) {
             return new ZipArchiveWriter(output);
         }
-        return new TarGzArchiveWriter(output, posixLongFileMode, reproducibilityPolicy);
+        return new TarGzArchiveWriter(output, posixLongFileMode, gzipCompression);
     }
 }

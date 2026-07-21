@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimeZone;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -44,6 +45,20 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
         createNormalized(second, "America/Los_Angeles", source(1_800_000_000_000L, 0666, 0777));
 
         assertArrayEquals(Files.readAllBytes(first.toPath()), Files.readAllBytes(second.toPath()));
+    }
+
+    @Test
+    public void normalizedTarGzIsByteIdenticalAcrossCompressionWorkerCounts() throws Exception {
+        byte[] content = new byte[8 * 1024 * 1024 + 1024];
+        new Random(24680).nextBytes(content);
+        File serial = getTargetArchive("reproducible-serial.tar.gz");
+        File parallel = getTargetArchive("reproducible-parallel.tar.gz");
+
+        createNormalized(serial, content, 1);
+        createNormalized(parallel, content, 4);
+
+        assertArrayEquals(Files.readAllBytes(serial.toPath()), Files.readAllBytes(parallel.toPath()));
+        new TarGzArchiveValidator(parallel).assertSizeOfEntryInArchive("large.bin", content.length);
     }
 
     @Test
@@ -103,6 +118,15 @@ public class ReproducibilityPolicyTest extends FileSystemAssert {
         } finally {
             TimeZone.setDefault(original);
         }
+    }
+
+    private void createNormalized(File archive, byte[] content, int compressionThreads) throws Exception {
+        Archiver.builder()
+                .reproducibility(ReproducibilityPolicy.NORMALIZED)
+                .entryOrder(EntryOrder.NAME)
+                .gzipCompressionThreads(compressionThreads)
+                .build()
+                .archive(archive, singleEntrySource(SourceEntry.file("large.bin", EntryContents.of(content), 0644, 0)));
     }
 
     private Source source(long timestamp, int regularMode, int executableMode) {

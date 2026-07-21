@@ -101,6 +101,8 @@ public class Archiver {
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
+        int gzipCompressionThreads = GzipCompressionOptions.DEFAULT_THREADS;
+        int gzipCompressionLevel = GzipCompressionOptions.DEFAULT_LEVEL;
 
         /** Selects preserved or normalized archive metadata independently of entry ordering. */
         public ArchiverBuilder reproducibility(ReproducibilityPolicy reproducibilityPolicy) {
@@ -139,6 +141,20 @@ public class Archiver {
 
         public ArchiverBuilder posixLongFileMode(boolean posixLongFileMode) {
             this.posixLongFileMode = posixLongFileMode;
+            return this;
+        }
+
+        /** Sets the number of bounded gzip compression workers used for tar.gz output. */
+        public ArchiverBuilder gzipCompressionThreads(int threads) {
+            new GzipCompressionOptions(threads, gzipCompressionLevel);
+            gzipCompressionThreads = threads;
+            return this;
+        }
+
+        /** Sets the DEFLATE compression level from -1 (default) through 9 (best compression). */
+        public ArchiverBuilder gzipCompressionLevel(int level) {
+            new GzipCompressionOptions(gzipCompressionThreads, level);
+            gzipCompressionLevel = level;
             return this;
         }
 
