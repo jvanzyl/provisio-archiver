@@ -18,7 +18,7 @@ import org.apache.commons.io.IOUtils;
 
 final class TarGzArchiveWriter implements ArchiveWriter {
 
-    private static final int COMPRESSION_CHUNK_SIZE = 8 * 1024 * 1024;
+    private static final int COMPRESSION_CHUNK_SIZE = 1024 * 1024;
 
     private final TarArchiveOutputStream outputStream;
 
