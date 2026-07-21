@@ -37,6 +37,13 @@ final class OutputEntry {
                 name, EntryType.HARD_LINK, EntryContents.empty(), fileMode, time, requireNonNull(target));
     }
 
+    OutputEntry withContent(EntryContent content) {
+        if (type != EntryType.FILE) {
+            throw new IllegalStateException("Only file entries have replaceable content");
+        }
+        return new OutputEntry(name, type, content, fileMode, time, linkTarget);
+    }
+
     String getName() {
         return name;
     }

@@ -8,12 +8,16 @@
 package ca.vanzyl.provisio.archive;
 
 import java.io.Closeable;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +35,9 @@ final class ArchiveSession implements Closeable {
     private final ArchiveWriter writer;
     private final ContentSpool contentSpool;
     private final Selector hardLinkSelector;
-    private final Map<String, OutputEntry> hardLinkTargets = new HashMap<>();
+    private final Map<Long, List<ContentTarget>> hardLinkTargets = new HashMap<>();
     private final Map<String, Boolean> paths = new HashMap<>();
-    private final Map<String, OutputEntry> entries = new TreeMap<>();
+    private final Map<String, PendingEntry> entries = new TreeMap<>();
     private boolean finished;
     private boolean closed;
 
@@ -58,8 +62,8 @@ final class ArchiveSession implements Closeable {
 
     void finish() throws IOException {
         requireActive();
-        for (OutputEntry entry : entries.values()) {
-            writer.write(entry);
+        for (PendingEntry entry : entries.values()) {
+            writeEntry(entry);
         }
         finished = true;
     }
@@ -83,7 +87,7 @@ final class ArchiveSession implements Closeable {
                 paths.put(directoryPath, Boolean.FALSE);
                 OutputEntry directoryEntry =
                         createOutputEntry(directoryName, SourceEntry.directory(directoryName, -1, 0), false, null);
-                addEntry(directoryName, directoryEntry);
+                addEntry(directoryName, directoryEntry, false);
             }
         }
 
@@ -92,7 +96,7 @@ final class ArchiveSession implements Closeable {
             paths.put(path, Boolean.TRUE);
             SourceEntry stableEntry = options.entryOrder() == EntryOrder.NAME ? contentSpool.stabilize(entry) : entry;
             OutputEntry archiveEntry = createOutputEntry(entryName, stableEntry, executable, linkTarget);
-            addEntry(entryName, archiveEntry);
+            addEntry(entryName, archiveEntry, hardLinkSelector.include(entryName));
         } else if (Boolean.TRUE.equals(paths.get(path)) || !entry.isDirectory()) {
             throw new IllegalArgumentException("Duplicate archive entry " + entryName);
         } else {
@@ -156,16 +160,6 @@ final class ArchiveSession implements Closeable {
         }
 
         long time = options.normalize() ? normalizedTimestamp(name) : -1;
-        if (format == ArchiveFormat.TAR_GZ && source.getType() == EntryType.FILE && hardLinkSelector.include(name)) {
-            String sourceFileName = source.getName().substring(source.getName().lastIndexOf('/') + 1);
-            OutputEntry target = hardLinkTargets.get(sourceFileName);
-            if (target != null) {
-                return OutputEntry.hardLink(name, target.getName(), mode, time);
-            }
-            OutputEntry entry = OutputEntry.from(name, source, mode, time, linkTarget);
-            hardLinkTargets.put(sourceFileName, entry);
-            return entry;
-        }
         return OutputEntry.from(name, source, mode, time, linkTarget);
     }
 
@@ -176,11 +170,88 @@ final class ArchiveSession implements Closeable {
         return Archiver.DOS_EPOCH_IN_JAVA_TIME;
     }
 
-    private void addEntry(String entryName, OutputEntry entry) throws IOException {
+    private void addEntry(String entryName, OutputEntry entry, boolean hardLinkEligible) throws IOException {
+        PendingEntry pendingEntry = new PendingEntry(
+                entry, format == ArchiveFormat.TAR_GZ && entry.getType() == EntryType.FILE && hardLinkEligible);
         if (options.entryOrder() == EntryOrder.NAME) {
-            entries.put(entryName, entry);
+            entries.put(entryName, pendingEntry);
         } else {
+            writeEntry(pendingEntry);
+        }
+    }
+
+    private void writeEntry(PendingEntry pendingEntry) throws IOException {
+        OutputEntry entry = pendingEntry.entry;
+        if (!pendingEntry.hardLinkEligible) {
             writer.write(entry);
+            return;
+        }
+
+        long declaredSize = entry.getContent().size();
+        List<ContentTarget> candidates = hardLinkTargets.get(declaredSize);
+        if (candidates == null) {
+            ContentFingerprint fingerprint = writeAndFingerprint(entry);
+            addHardLinkTarget(declaredSize, fingerprint, entry.getName());
+            return;
+        }
+
+        FingerprintedContent fingerprintedContent = fingerprintContent(entry.getName(), entry.getContent());
+        for (ContentTarget candidate : candidates) {
+            if (candidate.fingerprint.equals(fingerprintedContent.fingerprint)) {
+                writer.write(OutputEntry.hardLink(
+                        entry.getName(), candidate.entryName, entry.getFileMode(), entry.getTime()));
+                return;
+            }
+        }
+
+        writer.write(entry.withContent(fingerprintedContent.content));
+        candidates.add(new ContentTarget(fingerprintedContent.fingerprint, entry.getName()));
+    }
+
+    private ContentFingerprint writeAndFingerprint(OutputEntry entry) throws IOException {
+        FingerprintingContent content = new FingerprintingContent(entry.getName(), entry.getContent());
+        writer.write(entry.withContent(content));
+        return content.fingerprint();
+    }
+
+    private FingerprintedContent fingerprintContent(String entryName, EntryContent content) throws IOException {
+        EntryContent stableContent = content.isRepeatable() ? content : contentSpool.stabilize(content);
+        return new FingerprintedContent(stableContent, fingerprint(entryName, stableContent));
+    }
+
+    private ContentFingerprint fingerprint(String entryName, EntryContent content) throws IOException {
+        MessageDigest digest = sha256();
+        long size = 0;
+        byte[] buffer = new byte[8192];
+        try (InputStream inputStream = content.open()) {
+            int count;
+            while ((count = inputStream.read(buffer)) != -1) {
+                digest.update(buffer, 0, count);
+                size += count;
+            }
+        }
+        validateSize(entryName, content.size(), size);
+        return new ContentFingerprint(size, digest.digest());
+    }
+
+    private void addHardLinkTarget(long declaredSize, ContentFingerprint fingerprint, String entryName) {
+        hardLinkTargets
+                .computeIfAbsent(declaredSize, ignored -> new ArrayList<>())
+                .add(new ContentTarget(fingerprint, entryName));
+    }
+
+    private static MessageDigest sha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 is required by the Java platform", e);
+        }
+    }
+
+    private static void validateSize(String entryName, long expected, long actual) throws IOException {
+        if (expected != actual) {
+            throw new IOException("Content size mismatch for archive entry " + entryName + ": expected " + expected
+                    + ", read " + actual);
         }
     }
 
@@ -233,17 +304,21 @@ final class ArchiveSession implements Closeable {
                 return entry;
             }
 
+            return entry.withContent(stabilize(entry.getContent()));
+        }
+
+        private EntryContent stabilize(EntryContent entryContent) throws IOException {
             Path content = Files.createTempFile(temporaryDirectory, ".provisio-entry-", ".tmp");
             boolean completed = false;
             try {
-                try (InputStream inputStream = entry.getContent().open();
+                try (InputStream inputStream = entryContent.open();
                         OutputStream outputStream = Files.newOutputStream(content)) {
                     IOUtils.copyLarge(inputStream, outputStream);
                 }
-                SourceEntry stableEntry = entry.withContent(EntryContents.of(content));
+                EntryContent stableContent = EntryContents.of(content);
                 contentFiles.add(content);
                 completed = true;
-                return stableEntry;
+                return stableContent;
             } finally {
                 if (!completed) {
                     Files.deleteIfExists(content);
@@ -268,6 +343,123 @@ final class ArchiveSession implements Closeable {
             if (failure != null) {
                 throw failure;
             }
+        }
+    }
+
+    private static final class PendingEntry {
+
+        private final OutputEntry entry;
+        private final boolean hardLinkEligible;
+
+        private PendingEntry(OutputEntry entry, boolean hardLinkEligible) {
+            this.entry = entry;
+            this.hardLinkEligible = hardLinkEligible;
+        }
+    }
+
+    private static final class ContentTarget {
+
+        private final ContentFingerprint fingerprint;
+        private final String entryName;
+
+        private ContentTarget(ContentFingerprint fingerprint, String entryName) {
+            this.fingerprint = fingerprint;
+            this.entryName = entryName;
+        }
+    }
+
+    private static final class FingerprintedContent {
+
+        private final EntryContent content;
+        private final ContentFingerprint fingerprint;
+
+        private FingerprintedContent(EntryContent content, ContentFingerprint fingerprint) {
+            this.content = content;
+            this.fingerprint = fingerprint;
+        }
+    }
+
+    private static final class ContentFingerprint {
+
+        private final long size;
+        private final byte[] sha256;
+
+        private ContentFingerprint(long size, byte[] sha256) {
+            this.size = size;
+            this.sha256 = sha256;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof ContentFingerprint)) {
+                return false;
+            }
+            ContentFingerprint that = (ContentFingerprint) other;
+            return size == that.size && Arrays.equals(sha256, that.sha256);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Long.hashCode(size) + Arrays.hashCode(sha256);
+        }
+    }
+
+    private static final class FingerprintingContent implements EntryContent {
+
+        private final String entryName;
+        private final EntryContent delegate;
+        private final MessageDigest digest = sha256();
+        private long size;
+        private boolean opened;
+
+        private FingerprintingContent(String entryName, EntryContent delegate) {
+            this.entryName = entryName;
+            this.delegate = delegate;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            if (opened) {
+                throw new IOException("Fingerprinting content opened more than once for " + entryName);
+            }
+            opened = true;
+            return new FilterInputStream(delegate.open()) {
+                @Override
+                public int read() throws IOException {
+                    int value = super.read();
+                    if (value != -1) {
+                        digest.update((byte) value);
+                        size++;
+                    }
+                    return value;
+                }
+
+                @Override
+                public int read(byte[] bytes, int offset, int length) throws IOException {
+                    int count = super.read(bytes, offset, length);
+                    if (count != -1) {
+                        digest.update(bytes, offset, count);
+                        size += count;
+                    }
+                    return count;
+                }
+            };
+        }
+
+        @Override
+        public long size() {
+            return delegate.size();
+        }
+
+        private ContentFingerprint fingerprint() throws IOException {
+            if (!opened) {
+                throw new IOException("Archive writer did not consume content for " + entryName);
+            }
+            validateSize(entryName, delegate.size(), size);
+            return new ContentFingerprint(size, digest.digest());
         }
     }
 }

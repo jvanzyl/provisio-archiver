@@ -139,15 +139,17 @@ Hard-link eligibility and content identity belong to assembly. A tar writer
 receives either a regular output entry or an already selected hard-link entry;
 the ZIP writer rejects hard links because ZIP has no representation for them.
 
-The legacy filename-based hard-link selection has been moved out of the tar
-writer into assembly as an explicit transitional policy. It remains deliberately
-isolated there until content identity replaces it.
+Filename-based hard-link selection has been removed. Eligible regular files are
+fingerprinted with SHA-256, and only matching size and digest produce a hard
+link. Source-ordered output hashes first occurrences as they are written and
+spools only single-use entries that have a possible prior size match. Name-order
+output performs identity decisions in final output order, ensuring every target
+is written before its links.
 
-Filename equality is not content identity. Eligible content will be compared by
-available metadata such as size and CRC. Missing or invalid identity metadata
-must disable the metadata-only optimization rather than produce an unsafe link.
-The first matching entry is written normally and must precede all hard links to
-it.
+Size and CRC remain useful candidate metadata but are not exact identity. A
+metadata-only optimization must be explicit rather than silently weakening the
+verified default. Missing or invalid metadata must fall back to verified
+identity instead of producing an unsafe link.
 
 ### Output integrity and reproducibility
 

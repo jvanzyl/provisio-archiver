@@ -29,7 +29,7 @@ public interface EntryContent {
         return -1;
     }
 
-    /** Returns whether the content can be opened more than once during its source callback. */
+    /** Returns whether the same content can be opened more than once during its source callback. */
     default boolean isRepeatable() {
         return false;
     }
