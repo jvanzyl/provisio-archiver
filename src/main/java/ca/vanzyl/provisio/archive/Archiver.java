@@ -97,6 +97,7 @@ public class Archiver {
         List<String> executables = new ArrayList<>();
         boolean normalize = false;
         EntryOrder entryOrder = EntryOrder.SOURCE;
+        ContentIdentityMode contentIdentityMode = ContentIdentityMode.VERIFIED;
         boolean posixLongFileMode;
         List<String> hardLinkIncludes = new ArrayList<>();
         List<String> hardLinkExcludes = new ArrayList<>();
@@ -118,6 +119,16 @@ public class Archiver {
          */
         public ArchiverBuilder entryOrder(EntryOrder entryOrder) {
             this.entryOrder = requireNonNull(entryOrder);
+            return this;
+        }
+
+        /**
+         * Selects verified or metadata-only identity for eligible tar hard links.
+         *
+         * @param contentIdentityMode content identity policy
+         */
+        public ArchiverBuilder contentIdentity(ContentIdentityMode contentIdentityMode) {
+            this.contentIdentityMode = requireNonNull(contentIdentityMode);
             return this;
         }
 

@@ -17,6 +17,7 @@ final class ArchiveOptions {
     private final List<String> executables;
     private final boolean normalize;
     private final EntryOrder entryOrder;
+    private final ContentIdentityMode contentIdentityMode;
     private final boolean posixLongFileMode;
     private final List<String> hardLinkIncludes;
     private final List<String> hardLinkExcludes;
@@ -25,6 +26,7 @@ final class ArchiveOptions {
         executables = immutableCopy(builder.executables);
         normalize = builder.normalize;
         entryOrder = builder.entryOrder;
+        contentIdentityMode = builder.contentIdentityMode;
         posixLongFileMode = builder.posixLongFileMode;
         hardLinkIncludes = immutableCopy(builder.hardLinkIncludes);
         hardLinkExcludes = immutableCopy(builder.hardLinkExcludes);
@@ -40,6 +42,10 @@ final class ArchiveOptions {
 
     EntryOrder entryOrder() {
         return entryOrder;
+    }
+
+    ContentIdentityMode contentIdentityMode() {
+        return contentIdentityMode;
     }
 
     boolean posixLongFileMode() {

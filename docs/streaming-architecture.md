@@ -146,10 +146,13 @@ spools only single-use entries that have a possible prior size match. Name-order
 output performs identity decisions in final output order, ensuring every target
 is written before its links.
 
-Size and CRC remain useful candidate metadata but are not exact identity. A
-metadata-only optimization must be explicit rather than silently weakening the
-verified default. Missing or invalid metadata must fall back to verified
-identity instead of producing an unsafe link.
+Size and CRC remain useful candidate metadata but are not exact identity.
+`ContentIdentityMode.VERIFIED` is therefore the default. The explicit
+`SIZE_AND_CRC32` mode trusts source-reported metadata and avoids opening matching
+duplicate content. In name order, one representative is spooled for each
+metadata identity and supplies the content for the first sorted target. Missing
+or invalid metadata falls back to verified identity instead of producing an
+unsafe link.
 
 ### Output integrity and reproducibility
 

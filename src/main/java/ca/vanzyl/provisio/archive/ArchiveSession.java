@@ -36,6 +36,8 @@ final class ArchiveSession implements Closeable {
     private final ContentSpool contentSpool;
     private final Selector hardLinkSelector;
     private final Map<Long, List<ContentTarget>> hardLinkTargets = new HashMap<>();
+    private final Map<MetadataIdentity, String> metadataHardLinkTargets = new HashMap<>();
+    private final Map<MetadataIdentity, MetadataGroup> metadataGroups = new HashMap<>();
     private final Map<String, Boolean> paths = new HashMap<>();
     private final Map<String, PendingEntry> entries = new TreeMap<>();
     private boolean finished;
@@ -94,8 +96,7 @@ final class ArchiveSession implements Closeable {
         String path = outputPath.value();
         if (!paths.containsKey(path)) {
             paths.put(path, Boolean.TRUE);
-            SourceEntry stableEntry = options.entryOrder() == EntryOrder.NAME ? contentSpool.stabilize(entry) : entry;
-            OutputEntry archiveEntry = createOutputEntry(entryName, stableEntry, executable, linkTarget);
+            OutputEntry archiveEntry = createOutputEntry(entryName, entry, executable, linkTarget);
             addEntry(entryName, archiveEntry, hardLinkSelector.include(entryName));
         } else if (Boolean.TRUE.equals(paths.get(path)) || !entry.isDirectory()) {
             throw new IllegalArgumentException("Duplicate archive entry " + entryName);
@@ -171,12 +172,26 @@ final class ArchiveSession implements Closeable {
     }
 
     private void addEntry(String entryName, OutputEntry entry, boolean hardLinkEligible) throws IOException {
-        PendingEntry pendingEntry = new PendingEntry(
-                entry, format == ArchiveFormat.TAR_GZ && entry.getType() == EntryType.FILE && hardLinkEligible);
+        boolean eligible = format == ArchiveFormat.TAR_GZ && entry.getType() == EntryType.FILE && hardLinkEligible;
         if (options.entryOrder() == EntryOrder.NAME) {
+            MetadataGroup metadataGroup = null;
+            if (eligible && options.contentIdentityMode() == ContentIdentityMode.SIZE_AND_CRC32) {
+                MetadataIdentity identity = MetadataIdentity.from(entry.getContent());
+                if (identity != null) {
+                    metadataGroup = metadataGroups.get(identity);
+                    if (metadataGroup == null) {
+                        metadataGroup = new MetadataGroup(contentSpool.stabilize(entry.getContent()));
+                        metadataGroups.put(identity, metadataGroup);
+                    }
+                }
+            }
+            if (entry.getType() == EntryType.FILE && metadataGroup == null) {
+                entry = entry.withContent(contentSpool.stabilize(entry.getContent()));
+            }
+            PendingEntry pendingEntry = new PendingEntry(entry, eligible, metadataGroup);
             entries.put(entryName, pendingEntry);
         } else {
-            writeEntry(pendingEntry);
+            writeEntry(new PendingEntry(entry, eligible, null));
         }
     }
 
@@ -186,6 +201,44 @@ final class ArchiveSession implements Closeable {
             writer.write(entry);
             return;
         }
+
+        if (pendingEntry.metadataGroup != null) {
+            writeNameOrderedMetadataEntry(entry, pendingEntry.metadataGroup);
+            return;
+        }
+
+        if (options.contentIdentityMode() == ContentIdentityMode.SIZE_AND_CRC32) {
+            MetadataIdentity identity = MetadataIdentity.from(entry.getContent());
+            if (identity != null) {
+                writeSourceOrderedMetadataEntry(entry, identity);
+                return;
+            }
+        }
+
+        writeVerifiedEntry(entry);
+    }
+
+    private void writeNameOrderedMetadataEntry(OutputEntry entry, MetadataGroup group) throws IOException {
+        if (group.targetEntryName == null) {
+            writer.write(entry.withContent(group.content));
+            group.targetEntryName = entry.getName();
+        } else {
+            writer.write(
+                    OutputEntry.hardLink(entry.getName(), group.targetEntryName, entry.getFileMode(), entry.getTime()));
+        }
+    }
+
+    private void writeSourceOrderedMetadataEntry(OutputEntry entry, MetadataIdentity identity) throws IOException {
+        String target = metadataHardLinkTargets.get(identity);
+        if (target == null) {
+            writer.write(entry);
+            metadataHardLinkTargets.put(identity, entry.getName());
+        } else {
+            writer.write(OutputEntry.hardLink(entry.getName(), target, entry.getFileMode(), entry.getTime()));
+        }
+    }
+
+    private void writeVerifiedEntry(OutputEntry entry) throws IOException {
 
         long declaredSize = entry.getContent().size();
         List<ContentTarget> candidates = hardLinkTargets.get(declaredSize);
@@ -299,14 +352,6 @@ final class ArchiveSession implements Closeable {
             this.temporaryDirectory = temporaryDirectory;
         }
 
-        private SourceEntry stabilize(SourceEntry entry) throws IOException {
-            if (entry.getType() != EntryType.FILE) {
-                return entry;
-            }
-
-            return entry.withContent(stabilize(entry.getContent()));
-        }
-
         private EntryContent stabilize(EntryContent entryContent) throws IOException {
             Path content = Files.createTempFile(temporaryDirectory, ".provisio-entry-", ".tmp");
             boolean completed = false;
@@ -350,10 +395,61 @@ final class ArchiveSession implements Closeable {
 
         private final OutputEntry entry;
         private final boolean hardLinkEligible;
+        private final MetadataGroup metadataGroup;
 
-        private PendingEntry(OutputEntry entry, boolean hardLinkEligible) {
+        private PendingEntry(OutputEntry entry, boolean hardLinkEligible, MetadataGroup metadataGroup) {
             this.entry = entry;
             this.hardLinkEligible = hardLinkEligible;
+            this.metadataGroup = metadataGroup;
+        }
+    }
+
+    private static final class MetadataGroup {
+
+        private final EntryContent content;
+        private String targetEntryName;
+
+        private MetadataGroup(EntryContent content) {
+            this.content = content;
+        }
+    }
+
+    private static final class MetadataIdentity {
+
+        private static final long MAXIMUM_CRC32 = 0xffff_ffffL;
+
+        private final long size;
+        private final long crc32;
+
+        private MetadataIdentity(long size, long crc32) {
+            this.size = size;
+            this.crc32 = crc32;
+        }
+
+        private static MetadataIdentity from(EntryContent content) {
+            long size = content.size();
+            long crc32 = content.crc32();
+            if (size < 0 || crc32 < 0 || crc32 > MAXIMUM_CRC32) {
+                return null;
+            }
+            return new MetadataIdentity(size, crc32);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof MetadataIdentity)) {
+                return false;
+            }
+            MetadataIdentity that = (MetadataIdentity) other;
+            return size == that.size && crc32 == that.crc32;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Long.hashCode(size) + Long.hashCode(crc32);
         }
     }
 

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import ca.vanzyl.provisio.archive.tar.TarGzArchiveSource;
+import ca.vanzyl.provisio.archive.zip.ZipArchiveSource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +33,113 @@ public class ContentIdentityTest extends FileSystemAssert {
         ArchiveValidator validator = new TarGzArchiveValidator(archive);
         validator.assertContentOfEntryInArchive("one/library.jar", "alpha");
         validator.assertContentOfEntryInArchive("two/library.jar", "bravo");
+    }
+
+    @Test
+    public void verifiedIdentityRejectsMatchingCrcMetadataForDifferentBytes() throws Exception {
+        File archive = getTargetArchive("identity-crc-collision.tar.gz");
+        TrackingMetadataContent first = new TrackingMetadataContent("alpha", 1234, false);
+        TrackingMetadataContent second = new TrackingMetadataContent("bravo", 1234, false);
+        Source source =
+                source(SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", second, 0644, 0));
+
+        hardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+
+        assertEquals(EntryType.FILE, entries(archive).get("one/a.jar").getType());
+        assertEquals(EntryType.FILE, entries(archive).get("two/b.jar").getType());
+        assertEquals(1, first.openCount);
+        assertEquals(1, second.openCount);
+    }
+
+    @Test
+    public void metadataIdentityAvoidsOpeningSourceOrderedDuplicateContent() throws Exception {
+        File archive = getTargetArchive("identity-metadata-source-order.tar.gz");
+        TrackingMetadataContent first = new TrackingMetadataContent("same", 77, false);
+        TrackingMetadataContent duplicate = new TrackingMetadataContent("xxxx", 77, true);
+        Source source = source(
+                SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", duplicate, 0644, 0));
+
+        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+
+        assertEquals(1, first.openCount);
+        assertEquals(0, duplicate.openCount);
+        assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
+    }
+
+    @Test
+    public void metadataIdentitySpoolsOneRepresentativeForNameOrder() throws Exception {
+        File archive = getTargetArchive("identity-metadata-name-order.tar.gz");
+        TrackingMetadataContent representative = new TrackingMetadataContent("same", 77, false);
+        TrackingMetadataContent duplicate = new TrackingMetadataContent("xxxx", 77, true);
+        Source source = source(
+                SourceEntry.file("z/z.jar", representative, 0644, 0), SourceEntry.file("a/a.jar", duplicate, 0644, 0));
+
+        metadataHardLinkingArchiver(EntryOrder.NAME).archive(archive, source);
+
+        assertEquals(1, representative.openCount);
+        assertEquals(0, duplicate.openCount);
+        Map<String, SourceEntry> entries = entries(archive);
+        assertEquals(EntryType.FILE, entries.get("a/a.jar").getType());
+        assertEquals(EntryType.HARD_LINK, entries.get("z/z.jar").getType());
+        assertEquals("a/a.jar", entries.get("z/z.jar").getLinkTarget());
+        new TarGzArchiveValidator(archive).assertContentOfEntryInArchive("a/a.jar", "same");
+    }
+
+    @Test
+    public void zipCentralDirectoryMetadataCanDriveTarHardLinks() throws Exception {
+        File sourceArchive = getTargetArchive("identity-metadata-source.zip");
+        Archiver.builder().build().archive(sourceArchive, source(file("z/z.jar", "same"), file("a/a.jar", "same")));
+        File outputArchive = getTargetArchive("identity-metadata-from-zip.tar.gz");
+
+        metadataHardLinkingArchiver(EntryOrder.NAME).archive(outputArchive, new ZipArchiveSource(sourceArchive));
+
+        Map<String, SourceEntry> entries = entries(outputArchive);
+        assertEquals(EntryType.FILE, entries.get("a/a.jar").getType());
+        assertEquals(EntryType.HARD_LINK, entries.get("z/z.jar").getType());
+        assertEquals("a/a.jar", entries.get("z/z.jar").getLinkTarget());
+    }
+
+    @Test
+    public void missingMetadataFallsBackToVerifiedIdentity() throws Exception {
+        File archive = getTargetArchive("identity-metadata-missing.tar.gz");
+        TrackingMetadataContent first = new TrackingMetadataContent("same", -1, false);
+        TrackingMetadataContent second = new TrackingMetadataContent("same", -1, false);
+        Source source =
+                source(SourceEntry.file("one/a.jar", first, 0644, 0), SourceEntry.file("two/b.jar", second, 0644, 0));
+
+        metadataHardLinkingArchiver(EntryOrder.SOURCE).archive(archive, source);
+
+        assertEquals(1, first.openCount);
+        assertEquals(1, second.openCount);
+        assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
+    }
+
+    @Test
+    public void invalidCrcMetadataFallsBackToVerifiedIdentity() throws Exception {
+        File archive = getTargetArchive("identity-metadata-invalid.tar.gz");
+        long invalidCrc = 0x1_0000_0000L;
+        TrackingMetadataContent first = new TrackingMetadataContent("same", invalidCrc, false);
+        TrackingMetadataContent second = new TrackingMetadataContent("same", invalidCrc, false);
+
+        metadataHardLinkingArchiver(EntryOrder.SOURCE)
+                .archive(
+                        archive,
+                        source(
+                                SourceEntry.file("one/a.jar", first, 0644, 0),
+                                SourceEntry.file("two/b.jar", second, 0644, 0)));
+
+        assertEquals(1, second.openCount);
+        assertEquals(EntryType.HARD_LINK, entries(archive).get("two/b.jar").getType());
+    }
+
+    @Test
+    public void nullContentIdentityModeIsRejected() {
+        try {
+            Archiver.builder().contentIdentity(null);
+            fail("Expected null content identity mode to fail");
+        } catch (NullPointerException expected) {
+            // Expected.
+        }
     }
 
     @Test
@@ -123,6 +231,14 @@ public class ContentIdentityTest extends FileSystemAssert {
         return Archiver.builder().entryOrder(order).hardLinkIncludes("**/*.jar").build();
     }
 
+    private Archiver metadataHardLinkingArchiver(EntryOrder order) {
+        return Archiver.builder()
+                .entryOrder(order)
+                .contentIdentity(ContentIdentityMode.SIZE_AND_CRC32)
+                .hardLinkIncludes("**/*.jar")
+                .build();
+    }
+
     private static SourceEntry file(String name, String content) {
         return SourceEntry.file(name, EntryContents.of(content.getBytes(StandardCharsets.UTF_8)), 0644, 0);
     }
@@ -183,6 +299,39 @@ public class ContentIdentityTest extends FileSystemAssert {
         @Override
         public long size() {
             return bytes.length;
+        }
+    }
+
+    private static final class TrackingMetadataContent implements EntryContent {
+
+        private final byte[] bytes;
+        private final long crc32;
+        private final boolean failOnOpen;
+        private int openCount;
+
+        private TrackingMetadataContent(String content, long crc32, boolean failOnOpen) {
+            bytes = content.getBytes(StandardCharsets.UTF_8);
+            this.crc32 = crc32;
+            this.failOnOpen = failOnOpen;
+        }
+
+        @Override
+        public InputStream open() throws IOException {
+            if (failOnOpen) {
+                throw new IOException("duplicate content should not be opened");
+            }
+            openCount++;
+            return new ByteArrayInputStream(bytes);
+        }
+
+        @Override
+        public long size() {
+            return bytes.length;
+        }
+
+        @Override
+        public long crc32() {
+            return crc32;
         }
     }
 }
